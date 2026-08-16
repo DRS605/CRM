@@ -7,11 +7,16 @@ using Microsoft.EntityFrameworkCore;
 namespace Matchketing.Persistencia.Repositorios;
 
 /// <summary>
-/// Arma la pila de Hoy cruzando tareas, contactos y embudo.
+/// Arma la pila de Hoy cruzando tareas, contactos, embudo y la puntuación Match.
 ///
-/// **Nota de alcance**: el orden definitivo lo pondrá el Match del módulo 5. Hasta entonces se usa
-/// una urgencia provisional —lo vencido primero, lo parado después, y lo que no tiene próxima acción
-/// al final—, que ya es infinitamente mejor que una lista alfabética, pero no es el producto.
+/// **El orden lo pone el Match**: es la tesis del producto, que lo primero de la mañana lo decida
+/// cuánto encaja el contacto y qué ha hecho últimamente, no la antigüedad de un recordatorio. A
+/// igual Match, desempata la urgencia (lo vencido antes que lo de hoy, lo parado antes que lo que
+/// solo está callado).
+///
+/// Un contacto **sin puntuar** va detrás de cualquiera que sí lo esté, aunque el otro puntúe bajo:
+/// «no sé nada de este» no puede adelantar a «sé que este vale 30». Al principio, cuando nadie tiene
+/// puntuación, todos empatan y manda la urgencia, que es el comportamiento del módulo 4.
 /// </summary>
 public sealed class ConsultaHoy(ContextoMatchketing bd, IReloj reloj) : IConsultaHoy
 {
@@ -52,7 +57,7 @@ public sealed class ConsultaHoy(ContextoMatchketing bd, IReloj reloj) : IConsult
             tarjetas.Add(new TarjetaHoy(
                 TipoTarjeta.Tarea, t.Id, t.ContactoId, t.OportunidadId, t.Titulo,
                 t.NombreContacto ?? "Sin contacto", null, t.Telefono, motivo, t.VenceEl, vencida, null,
-                vencida > 0 ? 100 + Math.Min(vencida, 30) : 60));
+                vencida > 0 ? 100 + Math.Min(vencida, 30) : 60, null, []));
         }
 
         // 2. Oportunidades paradas más días de los que su etapa tolera.
@@ -84,7 +89,7 @@ public sealed class ConsultaHoy(ContextoMatchketing bd, IReloj reloj) : IConsult
                 TipoTarjeta.Estancada, null, o.ContactoId, o.Id, o.Titulo,
                 o.NombreContacto, o.NombreCuenta, o.Telefono,
                 $"Lleva {dias} días parada en «{o.NombreEtapa}».", null, 0, o.Importe,
-                40 + Math.Min(dias - o.DiasAviso, 20)));
+                40 + Math.Min(dias - o.DiasAviso, 20), null, []));
         }
 
         // 3. La promesa del producto (H1): contactos vivos a los que nadie ha puesto próximo paso.
@@ -108,11 +113,35 @@ public sealed class ConsultaHoy(ContextoMatchketing bd, IReloj reloj) : IConsult
                 TipoTarjeta.SinProximaAccion, null, c.Id, null,
                 c.Nombre, c.Nombre, c.NombreCuenta, c.Telefono,
                 "Sin próximo paso. Un contacto sin próxima acción es un contacto que se pierde.",
-                null, 0, null, 20));
+                null, 0, null, 20, null, []));
         }
 
-        var ordenadas = tarjetas
-            .OrderByDescending(t => t.Urgencia)
+        // El Match de cada contacto, ya calculado y guardado. Se lee de una vez, no una por tarjeta.
+        var contactosEnPila = tarjetas.Where(t => t.ContactoId is not null).Select(t => t.ContactoId!.Value).Distinct().ToList();
+        var puntuaciones = await bd.Puntuaciones
+            .Where(p => contactosEnPila.Contains(p.ContactoId))
+            .Select(p => new { p.ContactoId, p.Match, p.Motivos })
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        var porContacto = puntuaciones.ToDictionary(p => p.ContactoId, p => p);
+
+        var conMatch = tarjetas.Select(t =>
+        {
+            if (t.ContactoId is not { } id || !porContacto.TryGetValue(id, out var p))
+            {
+                return t;
+            }
+
+            var motivos = string.IsNullOrEmpty(p.Motivos)
+                ? Array.Empty<string>()
+                : p.Motivos.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            return t with { Match = p.Match, Motivos = motivos };
+        }).ToList();
+
+        var ordenadas = conMatch
+            .OrderByDescending(t => t.Match ?? -1)
+            .ThenByDescending(t => t.Urgencia)
             .ThenByDescending(t => t.Importe ?? 0m)
             .ThenBy(t => t.NombreContacto, StringComparer.Ordinal)
             .ToList();

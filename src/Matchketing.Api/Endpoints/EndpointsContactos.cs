@@ -5,6 +5,7 @@ using Matchketing.Contactos.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
 using Matchketing.Nucleo.Comun;
+using Matchketing.Match.Aplicacion;
 using Matchketing.Tareas.Aplicacion;
 
 namespace Matchketing.Api.Endpoints;
@@ -157,7 +158,7 @@ public static class EndpointsContactos
 
         grupo.MapPost("/{id:guid}/llamada", async (
             Guid id, PeticionLlamada p, ServicioContactos servicio, ServicioTareas tareas,
-            IUnidadDeTrabajo unidad, IContextoEmpresa contexto, CancellationToken ct) =>
+            ServicioMatch match, IUnidadDeTrabajo unidad, IContextoEmpresa contexto, CancellationToken ct) =>
         {
             if (!contexto.Tiene(Permisos.ContactoGestionar))
             {
@@ -175,6 +176,12 @@ public static class EndpointsContactos
             if (p.Resultado == ResultadoLlamada.VolverALlamar)
             {
                 await tareas.CrearSeguimientoLlamadaAsync(id, ct).ConfigureAwait(false);
+            }
+
+            // Que coja el teléfono es señal de interés; que no lo coja, no lo es.
+            if (p.Resultado == ResultadoLlamada.Contactado)
+            {
+                await match.RegistrarSenalAsync(id, Match.Dominio.TipoSenal.LlamadaContestada, ct).ConfigureAwait(false);
             }
 
             await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);

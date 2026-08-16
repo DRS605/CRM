@@ -6,6 +6,7 @@ using Matchketing.Embudo.Aplicacion;
 using Matchketing.Embudo.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
+using Matchketing.Match.Aplicacion;
 using Matchketing.Nucleo.Comun;
 
 namespace Matchketing.Api.Endpoints;
@@ -47,7 +48,7 @@ public static class EndpointsEmbudo
 
         grupo.MapPost(string.Empty, async (
             PeticionOportunidad p, ServicioEmbudo servicio, ServicioContactos contactos,
-            IUnidadDeTrabajo unidad, IContextoEmpresa contexto, CancellationToken ct) =>
+            ServicioMatch match, IUnidadDeTrabajo unidad, IContextoEmpresa contexto, CancellationToken ct) =>
         {
             if (!contexto.Tiene(Permisos.OportunidadGestionar))
             {
@@ -64,6 +65,8 @@ public static class EndpointsEmbudo
             await contactos.RegistrarActividadAsync(
                 p.ContactoId, TipoActividad.Sistema, SentidoActividad.Interna,
                 $"Nueva oportunidad: «{r.Valor.Titulo}» por {r.Valor.Importe:0.00} €.", null, ct).ConfigureAwait(false);
+
+            await match.RegistrarSenalAsync(p.ContactoId, Match.Dominio.TipoSenal.OportunidadCreada, ct).ConfigureAwait(false);
 
             await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
             return Results.Created($"/oportunidades/{r.Valor.Id}", new { id = r.Valor.Id });

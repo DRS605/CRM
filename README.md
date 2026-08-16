@@ -34,12 +34,13 @@ src/
   Matchketing.Contactos       Contacto, Cuenta, Actividad, duplicados e importación CSV
   Matchketing.Embudo          Embudo, Etapa, Oportunidad, motivos de pérdida y previsión
   Matchketing.Tareas          Tarea y la pila de Hoy
+  Matchketing.Match           Señales, Encaje, Momento y reparto de leads
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
   Matchketing.Api             REST + OpenAPI + JWT + interfaz web
 tests/
   Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
-  Matchketing.IntegrationTests
+  Matchketing.Match.Tests · Matchketing.IntegrationTests
 ```
 
 ## Estado
@@ -50,7 +51,7 @@ tests/
 | 2. Contactos | ✅ Terminado |
 | 3. Embudo | ✅ Terminado |
 | 4. Tareas y Hoy | ✅ Terminado |
-| 5. Match v1 | ⬜ Pendiente |
+| 5. Match v1 | ✅ Terminado |
 | 6. Captación | ⬜ Pendiente |
 | 7. Informes | ⬜ Pendiente |
 | 8. Cumplimiento | ⬜ Pendiente |
@@ -61,7 +62,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 160 pruebas: 113 unitarias + 47 de integración
+dotnet test                                  # 212 pruebas: 154 unitarias + 58 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -120,5 +121,9 @@ producto: si tienes el SDK instalado, ignóralos.
 | `GET` | `/hoy` | La pila del día, ordenada y con sus motivos |
 | `GET` `POST` | `/tareas` | Tareas |
 | `POST` | `/tareas/{id}/completar` · `/descartar` · `/aplazar` | Aplazar exige fecha futura |
+| `GET` | `/match/contactos/{id}` | Puntuación con encaje, momento y motivos |
+| `POST` | `/match/recalcular` | Recalcula toda la empresa |
+| `GET` | `/match/contactos/{id}/comercial` | Qué comercial encaja mejor, y por qué |
+| `POST` | `/match/contactos/{id}/asignar` | Asigna, deja constancia y crea la primera llamada |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

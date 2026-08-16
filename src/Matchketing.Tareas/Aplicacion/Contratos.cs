@@ -32,7 +32,9 @@ public sealed record TarjetaHoy(
     DateOnly? VenceEl,
     int DiasVencida,
     decimal? Importe,
-    int Urgencia);
+    int Urgencia,
+    int? Match,
+    IReadOnlyList<string> Motivos);
 
 public sealed record PilaHoy(
     IReadOnlyList<TarjetaHoy> Tarjetas,

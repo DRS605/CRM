@@ -51,6 +51,19 @@ public sealed class ServicioContactos(
         return r.Fallido ? Resultado.Fallo<Contacto>(r.Error!) : Resultado.Ok(contacto);
     }
 
+    /// <summary>Cambia el dueño del contacto. Lo usa el reparto de leads del módulo Match.</summary>
+    public async Task<Resultado<Contacto>> AsignarPropietarioAsync(Guid id, Guid propietarioId, CancellationToken ct = default)
+    {
+        var contacto = await contactos.BuscarPorIdAsync(id, ct).ConfigureAwait(false);
+        if (contacto is null)
+        {
+            return Resultado.Fallo<Contacto>(Error.NoEncontrado("contacto.no_encontrado", "El contacto no existe."));
+        }
+
+        var r = contacto.Actualizar(contacto.Nombre, contacto.Email, contacto.Telefono, contacto.Cargo, contacto.CuentaId, propietarioId, reloj);
+        return r.Fallido ? Resultado.Fallo<Contacto>(r.Error!) : Resultado.Ok(contacto);
+    }
+
     public async Task<Resultado> CambiarEstadoAsync(Guid id, EstadoContacto estado, CancellationToken ct = default)
     {
         var contacto = await contactos.BuscarPorIdAsync(id, ct).ConfigureAwait(false);

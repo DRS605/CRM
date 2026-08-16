@@ -30,6 +30,16 @@ public sealed class Membresia : RaizAgregadoEmpresa<Guid>
 
     public bool Activa { get; private set; }
 
+    /// <summary>
+    /// Provincias que cubre esta persona, separadas por comas. Es el primer factor del reparto de
+    /// leads: quien lleva la zona tiene ventaja sobre quien no.
+    /// </summary>
+    public string? Zonas { get; private set; }
+
+    public IReadOnlyList<string> ListaZonas => string.IsNullOrWhiteSpace(Zonas)
+        ? []
+        : Zonas.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     public DateTimeOffset CreadoEn { get; private set; }
 
     public IReadOnlyList<string> Permisos => Activa ? PermisosDeRol.De(Rol) : [];
@@ -49,6 +59,17 @@ public sealed class Membresia : RaizAgregadoEmpresa<Guid>
         }
 
         Rol = rol;
+        return Resultado.Ok();
+    }
+
+    public Resultado FijarZonas(string? zonas)
+    {
+        if (zonas is { Length: > 400 })
+        {
+            return Resultado.Fallo(Error.Validacion("membresia.zonas_largas", "La lista de zonas es demasiado larga."));
+        }
+
+        Zonas = string.IsNullOrWhiteSpace(zonas) ? null : zonas.Trim();
         return Resultado.Ok();
     }
 

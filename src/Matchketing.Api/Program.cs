@@ -3,6 +3,7 @@ using Matchketing.Api.Comun;
 using Matchketing.Api.Endpoints;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
+using Matchketing.Match.Aplicacion;
 using Matchketing.Tareas.Aplicacion;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Nucleo.Comun;
@@ -56,6 +57,10 @@ constructor.Services.AddScoped<ServicioEmbudo>();
 constructor.Services.AddScoped<IRepositorioTareas, RepositorioTareas>();
 constructor.Services.AddScoped<IConsultaHoy, ConsultaHoy>();
 constructor.Services.AddScoped<ServicioTareas>();
+constructor.Services.AddScoped<IRepositorioSenales, RepositorioSenales>();
+constructor.Services.AddScoped<IRepositorioPuntuaciones, RepositorioPuntuaciones>();
+constructor.Services.AddScoped<IConsultaMatch, ConsultaMatch>();
+constructor.Services.AddScoped<ServicioMatch>();
 
 constructor.Services
     .AddAuthentication("Bearer")
@@ -100,6 +105,7 @@ app.MapearOrganizacion();
 app.MapearContactos();
 app.MapearEmbudo();
 app.MapearTareas();
+app.MapearMatch();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

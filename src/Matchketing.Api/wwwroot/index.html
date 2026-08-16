@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>match.keting</title>
+<!-- El punto de la marca, también en la pestaña del navegador. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%23D4006E'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --magenta:#D4006E; --magenta-hover:#9B0050; --magenta-velo:#FCEEF4; --magenta-borde:#F3D3E1;
+    --sobre-magenta:#FFFFFF;
+    --tinta:#170B12; --grafito:#6B5A63; --papel:#FBF8F9; --superficie:#FFFFFF; --elevado:#FFFFFF;
+    --trazo:#E9DDE3; --trazo-suave:#F1E7EC;
+    --turquesa:#00767F; --verde:#0E7C5A; --ambar:#A66A00;
+    --sombra:0 1px 2px rgba(23,11,18,.05), 0 8px 24px -12px rgba(23,11,18,.16);
+    --sombra-alta:0 2px 4px rgba(23,11,18,.06), 0 24px 48px -20px rgba(23,11,18,.28);
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: "Helvetica Neue", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --magenta:#FF4D9B; --magenta-hover:#FF7DB6; --magenta-velo:#2E1220; --magenta-borde:#4A1E33;
+      --sobre-magenta:#1C1018;
+      --tinta:#F7EFF3; --grafito:#B69EAA; --papel:#120810; --superficie:#1C1018; --elevado:#24151E;
+      --trazo:#3A2430; --trazo-suave:#2A1822;
+      --turquesa:#3ED0D8; --verde:#2BB98A; --ambar:#E0A83C;
+      --sombra:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+      --sombra-alta:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --magenta:#FF4D9B; --magenta-hover:#FF7DB6; --magenta-velo:#2E1220; --magenta-borde:#4A1E33;
+    --sobre-magenta:#1C1018;
+    --tinta:#F7EFF3; --grafito:#B69EAA; --papel:#120810; --superficie:#1C1018; --elevado:#24151E;
+    --trazo:#3A2430; --trazo-suave:#2A1822;
+    --turquesa:#3ED0D8; --verde:#2BB98A; --ambar:#E0A83C;
+    --sombra:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+    --sombra-alta:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--papel); color: var(--tinta);
+    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: 4px; }
+  [hidden] { display: none !important; }
+
+  .marca { font-weight: 800; letter-spacing: -.045em; }
+  .punto { color: var(--magenta); }
+  .bolita { width: 8px; height: 8px; border-radius: 50%; background: var(--magenta); flex: none; display: inline-block; }
+
+  /* ============ Acceso ============ */
+  .acceso { min-height: 100%; display: grid; place-items: center; padding: 32px 20px; }
+  .acceso-caja { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 26px; }
+  .acceso .marca { font-size: 44px; line-height: 1; }
+  .acceso .lema {
+    font-family: var(--serif); font-size: 18px; line-height: 1.45; color: var(--tinta);
+    margin: 0; max-width: 30ch;
+  }
+  .tarjeta {
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 12px;
+    padding: 26px; box-shadow: var(--sombra); display: flex; flex-direction: column; gap: 18px;
+  }
+  .pestanas { display: flex; gap: 4px; }
+  .pestana {
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 7px 14px; border-radius: 999px; border: 1px solid transparent;
+    background: none; color: var(--grafito);
+  }
+  .pestana.on { background: var(--magenta-velo); color: var(--magenta); }
+
+  .campo { display: flex; flex-direction: column; gap: 6px; }
+  .campo label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--grafito);
+  }
+  .campo input {
+    font: inherit; font-size: 15px; padding: 10px 13px; border-radius: 9px;
+    border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
+  }
+  .campo input:focus { border-color: var(--magenta); }
+  .pista { font-size: 12.5px; color: var(--grafito); }
+
+  .btn {
+    font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+    padding: 10px 18px; border-radius: 9px;
+    border: 1px solid var(--trazo); background: var(--superficie); color: var(--tinta);
+    transition: background .14s ease, border-color .14s ease;
+  }
+  .btn:hover { border-color: var(--grafito); }
+  .btn.pri { background: var(--magenta); border-color: var(--magenta); color: var(--sobre-magenta); }
+  .btn.pri:hover { background: var(--magenta-hover); border-color: var(--magenta-hover); }
+  .btn.fantasma { border-color: transparent; color: var(--grafito); }
+  .btn.fantasma:hover { border-color: var(--trazo); }
+  .btn[disabled] { opacity: .55; cursor: default; }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+
+  .aviso {
+    font-size: 13.5px; padding: 10px 13px; border-radius: 9px;
+    border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
+    color: var(--ambar);
+  }
+  .aviso.ok { border-color: var(--verde); color: var(--verde); background: color-mix(in srgb, var(--verde) 10%, transparent); }
+
+  /* ============ Aplicación ============ */
+  .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100%; }
+  @media (max-width: 760px) { .app { grid-template-columns: 1fr; } .lateral { display: none; } }
+
+  .lateral {
+    background: var(--superficie); border-right: 1px solid var(--trazo);
+    padding: 20px 14px; display: flex; flex-direction: column; gap: 22px;
+  }
+  .lateral .marca { font-size: 19px; padding: 0 10px; }
+  nav { display: flex; flex-direction: column; gap: 2px; }
+  .item {
+    font: inherit; font-size: 14.5px; text-align: left; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px; border: 0; background: none; color: var(--tinta);
+  }
+  .item:hover { background: var(--trazo-suave); }
+  .item.on { background: var(--magenta-velo); color: var(--magenta); font-weight: 700; }
+  .item .marcador { width: 8px; height: 8px; border-radius: 50%; background: transparent; flex: none; }
+  .item.on .marcador { background: var(--magenta); }
+  .item .pendiente {
+    margin-left: auto; font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em;
+    color: var(--grafito); border: 1px solid var(--trazo); border-radius: 4px; padding: 1px 5px;
+  }
+
+  .pie-lateral { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
+  .quien { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--magenta);
+    color: var(--sobre-magenta); display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; flex: none;
+  }
+  .quien .datos { min-width: 0; }
+  .quien .n { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quien .e { color: var(--grafito); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  main { padding: 32px clamp(20px, 4vw, 44px) 64px; display: flex; flex-direction: column; gap: 24px; }
+  /* Cada vista también espacia a sus hijos: si no, los paneles se tocan y el pie pisa el borde. */
+  main > section { display: flex; flex-direction: column; gap: 20px; }
+  .titulo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .titulo h1 { font-size: 27px; font-weight: 800; letter-spacing: -.03em; margin: 0; }
+  .titulo .sub { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
+
+  .vacio-caja {
+    border: 1px dashed var(--trazo); border-radius: 12px; background: var(--superficie);
+    padding: 56px 32px; display: flex; flex-direction: column; align-items: center;
+    gap: 12px; text-align: center;
+  }
+  .vacio-caja .grande { font-size: 24px; font-weight: 800; letter-spacing: -.03em; }
+  .vacio-caja p { margin: 0; color: var(--grafito); max-width: 46ch; font-size: 14.5px; }
+  .etiqueta-modulo {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--magenta); background: var(--magenta-velo); border: 1px solid var(--magenta-borde);
+    border-radius: 999px; padding: 4px 11px;
+  }
+
+  .panel {
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 12px;
+    padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 660px;
+    box-shadow: var(--sombra);
+  }
+  .panel h2 { font-size: 16px; font-weight: 700; letter-spacing: -.015em; margin: 0; }
+  .panel .explica { font-size: 13.5px; color: var(--grafito); margin: 0; }
+  .filas { display: flex; flex-direction: column; gap: 14px; }
+  .fila-dato { display: flex; justify-content: space-between; gap: 16px; font-size: 14.5px; padding-bottom: 12px; border-bottom: 1px solid var(--trazo-suave); }
+  .fila-dato:last-child { border-bottom: 0; padding-bottom: 0; }
+  .fila-dato .k { color: var(--grafito); }
+  .fila-dato .v { font-weight: 600; }
+
+  .balanza { display: flex; flex-direction: column; gap: 10px; }
+  .balanza .cabeza { display: flex; justify-content: space-between; font-size: 13px; }
+  .balanza .cabeza .enc { color: var(--magenta); font-weight: 700; }
+  .balanza .cabeza .mom { color: var(--turquesa); font-weight: 700; }
+  .barra-doble { display: flex; gap: 2px; height: 8px; }
+  .barra-doble i { display: block; border-radius: 999px; }
+  .barra-doble .enc { background: var(--magenta); }
+  .barra-doble .mom { background: var(--turquesa); }
+  input[type="range"] { width: 100%; accent-color: var(--magenta); }
+  input[type="number"] {
+    font: inherit; font-size: 15px; padding: 9px 12px; border-radius: 9px; width: 110px;
+    border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
+  }
+  .acciones { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+
+  footer.nota {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--grafito); display: flex; align-items: center; gap: 9px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ACCESO ============ -->
+<div class="acceso" id="pantalla-acceso">
+  <div class="acceso-caja">
+    <div>
+      <div class="marca">match<span class="punto">.</span>keting</div>
+      <p class="lema">El CRM que te dice a quién llamar hoy, y por qué.</p>
+    </div>
+
+    <div class="tarjeta">
+      <div class="pestanas">
+        <button class="pestana on" type="button" data-modo="login">Entrar</button>
+        <button class="pestana" type="button" data-modo="registro">Crear cuenta</button>
+      </div>
+
+      <div class="campo" id="campo-nombre" hidden>
+        <label for="nombre">Tu nombre</label>
+        <input id="nombre" type="text" autocomplete="name" placeholder="Marta Ruiz" />
+      </div>
+      <div class="campo">
+        <label for="email">Correo electrónico</label>
+        <input id="email" type="email" autocomplete="email" placeholder="marta@empresa.es" />
+      </div>
+      <div class="campo">
+        <label for="contrasena">Contraseña</label>
+        <input id="contrasena" type="password" autocomplete="current-password" placeholder="••••••••" />
+        <span class="pista" id="pista-contrasena" hidden>Al menos 8 caracteres, con letras y números.</span>
+      </div>
+
+      <div class="aviso" id="aviso-acceso" hidden></div>
+      <button class="btn pri" type="button" id="btn-acceso">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ELEGIR EMPRESA ============ -->
+<div class="acceso" id="pantalla-empresa" hidden>
+  <div class="acceso-caja">
+    <div>
+      <div class="marca">match<span class="punto">.</span>keting</div>
+      <p class="lema" id="lema-empresa">¿Con qué empresa quieres trabajar?</p>
+    </div>
+
+    <div class="tarjeta" id="lista-empresas" hidden>
+      <h2 style="font-size:15px;margin:0">Tus empresas</h2>
+      <div class="filas" id="filas-empresas"></div>
+    </div>
+
+    <div class="tarjeta">
+      <h2 style="font-size:15px;margin:0">Crear una empresa</h2>
+      <div class="campo">
+        <label for="emp-nombre">Nombre</label>
+        <input id="emp-nombre" type="text" placeholder="Instalaciones Ribera, S.L." />
+      </div>
+      <div class="campo">
+        <label for="emp-provincia">Provincia</label>
+        <input id="emp-provincia" type="text" placeholder="Valencia" />
+      </div>
+      <div class="aviso" id="aviso-empresa" hidden></div>
+      <div class="acciones">
+        <button class="btn pri" type="button" id="btn-crear-empresa">Crear y entrar</button>
+        <button class="btn fantasma" type="button" id="btn-salir-2">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APLICACIÓN ============ -->
+<div class="app" id="pantalla-app" hidden>
+  <aside class="lateral">
+    <div class="marca">match<span class="punto">.</span>keting</div>
+    <nav id="menu">
+      <button class="item on" type="button" data-vista="hoy"><span class="marcador"></span>Hoy</button>
+      <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos<span class="pendiente">MÓD 2</span></button>
+      <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo<span class="pendiente">MÓD 3</span></button>
+      <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes<span class="pendiente">MÓD 7</span></button>
+      <button class="item" type="button" data-vista="ajustes"><span class="marcador"></span>Ajustes</button>
+    </nav>
+    <div class="pie-lateral">
+      <div class="quien">
+        <span class="avatar" id="avatar">··</span>
+        <span class="datos">
+          <span class="n" id="quien-nombre">—</span>
+          <span class="e" id="quien-empresa">—</span>
+        </span>
+      </div>
+      <button class="btn fantasma" type="button" id="btn-salir" style="width:100%">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- Hoy -->
+    <section id="vista-hoy">
+      <div class="titulo"><h1>Hoy</h1><span class="sub" id="sub-hoy">0 acciones</span></div>
+      <div class="vacio-caja">
+        <span class="bolita"></span>
+        <div class="grande">Hecho por hoy</div>
+        <p>No hay nada que hacer. Cuando entren contactos y oportunidades, aquí aparecerán
+          ordenados por Match, con el motivo de por qué toca ahora.</p>
+        <span class="etiqueta-modulo">Las tarjetas llegan con el módulo 4</span>
+      </div>
+    </section>
+
+    <!-- Secciones aún no construidas -->
+    <section id="vista-contactos" hidden>
+      <div class="titulo"><h1>Contactos</h1></div>
+      <div class="vacio-caja">
+        <div class="grande">Todavía no</div>
+        <p>Contactos, cuentas y la cronología unificada son el módulo 2. Se entrega completo
+          —dominio, API, persistencia, tests y documentación— antes de empezar el siguiente.</p>
+        <span class="etiqueta-modulo">Módulo 2 de 8</span>
+      </div>
+    </section>
+
+    <section id="vista-embudo" hidden>
+      <div class="titulo"><h1>Embudo</h1></div>
+      <div class="vacio-caja">
+        <div class="grande">Todavía no</div>
+        <p>El tablero de oportunidades con etapas, motivo de pérdida obligatorio y aviso de
+          estancamiento es el módulo 3.</p>
+        <span class="etiqueta-modulo">Módulo 3 de 8</span>
+      </div>
+    </section>
+
+    <section id="vista-informes" hidden>
+      <div class="titulo"><h1>Informes</h1></div>
+      <div class="vacio-caja">
+        <div class="grande">Todavía no</div>
+        <p>Dos informes, no cincuenta: embudo y motivos de pérdida. Es el módulo 7.</p>
+        <span class="etiqueta-modulo">Módulo 7 de 8</span>
+      </div>
+    </section>
+
+    <!-- Ajustes: funcional -->
+    <section id="vista-ajustes" hidden>
+      <div class="titulo"><h1>Ajustes</h1><span class="sub">Empresa activa</span></div>
+
+      <div class="panel">
+        <h2>Datos de la empresa</h2>
+        <div class="filas">
+          <div class="fila-dato"><span class="k">Nombre</span><span class="v" id="aj-nombre">—</span></div>
+          <div class="fila-dato"><span class="k">NIF</span><span class="v" id="aj-nif">—</span></div>
+          <div class="fila-dato"><span class="k">Provincia</span><span class="v" id="aj-provincia">—</span></div>
+          <div class="fila-dato"><span class="k">Tu rol</span><span class="v" id="aj-rol">—</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Motor Match</h2>
+        <p class="explica">Cuánto pesa parecerse a tus mejores clientes (<strong>Encaje</strong>)
+          frente a lo que ha pasado esta semana (<strong>Momento</strong>). Si no lo tocas, mitad y mitad.</p>
+
+        <div class="balanza">
+          <div class="cabeza">
+            <span class="enc">Encaje <span id="lbl-encaje">50 %</span></span>
+            <span class="mom"><span id="lbl-momento">50 %</span> Momento</span>
+          </div>
+          <div class="barra-doble">
+            <i class="enc" id="barra-encaje" style="flex:50"></i>
+            <i class="mom" id="barra-momento" style="flex:50"></i>
+          </div>
+          <input type="range" id="peso" min="0" max="100" step="5" value="50"
+                 aria-label="Peso del Encaje frente al Momento" />
+        </div>
+
+        <div class="campo" style="max-width:260px">
+          <label for="rebote">Horas hasta que un lead rebota</label>
+          <input id="rebote" type="number" min="1" max="240" value="4" />
+          <span class="pista">Si nadie da el primer paso en ese plazo, el lead pasa al siguiente comercial.</span>
+        </div>
+
+        <div class="aviso" id="aviso-ajustes" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="btn-guardar">Guardar</button>
+          <button class="btn fantasma" type="button" id="btn-cambiar-empresa">Cambiar de empresa</button>
+        </div>
+      </div>
+
+      <footer class="nota"><span class="bolita"></span> Módulo 1 de 8 · Núcleo, Identidad y Organización</footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var sesion = null;
+  var modo = 'login';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function mostrarAviso(el, texto, ok) {
+    el.textContent = texto;
+    el.className = ok ? 'aviso ok' : 'aviso';
+    el.hidden = !texto;
+  }
+
+  async function api(ruta, opciones) {
+    opciones = opciones || {};
+    var cabeceras = { 'Content-Type': 'application/json' };
+    if (sesion && sesion.token) { cabeceras.Authorization = 'Bearer ' + sesion.token; }
+    var r = await fetch(ruta, {
+      method: opciones.metodo || 'GET',
+      headers: cabeceras,
+      body: opciones.cuerpo ? JSON.stringify(opciones.cuerpo) : undefined
+    });
+    var texto = await r.text();
+    var datos = texto ? JSON.parse(texto) : null;
+    if (!r.ok) { throw new Error((datos && datos.mensaje) || 'No se ha podido completar la operación.'); }
+    return datos;
+  }
+
+  function iniciales(nombre) {
+    return (nombre || '').split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(function (p) { return p[0].toUpperCase(); }).join('') || '··';
+  }
+
+  function pantalla(cual) {
+    $('pantalla-acceso').hidden = cual !== 'acceso';
+    $('pantalla-empresa').hidden = cual !== 'empresa';
+    $('pantalla-app').hidden = cual !== 'app';
+  }
+
+  // ---------- Acceso ----------
+  Array.prototype.forEach.call(document.querySelectorAll('.pestana'), function (b) {
+    b.addEventListener('click', function () {
+      modo = b.dataset.modo;
+      Array.prototype.forEach.call(document.querySelectorAll('.pestana'), function (o) {
+        o.classList.toggle('on', o === b);
+      });
+      $('campo-nombre').hidden = modo !== 'registro';
+      $('pista-contrasena').hidden = modo !== 'registro';
+      $('btn-acceso').textContent = modo === 'registro' ? 'Crear cuenta' : 'Entrar';
+      $('contrasena').setAttribute('autocomplete', modo === 'registro' ? 'new-password' : 'current-password');
+      mostrarAviso($('aviso-acceso'), '');
+    });
+  });
+
+  $('btn-acceso').addEventListener('click', async function () {
+    var boton = $('btn-acceso');
+    boton.disabled = true;
+    mostrarAviso($('aviso-acceso'), '');
+    try {
+      var cuerpo = { email: $('email').value, contrasena: $('contrasena').value };
+      if (modo === 'registro') { cuerpo.nombre = $('nombre').value; }
+      sesion = await api(modo === 'registro' ? '/auth/registro' : '/auth/login', { metodo: 'POST', cuerpo: cuerpo });
+      await trasIniciarSesion();
+    } catch (e) {
+      mostrarAviso($('aviso-acceso'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  // ---------- Elegir empresa ----------
+  async function trasIniciarSesion() {
+    var yo = await api('/auth/yo');
+    $('quien-nombre').textContent = yo.nombre || sesion.usuario.nombre;
+    $('avatar').textContent = iniciales(yo.nombre || sesion.usuario.nombre);
+
+    if (!yo.empresas || yo.empresas.length === 0) {
+      $('lema-empresa').textContent = 'Crea tu empresa y empezamos.';
+      $('lista-empresas').hidden = true;
+      pantalla('empresa');
+      return;
+    }
+
+    if (yo.empresas.length === 1) {
+      await entrarEn(yo.empresas[0].id);
+      return;
+    }
+
+    $('lema-empresa').textContent = '¿Con qué empresa quieres trabajar?';
+    var cont = $('filas-empresas');
+    cont.textContent = '';
+    yo.empresas.forEach(function (e) {
+      var fila = document.createElement('div');
+      fila.className = 'fila-dato';
+      var izq = document.createElement('span');
+      izq.className = 'v';
+      izq.textContent = e.nombre;
+      var btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.type = 'button';
+      btn.textContent = 'Entrar';
+      btn.addEventListener('click', function () { entrarEn(e.id); });
+      fila.appendChild(izq);
+      fila.appendChild(btn);
+      cont.appendChild(fila);
+    });
+    $('lista-empresas').hidden = false;
+    pantalla('empresa');
+  }
+
+  async function entrarEn(empresaId) {
+    sesion = await api('/empresas/' + empresaId + '/seleccionar', { metodo: 'POST' });
+    await abrirApp();
+  }
+
+  $('btn-crear-empresa').addEventListener('click', async function () {
+    var boton = $('btn-crear-empresa');
+    boton.disabled = true;
+    mostrarAviso($('aviso-empresa'), '');
+    try {
+      sesion = await api('/empresas', {
+        metodo: 'POST',
+        cuerpo: { nombre: $('emp-nombre').value, provincia: $('emp-provincia').value }
+      });
+      await abrirApp();
+    } catch (e) {
+      mostrarAviso($('aviso-empresa'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  // ---------- Aplicación ----------
+  async function abrirApp() {
+    $('quien-nombre').textContent = sesion.usuario.nombre;
+    $('quien-empresa').textContent = sesion.nombreEmpresa || '—';
+    $('avatar').textContent = iniciales(sesion.usuario.nombre);
+    pantalla('app');
+    await cargarAjustes();
+  }
+
+  async function cargarAjustes() {
+    var e = await api('/empresas/activa');
+    $('aj-nombre').textContent = e.nombre;
+    $('aj-nif').textContent = e.nif || '—';
+    $('aj-provincia').textContent = e.provincia || '—';
+    $('aj-rol').textContent = (sesion.permisos && sesion.permisos.indexOf('usuario.gestionar') >= 0)
+      ? 'Propietario' : 'Comercial';
+    var peso = Math.round(Number(e.pesoEncaje) * 100);
+    $('peso').value = peso;
+    $('rebote').value = e.horasRebote;
+    pintarBalanza(peso);
+  }
+
+  function pintarBalanza(peso) {
+    $('lbl-encaje').textContent = peso + ' %';
+    $('lbl-momento').textContent = (100 - peso) + ' %';
+    $('barra-encaje').style.flex = String(Math.max(peso, 1));
+    $('barra-momento').style.flex = String(Math.max(100 - peso, 1));
+  }
+
+  $('peso').addEventListener('input', function () { pintarBalanza(Number($('peso').value)); });
+
+  $('btn-guardar').addEventListener('click', async function () {
+    var boton = $('btn-guardar');
+    boton.disabled = true;
+    mostrarAviso($('aviso-ajustes'), '');
+    try {
+      await api('/empresas/activa/ajustes-match', {
+        metodo: 'PUT',
+        cuerpo: { pesoEncaje: Number($('peso').value) / 100, horasRebote: Number($('rebote').value) }
+      });
+      mostrarAviso($('aviso-ajustes'), 'Guardado.', true);
+    } catch (e) {
+      mostrarAviso($('aviso-ajustes'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.item'), function (o) {
+        o.classList.toggle('on', o === b);
+      });
+      ['hoy', 'contactos', 'embudo', 'informes', 'ajustes'].forEach(function (v) {
+        $('vista-' + v).hidden = v !== b.dataset.vista;
+      });
+    });
+  });
+
+  function cerrarSesion() {
+    sesion = null;
+    $('email').value = '';
+    $('contrasena').value = '';
+    pantalla('acceso');
+  }
+
+  $('btn-salir').addEventListener('click', cerrarSesion);
+  $('btn-salir-2').addEventListener('click', cerrarSesion);
+  $('btn-cambiar-empresa').addEventListener('click', trasIniciarSesion);
+})();
+</script>
+</body>
+</html>

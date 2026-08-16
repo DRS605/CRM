@@ -6,9 +6,11 @@ uno a tres comerciales.
 > **Producto independiente.** No es un módulo de ALXOR Core: repositorio, base de datos y login
 > propios. La integración con el ERP es opcional y va por API y eventos.
 
-Documentación de producto (hoy en el repositorio de ALXOR Core, `docs/productos/`):
-`matchketing.md` (visión e identidad) · `matchketing-funcionalidades.md` (mapeo de HubSpot) ·
-`matchketing-diseno-tecnico-funcional.md` (el diseño que implementa este código).
+Documentación de producto en [`docs/producto/`](docs/producto/):
+[visión e identidad visual](docs/producto/vision.md) ·
+[las 132 capacidades de HubSpot con veredicto](docs/producto/hubspot.md) ·
+[diseño técnico y funcional](docs/producto/diseno-tecnico-funcional.md).
+Documentación por módulo en [`docs/modulos/`](docs/modulos/).
 
 ## Principios
 
@@ -87,8 +89,9 @@ dotnet ef migrations add <Nombre> \
 ### Sin SDK instalado
 
 `dn.sh` y `dsh.sh` ejecutan el SDK vía Docker (`mcr.microsoft.com/dotnet/sdk:8.0`) con
-`--network host` y el CA del proxy. Son un apaño del entorno de desarrollo remoto, no parte del
-producto: si tienes el SDK instalado, ignóralos.
+`--network host`. Deducen la raíz del repositorio del propio script, así que funcionan desde
+cualquier ruta. Son un apaño para entornos sin SDK, no parte del producto: si lo tienes instalado,
+ignóralos.
 
 ```bash
 ./dn.sh build

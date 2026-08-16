@@ -33,11 +33,13 @@ src/
   Matchketing.Organizacion    Empresa (tenant) y ajustes del motor Match
   Matchketing.Contactos       Contacto, Cuenta, Actividad, duplicados e importación CSV
   Matchketing.Embudo          Embudo, Etapa, Oportunidad, motivos de pérdida y previsión
+  Matchketing.Tareas          Tarea y la pila de Hoy
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
   Matchketing.Api             REST + OpenAPI + JWT + interfaz web
 tests/
   Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
-  Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.IntegrationTests
+  Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
+  Matchketing.IntegrationTests
 ```
 
 ## Estado
@@ -47,7 +49,7 @@ tests/
 | 1. Núcleo, Identidad y Organización | ✅ Terminado |
 | 2. Contactos | ✅ Terminado |
 | 3. Embudo | ✅ Terminado |
-| 4. Tareas y Hoy | ⬜ Pendiente |
+| 4. Tareas y Hoy | ✅ Terminado |
 | 5. Match v1 | ⬜ Pendiente |
 | 6. Captación | ⬜ Pendiente |
 | 7. Informes | ⬜ Pendiente |
@@ -59,7 +61,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 133 pruebas: 98 unitarias + 35 de integración
+dotnet test                                  # 160 pruebas: 113 unitarias + 47 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -115,5 +117,8 @@ producto: si tienes el SDK instalado, ignóralos.
 | `POST` | `/oportunidades/{id}/mover` | Cambia de etapa |
 | `POST` | `/oportunidades/{id}/ganar` · `/perder` | Cierra. Perder exige motivo |
 | `GET` | `/informes/motivos-perdida` | Por qué se pierde, en orden |
+| `GET` | `/hoy` | La pila del día, ordenada y con sus motivos |
+| `GET` `POST` | `/tareas` | Tareas |
+| `POST` | `/tareas/{id}/completar` · `/descartar` · `/aplazar` | Aplazar exige fecha futura |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

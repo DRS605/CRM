@@ -5,6 +5,7 @@ using Matchketing.Contactos.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
 using Matchketing.Nucleo.Comun;
+using Matchketing.Tareas.Aplicacion;
 
 namespace Matchketing.Api.Endpoints;
 
@@ -155,8 +156,8 @@ public static class EndpointsContactos
         .WithSummary("Añade una nota a la cronología.");
 
         grupo.MapPost("/{id:guid}/llamada", async (
-            Guid id, PeticionLlamada p, ServicioContactos servicio, IUnidadDeTrabajo unidad,
-            IContextoEmpresa contexto, CancellationToken ct) =>
+            Guid id, PeticionLlamada p, ServicioContactos servicio, ServicioTareas tareas,
+            IUnidadDeTrabajo unidad, IContextoEmpresa contexto, CancellationToken ct) =>
         {
             if (!contexto.Tiene(Permisos.ContactoGestionar))
             {
@@ -167,6 +168,13 @@ public static class EndpointsContactos
             if (r.Fallido)
             {
                 return ResultadosHttp.Problema(r.Error!);
+            }
+
+            // Si la llamada pide volver a llamar, la siguiente tarea se crea sola: es la única forma
+            // de cumplir la promesa de que ningún contacto vivo se queda sin próximo paso.
+            if (p.Resultado == ResultadoLlamada.VolverALlamar)
+            {
+                await tareas.CrearSeguimientoLlamadaAsync(id, ct).ConfigureAwait(false);
             }
 
             await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);

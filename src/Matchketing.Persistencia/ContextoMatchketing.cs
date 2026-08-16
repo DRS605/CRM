@@ -32,6 +32,8 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
 
     public DbSet<Embudo.Dominio.Oportunidad> Oportunidades => Set<Embudo.Dominio.Oportunidad>();
 
+    public DbSet<Tareas.Dominio.Tarea> Tareas => Set<Tareas.Dominio.Tarea>();
+
     /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
     public Guid? EmpresaActual => contexto.EmpresaId;
 
@@ -51,6 +53,7 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
         modelo.Entity<Actividad>().HasQueryFilter(a => a.EmpresaId == EmpresaActual);
         modelo.Entity<Embudo.Dominio.Embudo>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
         modelo.Entity<Embudo.Dominio.Oportunidad>().HasQueryFilter(o => o.EmpresaId == EmpresaActual);
+        modelo.Entity<Tareas.Dominio.Tarea>().HasQueryFilter(t => t.EmpresaId == EmpresaActual);
 
         // Nota deliberada: `identidad.membresia` NO lleva filtro global por empresa. Es la tabla que
         // decide a qué empresas puede entrar un usuario, así que filtrarla por la empresa activa

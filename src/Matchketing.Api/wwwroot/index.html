@@ -321,6 +321,49 @@
   .motivo-fila .barra-m i { display: block; height: 100%; background: var(--magenta); border-radius: 999px; }
   .motivo-fila .cifra { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); font-variant-numeric: tabular-nums; }
 
+
+  /* ---- Hoy ---- */
+  .pila { display: flex; flex-direction: column; gap: 12px; max-width: 780px; }
+  .tarjeta-hoy {
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 11px;
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--sombra);
+  }
+  .tarjeta-hoy.primera { border-color: var(--magenta-borde); }
+  .tarjeta-hoy .cabeza { display: flex; align-items: flex-start; gap: 14px; }
+  .tarjeta-hoy .quien-h { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .tarjeta-hoy .nom { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+  .tarjeta-hoy .sub { font-size: 12.5px; color: var(--grafito); font-family: var(--mono); }
+  .tarjeta-hoy .derecha-h { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .tarjeta-hoy .importe-h {
+    font-family: var(--mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .tarjeta-hoy .motivo-h { font-size: 14.5px; line-height: 1.5; max-width: 52ch; }
+  .tarjeta-hoy .motivo-h b { color: var(--magenta); font-weight: 600; }
+  .tarjeta-hoy .barra-acc { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .resultados-llamada { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 4px; }
+
+  .chip-tipo {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700;
+    padding: 3px 10px 3px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap;
+  }
+  .chip-tipo .pt { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .t-vencida { color: var(--magenta); background: var(--magenta-velo); border-color: var(--magenta-borde); }
+  .t-vencida .pt { background: var(--magenta); }
+  .t-hoy { color: var(--grafito); background: var(--trazo-suave); border-color: var(--trazo); }
+  .t-hoy .pt { background: var(--grafito); }
+  .t-parada { color: var(--ambar); background: color-mix(in srgb, var(--ambar) 12%, transparent); border-color: var(--ambar); }
+  .t-parada .pt { background: var(--ambar); }
+  .t-sinpaso { color: var(--turquesa); background: color-mix(in srgb, var(--turquesa) 12%, transparent); border-color: var(--turquesa); }
+  .t-sinpaso .pt { background: var(--turquesa); }
+
+  .hecho-caja {
+    border: 1px dashed var(--trazo); border-radius: 12px; background: var(--superficie);
+    padding: 56px 32px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+    text-align: center; max-width: 780px;
+  }
+  .hecho-caja .grande { font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+  .hecho-caja p { margin: 0; color: var(--grafito); max-width: 46ch; font-size: 14.5px; }
+
   footer.nota {
     font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
     color: var(--grafito); display: flex; align-items: center; gap: 9px;
@@ -421,13 +464,16 @@
   <main>
     <!-- Hoy -->
     <section id="vista-hoy">
-      <div class="titulo"><h1>Hoy</h1><span class="sub" id="sub-hoy">0 acciones</span></div>
-      <div class="vacio-caja">
+      <div class="titulo">
+        <h1>Hoy</h1>
+        <span class="sub" id="sub-hoy">—</span>
+      </div>
+      <div class="pila" id="hoy-pila"></div>
+      <div class="hecho-caja" id="hoy-vacio" hidden>
         <span class="bolita"></span>
         <div class="grande">Hecho por hoy</div>
-        <p>No hay nada que hacer. Cuando entren contactos y oportunidades, aquí aparecerán
-          ordenados por Match, con el motivo de por qué toca ahora.</p>
-        <span class="etiqueta-modulo">Las tarjetas llegan con el módulo 4</span>
+        <p id="hoy-vacio-texto">No hay nada que hacer. Ni contactos sin próximo paso, ni
+          oportunidades paradas. Cierra y vete.</p>
       </div>
     </section>
 
@@ -813,6 +859,7 @@
     $('avatar').textContent = iniciales(sesion.usuario.nombre);
     pantalla('app');
     await cargarAjustes();
+    await cargarHoy();
   }
 
   async function cargarAjustes() {
@@ -864,6 +911,7 @@
       });
       if (b.dataset.vista === 'contactos') { subVista('con-lista'); cargarContactos(); }
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
+      if (b.dataset.vista === 'hoy') { cargarHoy(); }
     });
   });
 
@@ -1149,6 +1197,181 @@
     }
   });
 
+
+
+  // ---------- Hoy ----------
+  var TIPO_TAREA = 1, TIPO_SIN_PASO = 2, TIPO_PARADA = 3;
+
+  function chipTipo(t) {
+    var clase, texto;
+    if (t.tipo === TIPO_TAREA) {
+      if (t.diasVencida > 0) { clase = 't-vencida'; texto = 'Vencida ' + t.diasVencida + ' d'; }
+      else { clase = 't-hoy'; texto = 'Hoy'; }
+    } else if (t.tipo === TIPO_PARADA) {
+      clase = 't-parada'; texto = 'Parada';
+    } else {
+      clase = 't-sinpaso'; texto = 'Sin próximo paso';
+    }
+    var span = document.createElement('span');
+    span.className = 'chip-tipo ' + clase;
+    var pt = document.createElement('span');
+    pt.className = 'pt';
+    span.appendChild(pt);
+    span.appendChild(document.createTextNode(texto));
+    return span;
+  }
+
+  function boton(texto, clase, alPulsar) {
+    var b = document.createElement('button');
+    b.className = clase;
+    b.type = 'button';
+    b.textContent = texto;
+    b.addEventListener('click', alPulsar);
+    return b;
+  }
+
+  function diaRelativo(dias) {
+    var d = new Date();
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function proximoLunes() {
+    var d = new Date();
+    d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+    return d.toISOString().slice(0, 10);
+  }
+
+  async function cargarHoy() {
+    var pila = await api('/hoy');
+    var cont = $('hoy-pila');
+    cont.textContent = '';
+
+    var partes = [];
+    if (pila.pendientes) { partes.push(pila.pendientes + (pila.pendientes === 1 ? ' acción' : ' acciones')); }
+    if (pila.hechasHoy) { partes.push(pila.hechasHoy + ' hechas'); }
+    $('sub-hoy').textContent = partes.join(' · ') || 'nada pendiente';
+
+    $('hoy-vacio').hidden = pila.tarjetas.length > 0;
+    if (pila.hechasHoy > 0 && pila.tarjetas.length === 0) {
+      $('hoy-vacio-texto').textContent = pila.hechasHoy + (pila.hechasHoy === 1
+        ? ' acción hecha y nada más pendiente. Cierra y vete.'
+        : ' acciones hechas y nada más pendiente. Cierra y vete.');
+    }
+
+    pila.tarjetas.forEach(function (t, i) {
+      var caja = document.createElement('article');
+      caja.className = 'tarjeta-hoy' + (i === 0 ? ' primera' : '');
+
+      var cabeza = document.createElement('div');
+      cabeza.className = 'cabeza';
+      var quien = document.createElement('div');
+      quien.className = 'quien-h';
+      var nom = document.createElement('span');
+      nom.className = 'nom';
+      nom.textContent = t.tipo === TIPO_TAREA ? t.titulo : t.nombreContacto;
+      var sub = document.createElement('span');
+      sub.className = 'sub';
+      sub.textContent = [
+        t.tipo === TIPO_TAREA ? t.nombreContacto : (t.tipo === TIPO_PARADA ? t.titulo : null),
+        t.nombreCuenta,
+        t.telefono
+      ].filter(Boolean).join(' · ') || '—';
+      quien.appendChild(nom);
+      quien.appendChild(sub);
+      cabeza.appendChild(quien);
+
+      var der = document.createElement('div');
+      der.className = 'derecha-h';
+      der.appendChild(chipTipo(t));
+      if (t.importe) {
+        var imp = document.createElement('span');
+        imp.className = 'importe-h';
+        imp.textContent = euros(t.importe);
+        der.appendChild(imp);
+      }
+      cabeza.appendChild(der);
+      caja.appendChild(cabeza);
+
+      var motivo = document.createElement('p');
+      motivo.className = 'motivo-h';
+      motivo.textContent = t.motivo;
+      caja.appendChild(motivo);
+
+      var acc = document.createElement('div');
+      acc.className = 'barra-acc';
+
+      // Llamar: despliega los cuatro resultados en la propia tarjeta. Un clic para abrir, otro
+      // para registrar; sin diálogos ni pantallas nuevas.
+      //
+      // Solo la primera tarjeta lleva el botón en magenta. La pila se trabaja de arriba abajo, y
+      // cinco botones magenta apilados dejarían de señalar nada.
+      if (t.contactoId) {
+        acc.appendChild(boton('Llamar', i === 0 ? 'btn pri' : 'btn', function () {
+          if (caja.querySelector('.resultados-llamada')) { return; }
+          var fila = document.createElement('div');
+          fila.className = 'resultados-llamada';
+          [[1, 'Contactado'], [2, 'No contesta'], [3, 'No le interesa'], [4, 'Volver a llamar']]
+            .forEach(function (par) {
+              fila.appendChild(boton(par[1], 'mini', async function () {
+                await api('/contactos/' + t.contactoId + '/llamada', {
+                  metodo: 'POST', cuerpo: { resultado: par[0], nota: null }
+                });
+                if (t.tareaId) {
+                  await api('/tareas/' + t.tareaId + '/completar', { metodo: 'POST' });
+                }
+                await cargarHoy();
+              }));
+            });
+          caja.appendChild(fila);
+        }));
+      }
+
+      if (t.tipo === TIPO_TAREA) {
+        acc.appendChild(boton('Hecho', 'btn', async function () {
+          await api('/tareas/' + t.tareaId + '/completar', { metodo: 'POST' });
+          await cargarHoy();
+        }));
+
+        var sel = document.createElement('select');
+        sel.setAttribute('aria-label', 'Aplazar hasta');
+        [['', 'Aplazar…'], ['1', 'a mañana'], ['lunes', 'al lunes'], ['14', 'dos semanas']]
+          .forEach(function (par) {
+            var o = document.createElement('option');
+            o.value = par[0];
+            o.textContent = par[1];
+            sel.appendChild(o);
+          });
+        sel.addEventListener('change', async function () {
+          if (!sel.value) { return; }
+          var hasta = sel.value === 'lunes' ? proximoLunes() : diaRelativo(Number(sel.value));
+          await api('/tareas/' + t.tareaId + '/aplazar', { metodo: 'POST', cuerpo: { hasta: hasta } });
+          await cargarHoy();
+        });
+        acc.appendChild(sel);
+
+        acc.appendChild(boton('Descartar', 'btn fantasma', async function () {
+          await api('/tareas/' + t.tareaId + '/descartar', { metodo: 'POST' });
+          await cargarHoy();
+        }));
+      } else {
+        acc.appendChild(boton('Crear tarea', 'btn', async function () {
+          await api('/tareas', {
+            metodo: 'POST',
+            cuerpo: {
+              titulo: t.tipo === TIPO_PARADA ? ('Desatascar: ' + t.titulo) : ('Dar un paso con ' + t.nombreContacto),
+              contactoId: t.contactoId,
+              oportunidadId: t.oportunidadId
+            }
+          });
+          await cargarHoy();
+        }));
+      }
+
+      caja.appendChild(acc);
+      cont.appendChild(caja);
+    });
+  }
 
   // ---------- Embudo ----------
   var MOTIVOS = { 1: 'Precio', 2: 'Plazo', 3: 'Competencia', 4: 'No era el momento', 5: 'No contesta', 6: 'Otro' };

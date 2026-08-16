@@ -9,5 +9,6 @@
     <ProjectReference Include="..\Matchketing.Identidad\Matchketing.Identidad.csproj" />
     <ProjectReference Include="..\Matchketing.Organizacion\Matchketing.Organizacion.csproj" />
     <ProjectReference Include="..\Matchketing.Contactos\Matchketing.Contactos.csproj" />
+    <ProjectReference Include="..\Matchketing.Embudo\Matchketing.Embudo.csproj" />
   </ItemGroup>
 </Project>

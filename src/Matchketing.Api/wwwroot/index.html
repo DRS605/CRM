@@ -267,6 +267,60 @@
     color: var(--ambar); border: 1px solid var(--ambar); border-radius: 999px; padding: 3px 10px;
   }
 
+
+  /* ---- Embudo ---- */
+  .resumen-embudo { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tarjeta-dato {
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 10px;
+    padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 128px;
+  }
+  .tarjeta-dato .k {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--grafito);
+  }
+  .tarjeta-dato .v {
+    font-size: 21px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  }
+  .tarjeta-dato.aviso-dato { border-color: var(--ambar); }
+  .tarjeta-dato.aviso-dato .v { color: var(--ambar); }
+
+  .tablero-scroll { overflow-x: auto; padding-bottom: 8px; }
+  .tablero { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(196px, 1fr); gap: 10px; min-width: 1000px; }
+  .columna { display: flex; flex-direction: column; gap: 10px; }
+  .columna-cab { display: flex; flex-direction: column; gap: 2px; padding: 0 2px 8px; border-bottom: 2px solid var(--trazo); }
+  .columna-cab .n { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
+  .columna-cab .s {
+    font-family: var(--mono); font-size: 11.5px; color: var(--grafito); font-variant-numeric: tabular-nums;
+  }
+  .columna:last-child .columna-cab { border-bottom-color: var(--magenta); }
+  .soltar { min-height: 60px; display: flex; flex-direction: column; gap: 9px; border-radius: 10px; padding: 2px; }
+  .soltar.encima { background: var(--magenta-velo); outline: 1px dashed var(--magenta-borde); }
+
+  .oport {
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 9px;
+    padding: 12px 13px; display: flex; flex-direction: column; gap: 7px;
+    box-shadow: var(--sombra); cursor: grab;
+  }
+  .oport:active { cursor: grabbing; }
+  .oport.parada { border-color: var(--ambar); }
+  .oport .t { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
+  .oport .i { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .oport .q { font-size: 12px; color: var(--grafito); }
+  .oport .acciones-op { display: flex; gap: 6px; }
+  .mini {
+    font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    padding: 3px 9px; border-radius: 6px; border: 1px solid var(--trazo);
+    background: var(--superficie); color: var(--tinta);
+  }
+  .mini.ganar { border-color: var(--verde); color: var(--verde); }
+  .mini.perder { border-color: var(--trazo); color: var(--grafito); }
+
+  .motivos-lista { display: flex; flex-direction: column; gap: 10px; }
+  .motivo-fila { display: grid; grid-template-columns: 128px 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+  .motivo-fila .barra-m { height: 8px; border-radius: 999px; background: var(--trazo-suave); overflow: hidden; }
+  .motivo-fila .barra-m i { display: block; height: 100%; background: var(--magenta); border-radius: 999px; }
+  .motivo-fila .cifra { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); font-variant-numeric: tabular-nums; }
+
   footer.nota {
     font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
     color: var(--grafito); display: flex; align-items: center; gap: 9px;
@@ -348,7 +402,7 @@
     <nav id="menu">
       <button class="item on" type="button" data-vista="hoy"><span class="marcador"></span>Hoy</button>
       <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos</button>
-      <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo<span class="pendiente">MÓD 3</span></button>
+      <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo</button>
       <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes<span class="pendiente">MÓD 7</span></button>
       <button class="item" type="button" data-vista="ajustes"><span class="marcador"></span>Ajustes</button>
     </nav>
@@ -490,12 +544,72 @@
     </section>
 
     <section id="vista-embudo" hidden>
-      <div class="titulo"><h1>Embudo</h1></div>
-      <div class="vacio-caja">
-        <div class="grande">Todavía no</div>
-        <p>El tablero de oportunidades con etapas, motivo de pérdida obligatorio y aviso de
-          estancamiento es el módulo 3.</p>
-        <span class="etiqueta-modulo">Módulo 3 de 8</span>
+      <div class="titulo">
+        <h1>Embudo</h1>
+        <span class="sub" id="sub-embudo"></span>
+      </div>
+
+      <div id="emb-tablero-vista">
+        <div class="resumen-embudo" id="emb-resumen"></div>
+
+        <div class="herramientas" style="margin-top:4px">
+          <button class="btn pri" type="button" id="emb-nueva">Nueva oportunidad</button>
+          <span class="contador">Arrastra una tarjeta para cambiarla de etapa.</span>
+        </div>
+
+        <div class="tablero-scroll" style="margin-top:16px">
+          <div class="tablero" id="emb-tablero"></div>
+        </div>
+
+        <div class="panel" style="max-width:640px;margin-top:20px">
+          <h2>Motivos de pérdida</h2>
+          <p class="explica">Por qué se pierde, en orden. Es el informe que más enseña a vender
+            mejor, y por eso el motivo es obligatorio al cerrar.</p>
+          <div class="motivos-lista" id="emb-motivos"></div>
+        </div>
+      </div>
+
+      <!-- Alta de oportunidad -->
+      <div class="panel" id="emb-form" hidden style="max-width:640px">
+        <h2>Nueva oportunidad</h2>
+        <div class="rejilla-form">
+          <div class="campo"><label for="o-contacto">Contacto</label><select id="o-contacto"></select></div>
+          <div class="campo"><label for="o-titulo">Título</label><input id="o-titulo" type="text" placeholder="Cámara frigorífica" /></div>
+          <div class="campo"><label for="o-importe">Importe (€)</label><input id="o-importe" type="number" min="0" step="0.01" value="0" /></div>
+          <div class="campo"><label for="o-fecha">Cierre previsto</label><input id="o-fecha" type="date" /></div>
+        </div>
+        <div class="aviso" id="emb-aviso-form" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="emb-guardar">Crear</button>
+          <button class="btn fantasma" type="button" id="emb-cancelar">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Cierre como perdida -->
+      <div class="panel" id="emb-perder" hidden style="max-width:560px">
+        <h2>Dar por perdida</h2>
+        <p class="explica">El motivo es <strong>obligatorio</strong>. Sin él no hay informe de
+          pérdidas, que es lo único que enseña a vender mejor.</p>
+        <div class="campo">
+          <label for="p-motivo">Motivo</label>
+          <select id="p-motivo">
+            <option value="1">Precio</option>
+            <option value="2">Plazo</option>
+            <option value="3">Competencia</option>
+            <option value="4">No era el momento</option>
+            <option value="5">No contesta</option>
+            <option value="6">Otro</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="p-detalle">Detalle (opcional)</label>
+          <textarea id="p-detalle" rows="2" placeholder="Nos sacaba 2.000 €."></textarea>
+        </div>
+        <div class="aviso" id="emb-aviso-perder" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="emb-confirmar-perder">Dar por perdida</button>
+          <button class="btn fantasma" type="button" id="emb-cancelar-perder">Cancelar</button>
+        </div>
       </div>
     </section>
 
@@ -749,6 +863,7 @@
         $('vista-' + v).hidden = v !== b.dataset.vista;
       });
       if (b.dataset.vista === 'contactos') { subVista('con-lista'); cargarContactos(); }
+      if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
     });
   });
 
@@ -1029,6 +1144,251 @@
       await abrirFicha(contactoAbierto);
     } catch (e) {
       mostrarAviso($('con-aviso-ficha'), e.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+
+  // ---------- Embudo ----------
+  var MOTIVOS = { 1: 'Precio', 2: 'Plazo', 3: 'Competencia', 4: 'No era el momento', 5: 'No contesta', 6: 'Otro' };
+  var oportunidadAPerder = null;
+
+  function euros(n) {
+    return Number(n).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €';
+  }
+
+  function subVistaEmbudo(cual) {
+    ['emb-tablero-vista', 'emb-form', 'emb-perder'].forEach(function (v) {
+      $(v).hidden = v !== cual;
+    });
+    mostrarAviso($('emb-aviso-form'), '');
+    mostrarAviso($('emb-aviso-perder'), '');
+  }
+
+  function dato(clave, valor, aviso) {
+    var caja = document.createElement('div');
+    caja.className = 'tarjeta-dato' + (aviso ? ' aviso-dato' : '');
+    var k = document.createElement('span');
+    k.className = 'k';
+    k.textContent = clave;
+    var v = document.createElement('span');
+    v.className = 'v';
+    v.textContent = valor;
+    caja.appendChild(k);
+    caja.appendChild(v);
+    return caja;
+  }
+
+  async function cargarEmbudo() {
+    var t = await api('/embudo/tablero');
+
+    var resumen = $('emb-resumen');
+    resumen.textContent = '';
+    resumen.appendChild(dato('Abiertas', String(t.totalAbiertas)));
+    resumen.appendChild(dato('En juego', euros(t.importeAbierto)));
+    resumen.appendChild(dato('Previsión', euros(t.previsionPonderada)));
+    if (t.estancadas > 0) {
+      resumen.appendChild(dato('Estancadas', String(t.estancadas), true));
+    }
+    $('sub-embudo').textContent = t.nombre;
+
+    var tab = $('emb-tablero');
+    tab.textContent = '';
+
+    t.columnas.forEach(function (col) {
+      var c = document.createElement('div');
+      c.className = 'columna';
+
+      var cab = document.createElement('div');
+      cab.className = 'columna-cab';
+      var n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = col.nombre;
+      var sub = document.createElement('span');
+      sub.className = 's';
+      sub.textContent = col.cuantas + ' · ' + euros(col.importe) + ' · ' + col.probabilidad + ' %';
+      cab.appendChild(n);
+      cab.appendChild(sub);
+      c.appendChild(cab);
+
+      var zona = document.createElement('div');
+      zona.className = 'soltar';
+      zona.dataset.etapa = col.etapaId;
+      zona.addEventListener('dragover', function (ev) { ev.preventDefault(); zona.classList.add('encima'); });
+      zona.addEventListener('dragleave', function () { zona.classList.remove('encima'); });
+      zona.addEventListener('drop', async function (ev) {
+        ev.preventDefault();
+        zona.classList.remove('encima');
+        var id = ev.dataTransfer.getData('text/plain');
+        if (!id) { return; }
+        await api('/oportunidades/' + id + '/mover', { metodo: 'POST', cuerpo: { etapaId: col.etapaId } });
+        await cargarEmbudo();
+      });
+
+      col.oportunidades.forEach(function (o) {
+        var tarj = document.createElement('div');
+        tarj.className = 'oport' + (o.estancada ? ' parada' : '');
+        tarj.draggable = true;
+        tarj.addEventListener('dragstart', function (ev) { ev.dataTransfer.setData('text/plain', o.id); });
+
+        var t1 = document.createElement('div');
+        t1.className = 't';
+        t1.textContent = o.titulo;
+        var t2 = document.createElement('div');
+        t2.className = 'i';
+        t2.textContent = euros(o.importe);
+        var t3 = document.createElement('div');
+        t3.className = 'q';
+        t3.textContent = o.nombreCuenta || o.nombreContacto;
+        tarj.appendChild(t1);
+        tarj.appendChild(t2);
+        tarj.appendChild(t3);
+
+        if (o.estancada) {
+          var chip = document.createElement('span');
+          chip.className = 'chip c-ambar';
+          chip.style.borderColor = 'var(--ambar)';
+          chip.style.color = 'var(--ambar)';
+          chip.style.background = 'color-mix(in srgb, var(--ambar) 12%, transparent)';
+          chip.style.width = 'fit-content';
+          var pt = document.createElement('span');
+          pt.className = 'pt';
+          pt.style.background = 'var(--ambar)';
+          chip.appendChild(pt);
+          chip.appendChild(document.createTextNode('Parada ' + o.diasEnEtapa + ' d'));
+          tarj.appendChild(chip);
+        }
+
+        var acc = document.createElement('div');
+        acc.className = 'acciones-op';
+        var bGanar = document.createElement('button');
+        bGanar.className = 'mini ganar';
+        bGanar.type = 'button';
+        bGanar.textContent = 'Ganada';
+        bGanar.addEventListener('click', async function (ev) {
+          ev.stopPropagation();
+          await api('/oportunidades/' + o.id + '/ganar', { metodo: 'POST' });
+          await cargarEmbudo();
+        });
+        var bPerder = document.createElement('button');
+        bPerder.className = 'mini perder';
+        bPerder.type = 'button';
+        bPerder.textContent = 'Perdida';
+        bPerder.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          oportunidadAPerder = o.id;
+          $('p-detalle').value = '';
+          subVistaEmbudo('emb-perder');
+        });
+        acc.appendChild(bGanar);
+        acc.appendChild(bPerder);
+        tarj.appendChild(acc);
+
+        zona.appendChild(tarj);
+      });
+
+      c.appendChild(zona);
+      tab.appendChild(c);
+    });
+
+    await cargarMotivos();
+  }
+
+  async function cargarMotivos() {
+    var inf = await api('/informes/motivos-perdida');
+    var cont = $('emb-motivos');
+    cont.textContent = '';
+
+    if (inf.totalPerdidas === 0) {
+      var p = document.createElement('p');
+      p.className = 'explica';
+      p.textContent = 'Todavía no se ha perdido ninguna. Cuando pase, aquí estará el porqué.';
+      cont.appendChild(p);
+      return;
+    }
+
+    var maximo = Math.max.apply(null, inf.motivos.map(function (m) { return m.cuantas; }));
+    inf.motivos.forEach(function (m) {
+      var fila = document.createElement('div');
+      fila.className = 'motivo-fila';
+      var etiqueta = document.createElement('span');
+      etiqueta.textContent = MOTIVOS[m.motivo] || 'Otro';
+      var barra = document.createElement('div');
+      barra.className = 'barra-m';
+      var relleno = document.createElement('i');
+      relleno.style.width = Math.round(m.cuantas / maximo * 100) + '%';
+      barra.appendChild(relleno);
+      var cifra = document.createElement('span');
+      cifra.className = 'cifra';
+      cifra.textContent = m.cuantas + ' · ' + euros(m.importe);
+      fila.appendChild(etiqueta);
+      fila.appendChild(barra);
+      fila.appendChild(cifra);
+      cont.appendChild(fila);
+    });
+
+    var pie = document.createElement('p');
+    pie.className = 'explica';
+    pie.textContent = 'Ganadas: ' + inf.totalGanadas + ' (' + euros(inf.importeGanado) + ') · ' +
+      'Perdidas: ' + inf.totalPerdidas + ' (' + euros(inf.importePerdido) + ').';
+    cont.appendChild(pie);
+  }
+
+  $('emb-nueva').addEventListener('click', async function () {
+    var contactos = await api('/contactos');
+    var sel = $('o-contacto');
+    sel.textContent = '';
+    contactos.forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.nombre;
+      sel.appendChild(o);
+    });
+    $('o-titulo').value = '';
+    $('o-importe').value = '0';
+    $('o-fecha').value = '';
+    subVistaEmbudo('emb-form');
+    $('o-titulo').focus();
+  });
+
+  $('emb-guardar').addEventListener('click', async function () {
+    var b = $('emb-guardar');
+    b.disabled = true;
+    try {
+      await api('/oportunidades', {
+        metodo: 'POST',
+        cuerpo: {
+          contactoId: $('o-contacto').value,
+          titulo: $('o-titulo').value,
+          importe: Number($('o-importe').value),
+          previstaCierre: $('o-fecha').value || null
+        }
+      });
+      subVistaEmbudo('emb-tablero-vista');
+      await cargarEmbudo();
+    } catch (e) {
+      mostrarAviso($('emb-aviso-form'), e.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  $('emb-cancelar').addEventListener('click', function () { subVistaEmbudo('emb-tablero-vista'); });
+  $('emb-cancelar-perder').addEventListener('click', function () { subVistaEmbudo('emb-tablero-vista'); });
+
+  $('emb-confirmar-perder').addEventListener('click', async function () {
+    var b = $('emb-confirmar-perder');
+    b.disabled = true;
+    try {
+      await api('/oportunidades/' + oportunidadAPerder + '/perder', {
+        metodo: 'POST',
+        cuerpo: { motivo: Number($('p-motivo').value), detalle: $('p-detalle').value }
+      });
+      subVistaEmbudo('emb-tablero-vista');
+      await cargarEmbudo();
+    } catch (e) {
+      mostrarAviso($('emb-aviso-perder'), e.message);
     } finally {
       b.disabled = false;
     }

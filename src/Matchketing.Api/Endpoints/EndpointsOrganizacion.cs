@@ -4,6 +4,7 @@ using Matchketing.Api.Contratos;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
 using Matchketing.Nucleo.Tiempo;
+using Matchketing.Embudo.Aplicacion;
 using Matchketing.Organizacion.Aplicacion;
 
 namespace Matchketing.Api.Endpoints;
@@ -21,6 +22,7 @@ public static class EndpointsOrganizacion
             ClaimsPrincipal quien,
             ServicioEmpresas empresas,
             ServicioIdentidad identidad,
+            ServicioEmbudo embudo,
             IUnidadDeTrabajo unidad,
             IReloj reloj,
             CancellationToken ct) =>
@@ -36,6 +38,11 @@ public static class EndpointsOrganizacion
             // Quien crea la empresa es su propietario. Empresa y membresía se guardan en la misma
             // transacción: una empresa sin propietario sería una empresa a la que nadie puede entrar.
             identidad.AnadirMembresia(Membresia.Crear(usuarioId, creada.Valor.Id, Rol.Propietario, reloj));
+
+            // La empresa nace con su embudo de cinco etapas: nadie debería tener que montarlo antes
+            // de poder apuntar su primera venta.
+            embudo.CrearEmbudoPorDefecto(creada.Valor.Id);
+
             await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
 
             var sesion = await identidad.SeleccionarEmpresaAsync(usuarioId, creada.Valor.Id, creada.Valor.Nombre, ct).ConfigureAwait(false);

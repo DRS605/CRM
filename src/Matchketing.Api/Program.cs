@@ -2,6 +2,7 @@ using System.Text;
 using Matchketing.Api.Comun;
 using Matchketing.Api.Endpoints;
 using Matchketing.Contactos.Aplicacion;
+using Matchketing.Embudo.Aplicacion;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Tiempo;
@@ -47,6 +48,10 @@ constructor.Services.AddScoped<IConsultaContactos, ConsultaContactos>();
 constructor.Services.AddScoped<ServicioContactos>();
 constructor.Services.AddScoped<ServicioDuplicados>();
 constructor.Services.AddScoped<ImportarContactos>();
+constructor.Services.AddScoped<IRepositorioEmbudos, RepositorioEmbudos>();
+constructor.Services.AddScoped<IRepositorioOportunidades, RepositorioOportunidades>();
+constructor.Services.AddScoped<IConsultaEmbudo, ConsultaEmbudo>();
+constructor.Services.AddScoped<ServicioEmbudo>();
 
 constructor.Services
     .AddAuthentication("Bearer")
@@ -89,6 +94,7 @@ app.MapGet("/salud", () => Results.Ok(new { estado = "vivo" })).WithTags("Sistem
 app.MapearIdentidad();
 app.MapearOrganizacion();
 app.MapearContactos();
+app.MapearEmbudo();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

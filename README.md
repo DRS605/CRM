@@ -31,10 +31,12 @@ src/
   Matchketing.Nucleo          Resultado, Error, entidades base, IReloj, IContextoEmpresa, Email
   Matchketing.Identidad       Usuario, Membresia, Rol y permisos + casos de uso
   Matchketing.Organizacion    Empresa (tenant) y ajustes del motor Match
+  Matchketing.Contactos       Contacto, Cuenta, Actividad, duplicados e importación CSV
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
   Matchketing.Api             REST + OpenAPI + JWT + interfaz web
 tests/
-  Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests · Matchketing.IntegrationTests
+  Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
+  Matchketing.Contactos.Tests · Matchketing.IntegrationTests
 ```
 
 ## Estado
@@ -42,7 +44,7 @@ tests/
 | Módulo | Estado |
 |---|---|
 | 1. Núcleo, Identidad y Organización | ✅ Terminado |
-| 2. Contactos | ⬜ Pendiente |
+| 2. Contactos | ✅ Terminado |
 | 3. Embudo | ⬜ Pendiente |
 | 4. Tareas y Hoy | ⬜ Pendiente |
 | 5. Match v1 | ⬜ Pendiente |
@@ -56,7 +58,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 44 pruebas: 33 unitarias + 11 de integración
+dotnet test                                  # 98 pruebas: 74 unitarias + 24 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -87,7 +89,7 @@ producto: si tienes el SDK instalado, ignóralos.
 ./dsh.sh 'dotnet test'
 ```
 
-## API del módulo 1
+## API
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -99,3 +101,13 @@ producto: si tienes el SDK instalado, ignóralos.
 | `POST` | `/empresas/{id}/seleccionar` | Token nuevo con esa empresa activa |
 | `GET` | `/empresas/activa` | Datos y ajustes de la empresa activa |
 | `PUT` | `/empresas/activa/ajustes-match` | Peso del Encaje y horas de rebote |
+| `GET` | `/contactos?busqueda=` | Listado con búsqueda |
+| `GET` | `/contactos/{id}` | Ficha con la cronología |
+| `POST` | `/contactos` | Crea un contacto. **201** |
+| `POST` | `/contactos/{id}/notas` · `/llamada` | Añade a la cronología |
+| `GET` | `/contactos/duplicados` | Parejas propuestas |
+| `POST` | `/contactos/{id}/fusionar` | Fusiona sin perder actividades |
+| `POST` | `/contactos/importar` | CSV con previsualización |
+| `GET` `POST` | `/cuentas` | Cuentas (opcionales) |
+
+Documentación por módulo en [`docs/modulos/`](docs/modulos/).

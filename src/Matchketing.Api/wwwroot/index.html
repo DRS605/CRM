@@ -190,6 +190,83 @@
   }
   .acciones { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
 
+
+  /* ---- Contactos ---- */
+  .herramientas { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+  .buscador {
+    font: inherit; font-size: 14px; padding: 9px 13px; border-radius: 9px; flex: 1 1 260px; min-width: 0;
+    border: 1px solid var(--trazo); background: var(--superficie); color: var(--tinta);
+  }
+  .contador { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
+
+  .tabla-caja { border: 1px solid var(--trazo); border-radius: 12px; background: var(--superficie); overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 680px; }
+  thead th {
+    text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--grafito); font-weight: 400;
+    padding: 11px 16px; border-bottom: 1px solid var(--trazo); white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--trazo-suave); cursor: pointer; }
+  tbody tr:last-child { border-bottom: 0; }
+  tbody tr:hover { background: var(--trazo-suave); }
+  td { padding: 12px 16px; font-size: 14px; vertical-align: middle; }
+  td.principal { font-weight: 600; letter-spacing: -.01em; }
+  td.apagada { color: var(--grafito); font-family: var(--mono); font-size: 12.5px; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    padding: 3px 10px 3px 8px; border-radius: 999px; border: 1px solid;
+  }
+  .chip .pt { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+  .e-lead { color: var(--magenta); background: var(--magenta-velo); border-color: var(--magenta-borde); }
+  .e-lead .pt { background: var(--magenta); }
+  .e-cliente { color: var(--verde); background: color-mix(in srgb, var(--verde) 12%, transparent); border-color: var(--verde); }
+  .e-cliente .pt { background: var(--verde); }
+  .e-perdido, .e-baja { color: var(--grafito); background: var(--trazo-suave); border-color: var(--trazo); }
+  .e-perdido .pt, .e-baja .pt { background: var(--grafito); }
+
+  /* ---- Ficha ---- */
+  .ficha-cabecera { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .ficha-cabecera .quien-ficha { display: flex; flex-direction: column; gap: 4px; }
+  .ficha-cabecera h2 { font-size: 22px; font-weight: 800; letter-spacing: -.03em; margin: 0; }
+  .ficha-cabecera .medios { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); }
+  .ficha-cabecera .derecha { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .cronologia { display: flex; flex-direction: column; gap: 0; }
+  .hito { display: grid; grid-template-columns: 20px 1fr; gap: 14px; padding-bottom: 18px; position: relative; }
+  .hito:not(:last-child)::before {
+    content: ""; position: absolute; left: 9px; top: 16px; bottom: 0; width: 1px; background: var(--trazo);
+  }
+  .hito .punto-hito {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--magenta);
+    margin-top: 6px; margin-left: 5px; z-index: 1; border: 2px solid var(--superficie); box-sizing: content-box;
+  }
+  .hito.sistema .punto-hito { background: var(--grafito); }
+  .hito .contenido { display: flex; flex-direction: column; gap: 3px; }
+  .hito .meta {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--grafito);
+  }
+  .hito .texto { font-size: 14.5px; line-height: 1.5; }
+
+  .rejilla-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  textarea {
+    font: inherit; font-size: 14px; padding: 10px 13px; border-radius: 9px; resize: vertical;
+    border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta); width: 100%;
+  }
+  select {
+    font: inherit; font-size: 14.5px; padding: 9px 12px; border-radius: 9px;
+    border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
+  }
+  .par-duplicado { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid var(--trazo-suave); }
+  .par-duplicado:last-child { border-bottom: 0; }
+  .par-duplicado .lado { flex: 1 1 200px; }
+  .par-duplicado .lado .n { font-weight: 600; }
+  .par-duplicado .lado .d { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
+  .par-duplicado .motivo {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--ambar); border: 1px solid var(--ambar); border-radius: 999px; padding: 3px 10px;
+  }
+
   footer.nota {
     font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
     color: var(--grafito); display: flex; align-items: center; gap: 9px;
@@ -270,7 +347,7 @@
     <div class="marca">match<span class="punto">.</span>keting</div>
     <nav id="menu">
       <button class="item on" type="button" data-vista="hoy"><span class="marcador"></span>Hoy</button>
-      <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos<span class="pendiente">MÓD 2</span></button>
+      <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos</button>
       <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo<span class="pendiente">MÓD 3</span></button>
       <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes<span class="pendiente">MÓD 7</span></button>
       <button class="item" type="button" data-vista="ajustes"><span class="marcador"></span>Ajustes</button>
@@ -302,12 +379,113 @@
 
     <!-- Secciones aún no construidas -->
     <section id="vista-contactos" hidden>
-      <div class="titulo"><h1>Contactos</h1></div>
-      <div class="vacio-caja">
-        <div class="grande">Todavía no</div>
-        <p>Contactos, cuentas y la cronología unificada son el módulo 2. Se entrega completo
-          —dominio, API, persistencia, tests y documentación— antes de empezar el siguiente.</p>
-        <span class="etiqueta-modulo">Módulo 2 de 8</span>
+      <div class="titulo">
+        <h1>Contactos</h1>
+        <span class="sub" id="sub-contactos"></span>
+      </div>
+
+      <!-- Listado -->
+      <div id="con-lista">
+        <div class="herramientas">
+          <input class="buscador" id="con-busca" type="search" placeholder="Buscar por nombre, correo, teléfono o cargo…" />
+          <button class="btn pri" type="button" id="con-nuevo">Nuevo contacto</button>
+          <button class="btn" type="button" id="con-importar">Importar CSV</button>
+          <button class="btn" type="button" id="con-duplicados">Duplicados</button>
+        </div>
+        <div class="tabla-caja" id="con-tabla-caja">
+          <table>
+            <thead><tr>
+              <th>Nombre</th><th>Cuenta</th><th>Correo</th><th>Teléfono</th><th>Estado</th><th>Última actividad</th>
+            </tr></thead>
+            <tbody id="con-filas"></tbody>
+          </table>
+        </div>
+        <div class="vacio-caja" id="con-vacio" hidden>
+          <span class="bolita"></span>
+          <div class="grande">Aún no hay contactos</div>
+          <p>Crea el primero, o pega un CSV exportado de tu agenda o de Excel: se reconocen las
+            columnas por el nombre, sin importar el orden.</p>
+        </div>
+      </div>
+
+      <!-- Alta -->
+      <div class="panel" id="con-form" hidden style="max-width:720px">
+        <h2>Nuevo contacto</h2>
+        <p class="explica">Hace falta al menos un correo o un teléfono: un contacto al que no se
+          puede llamar ni escribir no sirve de nada.</p>
+        <div class="rejilla-form">
+          <div class="campo"><label for="f-nombre">Nombre</label><input id="f-nombre" type="text" placeholder="Manolo García" /></div>
+          <div class="campo"><label for="f-email">Correo</label><input id="f-email" type="email" placeholder="manolo@casamanolo.es" /></div>
+          <div class="campo"><label for="f-telefono">Teléfono</label><input id="f-telefono" type="tel" placeholder="961 23 45 67" /></div>
+          <div class="campo"><label for="f-cargo">Cargo</label><input id="f-cargo" type="text" placeholder="Gerente" /></div>
+          <div class="campo"><label for="f-cuenta">Cuenta</label><select id="f-cuenta"><option value="">— Sin cuenta (B2C) —</option></select></div>
+          <div class="campo"><label for="f-origen">Origen</label><input id="f-origen" type="text" placeholder="feria, recomendación…" /></div>
+        </div>
+        <div class="aviso" id="con-aviso-form" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="con-guardar">Crear contacto</button>
+          <button class="btn fantasma" type="button" data-volver>Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Importación -->
+      <div class="panel" id="con-import" hidden style="max-width:720px">
+        <h2>Importar desde CSV</h2>
+        <p class="explica">Pega el contenido del fichero. Se detecta el separador solo y se
+          reconocen las columnas por su nombre (nombre, correo, teléfono, cargo, origen). La
+          previsualización <strong>no guarda nada</strong>.</p>
+        <textarea id="con-csv" rows="8" placeholder="nombre;email;telefono&#10;Manolo García;manolo@casamanolo.es;961234567"></textarea>
+        <div class="aviso" id="con-aviso-import" hidden></div>
+        <div class="acciones">
+          <button class="btn" type="button" id="con-previsualizar">Previsualizar</button>
+          <button class="btn pri" type="button" id="con-confirmar">Importar</button>
+          <button class="btn fantasma" type="button" data-volver>Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Duplicados -->
+      <div class="panel" id="con-dupes" hidden style="max-width:820px">
+        <h2>Posibles duplicados</h2>
+        <p class="explica">El sistema propone; decides tú. Al fusionar, el que se queda rellena sus
+          huecos con los datos del otro y se trae <strong>todas</strong> sus actividades.</p>
+        <div id="con-dupes-lista"></div>
+        <div class="acciones"><button class="btn fantasma" type="button" data-volver>Volver</button></div>
+      </div>
+
+      <!-- Ficha -->
+      <div id="con-ficha" hidden style="display:none">
+        <div class="panel" style="max-width:820px">
+          <div class="ficha-cabecera">
+            <div class="quien-ficha">
+              <h2 id="fi-nombre">—</h2>
+              <span class="medios" id="fi-medios">—</span>
+              <span id="fi-estado"></span>
+            </div>
+            <div class="derecha">
+              <select id="fi-resultado" aria-label="Resultado de la llamada">
+                <option value="1">Contactado</option>
+                <option value="2">No contesta</option>
+                <option value="3">No le interesa</option>
+                <option value="4">Volver a llamar</option>
+              </select>
+              <button class="btn pri" type="button" id="fi-llamar">Registrar llamada</button>
+              <button class="btn fantasma" type="button" data-volver>Volver</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="max-width:820px">
+          <h2>Añadir nota</h2>
+          <textarea id="fi-nota" rows="3" placeholder="Lo que ha pasado, en una línea."></textarea>
+          <div class="aviso" id="con-aviso-ficha" hidden></div>
+          <div class="acciones"><button class="btn" type="button" id="fi-guardar-nota">Guardar nota</button></div>
+        </div>
+
+        <div class="panel" style="max-width:820px">
+          <h2>Cronología</h2>
+          <p class="explica">Append-only: una conversación es un hecho, no un campo. No se edita ni se borra.</p>
+          <div class="cronologia" id="fi-cronologia"></div>
+        </div>
       </div>
     </section>
 
@@ -570,6 +748,7 @@
       ['hoy', 'contactos', 'embudo', 'informes', 'ajustes'].forEach(function (v) {
         $('vista-' + v).hidden = v !== b.dataset.vista;
       });
+      if (b.dataset.vista === 'contactos') { subVista('con-lista'); cargarContactos(); }
     });
   });
 
@@ -583,6 +762,282 @@
   $('btn-salir').addEventListener('click', cerrarSesion);
   $('btn-salir-2').addEventListener('click', cerrarSesion);
   $('btn-cambiar-empresa').addEventListener('click', trasIniciarSesion);
+
+  // ---------- Contactos ----------
+  var ESTADOS = { 1: ['Lead', 'e-lead'], 2: ['Cliente', 'e-cliente'], 3: ['Perdido', 'e-perdido'], 4: ['Baja', 'e-baja'] };
+  var TIPOS = { 1: 'Nota', 2: 'Llamada', 3: 'Correo', 4: 'Reunión', 5: 'Formulario', 6: 'Visita web', 7: 'Sistema' };
+  var contactoAbierto = null;
+  var temporizadorBusqueda = null;
+
+  function subVista(cual) {
+    ['con-lista', 'con-form', 'con-import', 'con-dupes', 'con-ficha'].forEach(function (v) {
+      var el = $(v);
+      el.hidden = v !== cual;
+      el.style.display = v === cual ? '' : 'none';
+    });
+    ['con-aviso-form', 'con-aviso-import', 'con-aviso-ficha'].forEach(function (a) { mostrarAviso($(a), ''); });
+  }
+
+  function fecha(iso) {
+    if (!iso) { return '—'; }
+    var d = new Date(iso);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' }) +
+      ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function chipEstado(estado) {
+    var e = ESTADOS[estado] || ['—', 'e-perdido'];
+    var span = document.createElement('span');
+    span.className = 'chip ' + e[1];
+    var pt = document.createElement('span');
+    pt.className = 'pt';
+    span.appendChild(pt);
+    span.appendChild(document.createTextNode(e[0]));
+    return span;
+  }
+
+  async function cargarContactos() {
+    var q = $('con-busca').value.trim();
+    var lista = await api('/contactos' + (q ? '?busqueda=' + encodeURIComponent(q) : ''));
+    var cuerpo = $('con-filas');
+    cuerpo.textContent = '';
+
+    lista.forEach(function (c) {
+      var tr = document.createElement('tr');
+      tr.tabIndex = 0;
+      function celda(texto, clase) {
+        var td = document.createElement('td');
+        if (clase) { td.className = clase; }
+        td.textContent = texto || '—';
+        tr.appendChild(td);
+        return td;
+      }
+      celda(c.nombre, 'principal');
+      celda(c.nombreCuenta || (c.cargo || '—'));
+      celda(c.email, 'apagada');
+      celda(c.telefono, 'apagada');
+      var tdEstado = document.createElement('td');
+      tdEstado.appendChild(chipEstado(c.estado));
+      tr.appendChild(tdEstado);
+      celda(c.ultimaActividadEn ? fecha(c.ultimaActividadEn) : 'Sin actividad', 'apagada');
+
+      tr.addEventListener('click', function () { abrirFicha(c.id); });
+      tr.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { abrirFicha(c.id); } });
+      cuerpo.appendChild(tr);
+    });
+
+    var vacio = lista.length === 0 && !q;
+    $('con-vacio').hidden = !vacio;
+    $('con-tabla-caja').hidden = lista.length === 0;
+    $('sub-contactos').textContent = lista.length === 1 ? '1 contacto' : lista.length + ' contactos';
+  }
+
+  async function abrirFicha(id) {
+    var ficha = await api('/contactos/' + id);
+    contactoAbierto = id;
+    var c = ficha.contacto;
+
+    $('fi-nombre').textContent = c.nombre;
+    $('fi-medios').textContent = [c.email, c.telefono, c.cargo, c.nombreCuenta].filter(Boolean).join(' · ') || '—';
+    var cont = $('fi-estado');
+    cont.textContent = '';
+    cont.appendChild(chipEstado(c.estado));
+
+    var crono = $('fi-cronologia');
+    crono.textContent = '';
+    if (ficha.cronologia.length === 0) {
+      var p = document.createElement('p');
+      p.className = 'explica';
+      p.textContent = 'Todavía no ha pasado nada con este contacto.';
+      crono.appendChild(p);
+    }
+    ficha.cronologia.forEach(function (a) {
+      var hito = document.createElement('div');
+      hito.className = 'hito' + (a.tipo === 7 ? ' sistema' : '');
+      var pt = document.createElement('span');
+      pt.className = 'punto-hito';
+      var cuerpo = document.createElement('div');
+      cuerpo.className = 'contenido';
+      var meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = (TIPOS[a.tipo] || 'Actividad') + ' · ' + fecha(a.ocurridaEn);
+      var texto = document.createElement('span');
+      texto.className = 'texto';
+      texto.textContent = a.cuerpo;
+      cuerpo.appendChild(meta);
+      cuerpo.appendChild(texto);
+      hito.appendChild(pt);
+      hito.appendChild(cuerpo);
+      crono.appendChild(hito);
+    });
+
+    subVista('con-ficha');
+  }
+
+  async function cargarCuentas() {
+    var lista = await api('/cuentas');
+    var sel = $('f-cuenta');
+    while (sel.options.length > 1) { sel.remove(1); }
+    lista.forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.nombre;
+      sel.appendChild(o);
+    });
+  }
+
+  $('con-busca').addEventListener('input', function () {
+    clearTimeout(temporizadorBusqueda);
+    temporizadorBusqueda = setTimeout(function () { cargarContactos(); }, 200);
+  });
+
+  $('con-nuevo').addEventListener('click', async function () {
+    ['f-nombre', 'f-email', 'f-telefono', 'f-cargo', 'f-origen'].forEach(function (c) { $(c).value = ''; });
+    $('f-cuenta').value = '';
+    await cargarCuentas();
+    subVista('con-form');
+    $('f-nombre').focus();
+  });
+
+  $('con-guardar').addEventListener('click', async function () {
+    var b = $('con-guardar');
+    b.disabled = true;
+    try {
+      await api('/contactos', {
+        metodo: 'POST',
+        cuerpo: {
+          nombre: $('f-nombre').value, email: $('f-email').value, telefono: $('f-telefono').value,
+          cargo: $('f-cargo').value, cuentaId: $('f-cuenta').value || null, origen: $('f-origen').value
+        }
+      });
+      subVista('con-lista');
+      await cargarContactos();
+    } catch (e) {
+      mostrarAviso($('con-aviso-form'), e.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  $('con-importar').addEventListener('click', function () { $('con-csv').value = ''; subVista('con-import'); });
+
+  async function importar(previsualizar) {
+    var b = previsualizar ? $('con-previsualizar') : $('con-confirmar');
+    b.disabled = true;
+    try {
+      var r = await api('/contactos/importar', {
+        metodo: 'POST',
+        cuerpo: { contenido: $('con-csv').value, previsualizar: previsualizar }
+      });
+      var partes = [];
+      partes.push(r.validas + (r.validas === 1 ? ' fila válida' : ' filas válidas'));
+      if (r.duplicadas) { partes.push(r.duplicadas + ' duplicadas que se omiten'); }
+      if (r.errores.length) {
+        partes.push(r.errores.length + ' con error: ' +
+          r.errores.slice(0, 3).map(function (e) { return 'línea ' + e.linea + ' (' + e.motivo + ')'; }).join('; '));
+      }
+      partes.push('Columnas reconocidas: ' + r.columnasReconocidas.join(', ') + '.');
+      var texto = (previsualizar ? 'Previsualización, no se ha guardado nada. ' : 'Importados ' + r.creados + '. ') + partes.join('. ');
+      mostrarAviso($('con-aviso-import'), texto, !previsualizar && r.errores.length === 0);
+
+      if (!previsualizar) {
+        await cargarContactos();
+        setTimeout(function () { subVista('con-lista'); }, 1200);
+      }
+    } catch (e) {
+      mostrarAviso($('con-aviso-import'), e.message);
+    } finally {
+      b.disabled = false;
+    }
+  }
+
+  $('con-previsualizar').addEventListener('click', function () { importar(true); });
+  $('con-confirmar').addEventListener('click', function () { importar(false); });
+
+  $('con-duplicados').addEventListener('click', async function () {
+    var pares = await api('/contactos/duplicados');
+    var cont = $('con-dupes-lista');
+    cont.textContent = '';
+
+    if (pares.length === 0) {
+      var p = document.createElement('p');
+      p.className = 'explica';
+      p.textContent = 'No hay duplicados. La base está limpia.';
+      cont.appendChild(p);
+    }
+
+    pares.forEach(function (par) {
+      var fila = document.createElement('div');
+      fila.className = 'par-duplicado';
+      [par.uno, par.otro].forEach(function (c) {
+        var lado = document.createElement('div');
+        lado.className = 'lado';
+        var n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = c.nombre;
+        var d = document.createElement('div');
+        d.className = 'd';
+        d.textContent = [c.email, c.telefono].filter(Boolean).join(' · ');
+        lado.appendChild(n);
+        lado.appendChild(d);
+        fila.appendChild(lado);
+      });
+      var motivo = document.createElement('span');
+      motivo.className = 'motivo';
+      motivo.textContent = par.motivo;
+      fila.appendChild(motivo);
+
+      var btn = document.createElement('button');
+      btn.className = 'btn pri';
+      btn.type = 'button';
+      btn.textContent = 'Fusionar en el primero';
+      btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        await api('/contactos/' + par.uno.id + '/fusionar', { metodo: 'POST', cuerpo: { absorbidoId: par.otro.id } });
+        $('con-duplicados').click();
+        await cargarContactos();
+      });
+      fila.appendChild(btn);
+      cont.appendChild(fila);
+    });
+
+    subVista('con-dupes');
+  });
+
+  $('fi-llamar').addEventListener('click', async function () {
+    var b = $('fi-llamar');
+    b.disabled = true;
+    try {
+      await api('/contactos/' + contactoAbierto + '/llamada', {
+        metodo: 'POST',
+        cuerpo: { resultado: Number($('fi-resultado').value), nota: null }
+      });
+      await abrirFicha(contactoAbierto);
+    } catch (e) {
+      mostrarAviso($('con-aviso-ficha'), e.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  $('fi-guardar-nota').addEventListener('click', async function () {
+    var b = $('fi-guardar-nota');
+    b.disabled = true;
+    try {
+      await api('/contactos/' + contactoAbierto + '/notas', { metodo: 'POST', cuerpo: { cuerpo: $('fi-nota').value } });
+      $('fi-nota').value = '';
+      await abrirFicha(contactoAbierto);
+    } catch (e) {
+      mostrarAviso($('con-aviso-ficha'), e.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-volver]'), function (b) {
+    b.addEventListener('click', function () { subVista('con-lista'); cargarContactos(); });
+  });
+
 })();
 </script>
 </body>

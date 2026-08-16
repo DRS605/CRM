@@ -1,3 +1,4 @@
+using Matchketing.Contactos.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
 using Matchketing.Nucleo.Comun;
@@ -19,6 +20,15 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
 
     public DbSet<Empresa> Empresas => Set<Empresa>();
 
+    public DbSet<Cuenta> Cuentas => Set<Cuenta>();
+
+    public DbSet<Contacto> Contactos => Set<Contacto>();
+
+    public DbSet<Actividad> Actividades => Set<Actividad>();
+
+    /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
+    public Guid? EmpresaActual => contexto.EmpresaId;
+
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default) => SaveChangesAsync(ct);
 
     protected override void OnModelCreating(ModelBuilder modelo)
@@ -28,13 +38,15 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
         modelo.HasDefaultSchema("publico");
         modelo.ApplyConfigurationsFromAssembly(typeof(ContextoMatchketing).Assembly);
 
-        // Nota deliberada: `membresia` NO lleva filtro global por empresa. Es la tabla que decide a
-        // qué empresas puede entrar un usuario, así que filtrarla por la empresa activa impediría
-        // listar las empresas entre las que elegir. El aislamiento de los datos de negocio
-        // (contactos, oportunidades…) sí irá por filtro global + RLS, módulo a módulo.
+        // Primera barrera del aislamiento entre empresas: imposible olvidarse del WHERE. Si no hay
+        // empresa activa, EmpresaActual es null y no casa con ninguna fila: falla cerrado.
+        modelo.Entity<Cuenta>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
+        modelo.Entity<Contacto>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
+        modelo.Entity<Actividad>().HasQueryFilter(a => a.EmpresaId == EmpresaActual);
+
+        // Nota deliberada: `identidad.membresia` NO lleva filtro global por empresa. Es la tabla que
+        // decide a qué empresas puede entrar un usuario, así que filtrarla por la empresa activa
+        // impediría listar las empresas entre las que elegir.
         base.OnModelCreating(modelo);
     }
-
-    /// <summary>Empresa activa de la petición. La usarán los filtros globales de los módulos de negocio.</summary>
-    public Guid? EmpresaActual => contexto.EmpresaId;
 }

@@ -7,7 +7,8 @@ using Xunit;
 
 namespace Matchketing.IntegrationTests;
 
-public sealed class PruebasFlujoIdentidad(ApiDePrueba api) : IClassFixture<ApiDePrueba>
+[Collection(ColeccionApi.Nombre)]
+public sealed class PruebasFlujoIdentidad(ApiDePrueba api)
 {
     private static int contador;
 

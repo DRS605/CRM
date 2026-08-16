@@ -1,6 +1,7 @@
 using System.Text;
 using Matchketing.Api.Comun;
 using Matchketing.Api.Endpoints;
+using Matchketing.Contactos.Aplicacion;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Tiempo;
@@ -29,13 +30,23 @@ constructor.Services.AddScoped<IContextoEmpresa, ContextoEmpresaHttp>();
 constructor.Services.AddScoped<IGeneradorTokens, GeneradorJwt>();
 constructor.Services.AddSingleton<IHasherContrasena, HasherContrasena>();
 
-constructor.Services.AddDbContext<ContextoMatchketing>(o => o.UseNpgsql(cadena));
+constructor.Services.AddScoped<InterceptorEmpresa>();
+constructor.Services.AddDbContext<ContextoMatchketing>((sp, o) => o
+    .UseNpgsql(cadena)
+    .AddInterceptors(sp.GetRequiredService<InterceptorEmpresa>()));
 constructor.Services.AddScoped<IUnidadDeTrabajo>(sp => sp.GetRequiredService<ContextoMatchketing>());
 constructor.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuarios>();
 constructor.Services.AddScoped<IRepositorioMembresias, RepositorioMembresias>();
 constructor.Services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();
 constructor.Services.AddScoped<ServicioIdentidad>();
 constructor.Services.AddScoped<ServicioEmpresas>();
+constructor.Services.AddScoped<IRepositorioContactos, RepositorioContactos>();
+constructor.Services.AddScoped<IRepositorioCuentas, RepositorioCuentas>();
+constructor.Services.AddScoped<IRepositorioActividades, RepositorioActividades>();
+constructor.Services.AddScoped<IConsultaContactos, ConsultaContactos>();
+constructor.Services.AddScoped<ServicioContactos>();
+constructor.Services.AddScoped<ServicioDuplicados>();
+constructor.Services.AddScoped<ImportarContactos>();
 
 constructor.Services
     .AddAuthentication("Bearer")
@@ -77,6 +88,7 @@ app.UseAuthorization();
 app.MapGet("/salud", () => Results.Ok(new { estado = "vivo" })).WithTags("Sistema");
 app.MapearIdentidad();
 app.MapearOrganizacion();
+app.MapearContactos();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

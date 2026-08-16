@@ -16,9 +16,14 @@ public static class Claims
 /// Resuelve la empresa activa de la petición a partir del token. Es la única fuente de verdad del
 /// tenant: ningún endpoint acepta un `empresa_id` por parámetro (invariante T2).
 /// </summary>
-public sealed class ContextoEmpresaHttp(IHttpContextAccessor acceso) : IContextoEmpresa
+public sealed class ContextoEmpresaHttp(IHttpContextAccessor acceso) : IContextoEmpresa, IContextoEmpresaPublico
 {
-    public Guid? EmpresaId => Leer(Claims.EmpresaId);
+    private Guid? empresaPublica;
+
+    public Guid? EmpresaId => Leer(Claims.EmpresaId) ?? empresaPublica;
+
+    /// <summary>Solo para la entrada pública de leads. Ver <see cref="IContextoEmpresaPublico"/>.</summary>
+    public void FijarEmpresa(Guid empresaId) => empresaPublica = empresaId;
 
     public Guid? UsuarioId => Leer(Claims.UsuarioId);
 

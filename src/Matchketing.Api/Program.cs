@@ -3,6 +3,7 @@ using Matchketing.Api.Comun;
 using Matchketing.Api.Endpoints;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
+using Matchketing.Captacion.Aplicacion;
 using Matchketing.Match.Aplicacion;
 using Matchketing.Tareas.Aplicacion;
 using Matchketing.Identidad.Aplicacion;
@@ -29,7 +30,9 @@ var ajustesJwt = new AjustesJwt(
 constructor.Services.AddHttpContextAccessor();
 constructor.Services.AddSingleton<IReloj, RelojSistema>();
 constructor.Services.AddSingleton(ajustesJwt);
-constructor.Services.AddScoped<IContextoEmpresa, ContextoEmpresaHttp>();
+constructor.Services.AddScoped<ContextoEmpresaHttp>();
+constructor.Services.AddScoped<IContextoEmpresa>(sp => sp.GetRequiredService<ContextoEmpresaHttp>());
+constructor.Services.AddScoped<IContextoEmpresaPublico>(sp => sp.GetRequiredService<ContextoEmpresaHttp>());
 constructor.Services.AddScoped<IGeneradorTokens, GeneradorJwt>();
 constructor.Services.AddSingleton<IHasherContrasena, HasherContrasena>();
 
@@ -61,6 +64,9 @@ constructor.Services.AddScoped<IRepositorioSenales, RepositorioSenales>();
 constructor.Services.AddScoped<IRepositorioPuntuaciones, RepositorioPuntuaciones>();
 constructor.Services.AddScoped<IConsultaMatch, ConsultaMatch>();
 constructor.Services.AddScoped<ServicioMatch>();
+constructor.Services.AddScoped<IRepositorioFormularios, RepositorioFormularios>();
+constructor.Services.AddScoped<IRepositorioEnvios, RepositorioEnvios>();
+constructor.Services.AddScoped<ServicioFormularios>();
 
 constructor.Services
     .AddAuthentication("Bearer")
@@ -79,6 +85,18 @@ constructor.Services
         };
     });
 constructor.Services.AddAuthorization();
+
+// El formulario se pega en la web del cliente, que es **otro origen**. Sin CORS el navegador
+// bloquearía el envío y la captación no funcionaría fuera de nuestro propio dominio.
+//
+// Se abre a cualquier origen a propósito y solo para las rutas públicas de `/f`: no sabemos en qué
+// dominio está la web de cada cliente y pedirle que la registre sería una fricción absurda. Lo que
+// protege el endpoint es la clave del formulario, no el origen; y no hay credenciales de por medio,
+// así que un tercero no puede hacer nada que no pudiera hacer con un `curl`.
+constructor.Services.AddCors(o => o.AddPolicy("captacion", p => p
+    .WithMethods("GET", "POST")
+    .AllowAnyHeader()
+    .AllowAnyOrigin()));
 constructor.Services.AddEndpointsApiExplorer();
 constructor.Services.AddSwaggerGen(o => o.SwaggerDoc("v1", new() { Title = "match.keting", Version = "v1" }));
 
@@ -96,6 +114,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -106,6 +125,7 @@ app.MapearContactos();
 app.MapearEmbudo();
 app.MapearTareas();
 app.MapearMatch();
+app.MapearCaptacion();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

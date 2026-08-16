@@ -38,10 +38,37 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
 
     public DbSet<Match.Dominio.PuntuacionMatch> Puntuaciones => Set<Match.Dominio.PuntuacionMatch>();
 
+    public DbSet<Captacion.Dominio.Formulario> Formularios => Set<Captacion.Dominio.Formulario>();
+
+    public DbSet<Captacion.Dominio.EnvioFormulario> Envios => Set<Captacion.Dominio.EnvioFormulario>();
+
+    public DbSet<Cumplimiento.Dominio.Consentimiento> Consentimientos => Set<Cumplimiento.Dominio.Consentimiento>();
+
     /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
     public Guid? EmpresaActual => contexto.EmpresaId;
 
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default) => SaveChangesAsync(ct);
+
+    /// <summary>
+    /// Vuelve a fijar <c>app.empresa_actual</c> en la conexión que ya esté abierta. Lo necesita la
+    /// entrada pública de leads: la empresa se conoce **después** de leer el formulario, y para
+    /// entonces la conexión puede llevar abierta desde antes con el valor vacío.
+    /// </summary>
+    public async Task ReaplicarEmpresaAsync(CancellationToken ct = default)
+    {
+        var conexion = Database.GetDbConnection();
+        if (conexion.State != System.Data.ConnectionState.Open)
+        {
+            return;
+        }
+
+        await using var orden = conexion.CreateCommand();
+        orden.CommandText = "SELECT set_config('app.empresa_actual', $1, false)";
+        var p = orden.CreateParameter();
+        p.Value = EmpresaActual?.ToString() ?? string.Empty;
+        orden.Parameters.Add(p);
+        await orden.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelo)
     {
@@ -60,6 +87,9 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
         modelo.Entity<Tareas.Dominio.Tarea>().HasQueryFilter(t => t.EmpresaId == EmpresaActual);
         modelo.Entity<Match.Dominio.Senal>().HasQueryFilter(s => s.EmpresaId == EmpresaActual);
         modelo.Entity<Match.Dominio.PuntuacionMatch>().HasQueryFilter(p => p.EmpresaId == EmpresaActual);
+        modelo.Entity<Captacion.Dominio.Formulario>().HasQueryFilter(f => f.EmpresaId == EmpresaActual);
+        modelo.Entity<Captacion.Dominio.EnvioFormulario>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
+        modelo.Entity<Cumplimiento.Dominio.Consentimiento>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
 
         // Nota deliberada: `identidad.membresia` NO lleva filtro global por empresa. Es la tabla que
         // decide a qué empresas puede entrar un usuario, así que filtrarla por la empresa activa

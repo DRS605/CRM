@@ -35,12 +35,14 @@ src/
   Matchketing.Embudo          Embudo, Etapa, Oportunidad, motivos de pérdida y previsión
   Matchketing.Tareas          Tarea y la pila de Hoy
   Matchketing.Match           Señales, Encaje, Momento y reparto de leads
+  Matchketing.Captacion       Formulario embebible y entrada pública de leads
+  Matchketing.Cumplimiento    Consentimiento con prueba (el resto, en el módulo 8)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
   Matchketing.Api             REST + OpenAPI + JWT + interfaz web
 tests/
   Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
-  Matchketing.Match.Tests · Matchketing.IntegrationTests
+  Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.IntegrationTests
 ```
 
 ## Estado
@@ -52,7 +54,7 @@ tests/
 | 3. Embudo | ✅ Terminado |
 | 4. Tareas y Hoy | ✅ Terminado |
 | 5. Match v1 | ✅ Terminado |
-| 6. Captación | ⬜ Pendiente |
+| 6. Captación | ✅ Terminado |
 | 7. Informes | ⬜ Pendiente |
 | 8. Cumplimiento | ⬜ Pendiente |
 
@@ -62,7 +64,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 212 pruebas: 154 unitarias + 58 de integración
+dotnet test                                  # 245 pruebas: 173 unitarias + 72 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -125,5 +127,9 @@ producto: si tienes el SDK instalado, ignóralos.
 | `POST` | `/match/recalcular` | Recalcula toda la empresa |
 | `GET` | `/match/contactos/{id}/comercial` | Qué comercial encaja mejor, y por qué |
 | `POST` | `/match/contactos/{id}/asignar` | Asigna, deja constancia y crea la primera llamada |
+| `GET` `POST` | `/formularios` | Formularios de captación |
+| `GET` | `/f/{clave}/script.js` | El script de una línea para la web del cliente |
+| `POST` | `/f/{clave}` | **Entrada pública de leads** (pública) |
+| `POST` | `/f/{clave}/visita` | Visita web de un contacto conocido (pública) |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

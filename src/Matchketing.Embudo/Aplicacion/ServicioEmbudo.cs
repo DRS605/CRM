@@ -23,8 +23,6 @@ public sealed class ServicioEmbudo(
     public Task<Tablero?> TableroAsync(Guid? embudoId = null, CancellationToken ct = default) =>
         consulta.TableroAsync(embudoId, ct);
 
-    public Task<InformeMotivos> MotivosAsync(CancellationToken ct = default) => consulta.MotivosAsync(ct);
-
     public async Task<Resultado<Oportunidad>> CrearAsync(
         Guid contactoId, Guid? cuentaId, string? titulo, decimal importe,
         Guid? etapaId, DateOnly? previstaCierre, CancellationToken ct = default)

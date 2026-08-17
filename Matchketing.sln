@@ -41,6 +41,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Captacion", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Captacion.Tests", "tests\Matchketing.Captacion.Tests\Matchketing.Captacion.Tests.csproj", "{C73B95EA-AB38-4D79-8D9A-2169BC8E63B1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Informes", "src\Matchketing.Informes\Matchketing.Informes.csproj", "{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Informes.Tests", "tests\Matchketing.Informes.Tests\Matchketing.Informes.Tests.csproj", "{05EE9B57-9217-47D6-9669-9385644A4627}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -118,6 +122,14 @@ Global
 		{C73B95EA-AB38-4D79-8D9A-2169BC8E63B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C73B95EA-AB38-4D79-8D9A-2169BC8E63B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C73B95EA-AB38-4D79-8D9A-2169BC8E63B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05EE9B57-9217-47D6-9669-9385644A4627}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05EE9B57-9217-47D6-9669-9385644A4627}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05EE9B57-9217-47D6-9669-9385644A4627}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05EE9B57-9217-47D6-9669-9385644A4627}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E5BC1274-F7E8-4B5B-9BFE-911757022089} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
@@ -137,5 +149,7 @@ Global
 		{288415A9-3AD6-4512-919B-AF4C3B90CA83} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
 		{A59315B5-B53B-406F-9500-51A6227578C5} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
 		{C73B95EA-AB38-4D79-8D9A-2169BC8E63B1} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
+		{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
+		{05EE9B57-9217-47D6-9669-9385644A4627} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
 	EndGlobalSection
 EndGlobal

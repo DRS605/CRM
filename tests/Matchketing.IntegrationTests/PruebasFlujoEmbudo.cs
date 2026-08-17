@@ -161,30 +161,6 @@ public sealed class PruebasFlujoEmbudo(ApiDePrueba api)
     }
 
     [Fact]
-    public async Task El_informe_de_motivos_ordena_por_el_que_mas_duele()
-    {
-        var cliente = await EnEmpresaAsync("Ribera Motivos");
-        var contacto = await ContactoAsync(cliente, "Manolo García");
-
-        foreach (var motivo in new[] { 1, 1, 3 })
-        {
-            var id = await OportunidadAsync(cliente, contacto, "Cámara", 1000m);
-            await cliente.PostAsJsonAsync($"/oportunidades/{id}/perder", new { motivo, detalle = (string?)null });
-        }
-
-        var ganada = await OportunidadAsync(cliente, contacto, "Vitrina", 5000m);
-        await cliente.PostAsync(new Uri($"/oportunidades/{ganada}/ganar", UriKind.Relative), null);
-
-        var informe = await LeerAsync(await cliente.GetAsync(new Uri("/informes/motivos-perdida", UriKind.Relative)));
-
-        informe.GetProperty("totalPerdidas").GetInt32().Should().Be(3);
-        informe.GetProperty("totalGanadas").GetInt32().Should().Be(1);
-        informe.GetProperty("importeGanado").GetDecimal().Should().Be(5000m);
-        informe.GetProperty("motivos")[0].GetProperty("motivo").GetInt32().Should().Be(1, "el precio, con dos, va primero");
-        informe.GetProperty("motivos")[0].GetProperty("cuantas").GetInt32().Should().Be(2);
-    }
-
-    [Fact]
     public async Task Una_empresa_no_ve_el_embudo_de_otra()
     {
         var unaEmpresa = await EnEmpresaAsync("Ribera Aislada A");

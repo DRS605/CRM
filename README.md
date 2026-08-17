@@ -38,13 +38,15 @@ src/
   Matchketing.Tareas          Tarea y la pila de Hoy
   Matchketing.Match           Señales, Encaje, Momento y reparto de leads
   Matchketing.Captacion       Formulario embebible y entrada pública de leads
+  Matchketing.Informes        Embudo, conversión y motivos de pérdida, con CSV
   Matchketing.Cumplimiento    Consentimiento con prueba (el resto, en el módulo 8)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
   Matchketing.Api             REST + OpenAPI + JWT + interfaz web
 tests/
   Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
-  Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.IntegrationTests
+  Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
+  Matchketing.IntegrationTests
 ```
 
 ## Estado
@@ -57,7 +59,7 @@ tests/
 | 4. Tareas y Hoy | ✅ Terminado |
 | 5. Match v1 | ✅ Terminado |
 | 6. Captación | ✅ Terminado |
-| 7. Informes | ⬜ Pendiente |
+| 7. Informes | ✅ Terminado |
 | 8. Cumplimiento | ⬜ Pendiente |
 
 ## Puesta en marcha
@@ -66,7 +68,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 245 pruebas: 173 unitarias + 72 de integración
+dotnet test                                  # 266 pruebas: 184 unitarias + 82 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -134,5 +136,8 @@ ignóralos.
 | `GET` | `/f/{clave}/script.js` | El script de una línea para la web del cliente |
 | `POST` | `/f/{clave}` | **Entrada pública de leads** (pública) |
 | `POST` | `/f/{clave}/visita` | Visita web de un contacto conocido (pública) |
+| `GET` | `/informes/embudo?periodo=mes` | Etapas, conversión real, previsión y ratios |
+| `GET` | `/informes/motivos-perdida` | Por qué se pierde, en orden |
+| `GET` | `/informes/embudo.csv` · `/motivos-perdida.csv` | CSV para Excel en español |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

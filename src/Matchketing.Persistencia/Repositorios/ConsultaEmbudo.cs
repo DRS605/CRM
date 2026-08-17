@@ -72,25 +72,4 @@ public sealed class ConsultaEmbudo(ContextoMatchketing bd, IReloj reloj) : ICons
             embudo.Id, embudo.Nombre, columnas,
             abiertas.Count, abiertas.Sum(o => o.Importe), decimal.Round(prevision, 2), estancadas);
     }
-
-    public async Task<InformeMotivos> MotivosAsync(CancellationToken ct = default)
-    {
-        var cerradas = await bd.Oportunidades
-            .Where(o => o.CerradaEn != null)
-            .Select(o => new { o.Motivo, o.Importe })
-            .ToListAsync(ct).ConfigureAwait(false);
-
-        var perdidas = cerradas.Where(o => o.Motivo != null).ToList();
-        var ganadas = cerradas.Where(o => o.Motivo == null).ToList();
-
-        var motivos = perdidas
-            .GroupBy(o => o.Motivo!.Value)
-            .Select(g => new MotivoConteo(g.Key, g.Count(), g.Sum(x => x.Importe)))
-            .OrderByDescending(m => m.Cuantas)
-            .ThenByDescending(m => m.Importe)
-            .ToList();
-
-        return new InformeMotivos(
-            motivos, perdidas.Count, perdidas.Sum(o => o.Importe), ganadas.Count, ganadas.Sum(o => o.Importe));
-    }
 }

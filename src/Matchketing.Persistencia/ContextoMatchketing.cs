@@ -32,6 +32,8 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
 
     public DbSet<Embudo.Dominio.Oportunidad> Oportunidades => Set<Embudo.Dominio.Oportunidad>();
 
+    public DbSet<Embudo.Dominio.PasoEtapa> PasosEtapa => Set<Embudo.Dominio.PasoEtapa>();
+
     public DbSet<Tareas.Dominio.Tarea> Tareas => Set<Tareas.Dominio.Tarea>();
 
     public DbSet<Match.Dominio.Senal> Senales => Set<Match.Dominio.Senal>();
@@ -90,6 +92,20 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
         modelo.Entity<Captacion.Dominio.Formulario>().HasQueryFilter(f => f.EmpresaId == EmpresaActual);
         modelo.Entity<Captacion.Dominio.EnvioFormulario>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
         modelo.Entity<Cumplimiento.Dominio.Consentimiento>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
+
+        // Los identificadores los genera **el dominio**, nunca la base: todos los agregados hacen
+        // `Guid.NewGuid()` al crearse. Hay que decírselo a EF, porque si cree que los genera la base
+        // usa la heurística «clave distinta de vacío ⇒ la fila ya existe» y, al descubrir una
+        // entidad hija nueva colgando de un padre ya rastreado, emite UPDATE en vez de INSERT. Eso
+        // falla con «expected to affect 1 row(s), but actually affected 0».
+        foreach (var tipo in modelo.Model.GetEntityTypes())
+        {
+            var clave = tipo.FindPrimaryKey();
+            if (clave?.Properties is [{ ClrType: var t } propiedad] && t == typeof(Guid))
+            {
+                propiedad.ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.Never;
+            }
+        }
 
         // Nota deliberada: `identidad.membresia` NO lleva filtro global por empresa. Es la tabla que
         // decide a qué empresas puede entrar un usuario, así que filtrarla por la empresa activa

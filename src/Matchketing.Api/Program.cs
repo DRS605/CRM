@@ -7,6 +7,7 @@ using Matchketing.Captacion.Aplicacion;
 using Matchketing.Match.Aplicacion;
 using Matchketing.Tareas.Aplicacion;
 using Matchketing.Identidad.Aplicacion;
+using Matchketing.Informes.Aplicacion;
 using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Tiempo;
 using Matchketing.Organizacion.Aplicacion;
@@ -67,6 +68,8 @@ constructor.Services.AddScoped<ServicioMatch>();
 constructor.Services.AddScoped<IRepositorioFormularios, RepositorioFormularios>();
 constructor.Services.AddScoped<IRepositorioEnvios, RepositorioEnvios>();
 constructor.Services.AddScoped<ServicioFormularios>();
+constructor.Services.AddScoped<IConsultaInformes, ConsultaInformes>();
+constructor.Services.AddScoped<ServicioInformes>();
 
 constructor.Services
     .AddAuthentication("Bearer")
@@ -126,6 +129,7 @@ app.MapearEmbudo();
 app.MapearTareas();
 app.MapearMatch();
 app.MapearCaptacion();
+app.MapearInformes();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

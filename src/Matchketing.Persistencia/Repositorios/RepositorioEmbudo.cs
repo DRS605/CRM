@@ -18,7 +18,7 @@ public sealed class RepositorioEmbudos(ContextoMatchketing bd) : IRepositorioEmb
 public sealed class RepositorioOportunidades(ContextoMatchketing bd) : IRepositorioOportunidades
 {
     public Task<Oportunidad?> BuscarPorIdAsync(Guid id, CancellationToken ct = default) =>
-        bd.Oportunidades.FirstOrDefaultAsync(o => o.Id == id, ct);
+        bd.Oportunidades.Include(o => o.Pasos).FirstOrDefaultAsync(o => o.Id == id, ct);
 
     public async Task<IReadOnlyList<Oportunidad>> DeContactoAsync(Guid contactoId, CancellationToken ct = default) =>
         await bd.Oportunidades.Where(o => o.ContactoId == contactoId)

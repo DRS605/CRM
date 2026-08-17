@@ -426,6 +426,39 @@
   }
   .marco-vista .consent-v { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; margin-bottom: 14px; }
 
+
+  /* ---- Informes ---- */
+  .periodos { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .periodo-btn {
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    padding: 6px 13px; border-radius: 999px; border: 1px solid var(--trazo);
+    background: var(--superficie); color: var(--grafito);
+  }
+  .periodo-btn.on { background: var(--magenta-velo); border-color: var(--magenta-borde); color: var(--magenta); }
+  .cual-periodo { font-family: var(--mono); font-size: 12px; color: var(--grafito); margin-left: 4px; }
+
+  .kpis { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .escalones { display: flex; flex-direction: column; gap: 0; }
+  .escalon { display: grid; grid-template-columns: 128px 1fr auto; gap: 14px; align-items: center; padding: 9px 0; }
+  .escalon .et { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+  .escalon .et small { display: block; font-weight: 400; font-size: 11px; color: var(--grafito); font-family: var(--mono); }
+  .escalon .pista-e { height: 20px; border-radius: 5px; background: var(--trazo-suave); overflow: hidden; }
+  .escalon .pista-e i { display: block; height: 100%; background: var(--magenta); border-radius: 5px; min-width: 2px; }
+  .escalon .cif { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .paso {
+    grid-column: 2; font-family: var(--mono); font-size: 11px; color: var(--grafito);
+    padding-left: 2px; display: flex; align-items: center; gap: 6px;
+  }
+  .paso::before { content: "↓"; color: var(--magenta); }
+
+  .balance { display: flex; gap: 28px; flex-wrap: wrap; }
+  .balance .lado-b { display: flex; flex-direction: column; gap: 2px; }
+  .balance .lado-b .k { font-family: var(--mono); font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: var(--grafito); }
+  .balance .lado-b .v { font-size: 22px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .balance .ganado .v { color: var(--verde); }
+  .balance .perdido .v { color: var(--grafito); }
+
   footer.nota {
     font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
     color: var(--grafito); display: flex; align-items: center; gap: 9px;
@@ -508,7 +541,7 @@
       <button class="item on" type="button" data-vista="hoy"><span class="marcador"></span>Hoy</button>
       <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos</button>
       <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo</button>
-      <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes<span class="pendiente">MÓD 7</span></button>
+      <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes</button>
       <button class="item" type="button" data-vista="ajustes"><span class="marcador"></span>Ajustes</button>
     </nav>
     <div class="pie-lateral">
@@ -692,12 +725,6 @@
           <div class="tablero" id="emb-tablero"></div>
         </div>
 
-        <div class="panel" style="max-width:640px;margin-top:20px">
-          <h2>Motivos de pérdida</h2>
-          <p class="explica">Por qué se pierde, en orden. Es el informe que más enseña a vender
-            mejor, y por eso el motivo es obligatorio al cerrar.</p>
-          <div class="motivos-lista" id="emb-motivos"></div>
-        </div>
       </div>
 
       <!-- Alta de oportunidad -->
@@ -745,11 +772,46 @@
     </section>
 
     <section id="vista-informes" hidden>
-      <div class="titulo"><h1>Informes</h1></div>
-      <div class="vacio-caja">
-        <div class="grande">Todavía no</div>
-        <p>Dos informes, no cincuenta: embudo y motivos de pérdida. Es el módulo 7.</p>
-        <span class="etiqueta-modulo">Módulo 7 de 8</span>
+      <div class="titulo">
+        <h1>Informes</h1>
+        <span class="sub" id="inf-cual">—</span>
+      </div>
+
+      <div class="periodos" id="inf-periodos">
+        <button class="periodo-btn" type="button" data-p="mes">Último mes</button>
+        <button class="periodo-btn" type="button" data-p="trimestre">Trimestre</button>
+        <button class="periodo-btn" type="button" data-p="año">Año</button>
+        <button class="periodo-btn on" type="button" data-p="todo">Todo</button>
+      </div>
+
+      <div class="panel" style="max-width:760px">
+        <h2>Embudo</h2>
+        <p class="explica">Qué hay abierto por etapa y cuánto pasa de una a la siguiente. La barra es
+          el importe; la flecha, la conversión.</p>
+        <div class="kpis" id="inf-kpis"></div>
+        <div class="escalones" id="inf-escalones" style="margin-top:8px"></div>
+        <div class="acciones">
+          <button class="btn" type="button" id="inf-csv-embudo">Descargar CSV</button>
+        </div>
+      </div>
+
+      <div class="panel" style="max-width:760px">
+        <h2>Cerrado en el periodo</h2>
+        <div class="balance">
+          <div class="lado-b ganado"><span class="k">Ganado</span><span class="v" id="inf-ganado">—</span><span class="cual-periodo" id="inf-ganadas-n" style="margin:0"></span></div>
+          <div class="lado-b perdido"><span class="k">Perdido</span><span class="v" id="inf-perdido">—</span><span class="cual-periodo" id="inf-perdidas-n" style="margin:0"></span></div>
+          <div class="lado-b"><span class="k">Días para cerrar</span><span class="v" id="inf-dias">—</span><span class="cual-periodo" style="margin:0">de media, las ganadas</span></div>
+        </div>
+      </div>
+
+      <div class="panel" style="max-width:760px">
+        <h2>Motivos de pérdida</h2>
+        <p class="explica">Por qué se pierde, en orden. Es el informe que más enseña a vender mejor,
+          y existe porque el motivo es obligatorio al cerrar.</p>
+        <div class="motivos-lista" id="inf-motivos"></div>
+        <div class="acciones">
+          <button class="btn" type="button" id="inf-csv-motivos">Descargar CSV</button>
+        </div>
       </div>
     </section>
 
@@ -844,7 +906,7 @@
         <div class="acciones"><button class="btn fantasma" type="button" id="sn-cerrar">Cerrar</button></div>
       </div>
 
-      <footer class="nota"><span class="bolita"></span> Módulos 1 a 6 de 8 terminados</footer>
+      <footer class="nota"><span class="bolita"></span> Módulos 1 a 7 de 8 terminados</footer>
     </section>
   </main>
 </div>
@@ -1045,6 +1107,7 @@
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
       if (b.dataset.vista === 'hoy') { cargarHoy(); }
       if (b.dataset.vista === 'ajustes') { cargarFormularios(); }
+      if (b.dataset.vista === 'informes') { cargarInformes(); }
     });
   });
 
@@ -1691,12 +1754,164 @@
     });
   }
 
+
+  // ---------- Informes ----------
+  var periodoElegido = 'todo';
+
+  function tarjetaKpi(clave, valor, aviso) {
+    var caja = document.createElement('div');
+    caja.className = 'tarjeta-dato' + (aviso ? ' aviso-dato' : '');
+    var k = document.createElement('span');
+    k.className = 'k';
+    k.textContent = clave;
+    var v = document.createElement('span');
+    v.className = 'v';
+    v.textContent = valor;
+    caja.appendChild(k);
+    caja.appendChild(v);
+    return caja;
+  }
+
+  async function cargarInformes() {
+    var q = '?periodo=' + encodeURIComponent(periodoElegido);
+    var emb = await api('/informes/embudo' + q);
+    var mot = await api('/informes/motivos-perdida' + q);
+
+    $('inf-cual').textContent = emb.periodo;
+
+    var kpis = $('inf-kpis');
+    kpis.textContent = '';
+    kpis.appendChild(tarjetaKpi('Abiertas', String(emb.abiertas)));
+    kpis.appendChild(tarjetaKpi('En juego', euros(emb.importeAbierto)));
+    kpis.appendChild(tarjetaKpi('Previsión', euros(emb.previsionPonderada)));
+    // Un dato que no se puede calcular sale como guion, nunca como 0: «todavía no se sabe» y
+    // «cero por ciento» no son lo mismo.
+    kpis.appendChild(tarjetaKpi('Tasa de cierre', emb.tasaCierre === null ? '—' : emb.tasaCierre + ' %'));
+    kpis.appendChild(tarjetaKpi('Ticket medio', emb.ticketMedio === null ? '—' : euros(emb.ticketMedio)));
+
+    var maximo = Math.max.apply(null, emb.etapas.map(function (e) { return e.importeAbierto; }).concat([1]));
+    var cont = $('inf-escalones');
+    cont.textContent = '';
+
+    emb.etapas.forEach(function (e, i) {
+      var fila = document.createElement('div');
+      fila.className = 'escalon';
+
+      var et = document.createElement('div');
+      et.className = 'et';
+      et.textContent = e.nombre;
+      var pr = document.createElement('small');
+      pr.textContent = e.probabilidad + ' % prob.';
+      et.appendChild(pr);
+
+      var pista = document.createElement('div');
+      pista.className = 'pista-e';
+      var relleno = document.createElement('i');
+      relleno.style.width = Math.max(2, Math.round(e.importeAbierto / maximo * 100)) + '%';
+      pista.appendChild(relleno);
+
+      var cif = document.createElement('span');
+      cif.className = 'cif';
+      cif.textContent = e.abiertas + ' · ' + euros(e.importeAbierto);
+
+      fila.appendChild(et);
+      fila.appendChild(pista);
+      fila.appendChild(cif);
+      cont.appendChild(fila);
+
+      if (i < emb.etapas.length - 1 && e.conversionALaSiguiente !== null) {
+        var paso = document.createElement('div');
+        paso.className = 'escalon';
+        var hueco = document.createElement('span');
+        var texto = document.createElement('span');
+        texto.className = 'paso';
+        texto.textContent = e.conversionALaSiguiente + ' % pasa a ' + emb.etapas[i + 1].nombre.toLowerCase();
+        paso.appendChild(hueco);
+        paso.appendChild(texto);
+        cont.appendChild(paso);
+      }
+    });
+
+    $('inf-ganado').textContent = euros(emb.importeGanado);
+    $('inf-perdido').textContent = euros(emb.importePerdido);
+    $('inf-ganadas-n').textContent = emb.ganadas === 1 ? '1 oportunidad' : emb.ganadas + ' oportunidades';
+    $('inf-perdidas-n').textContent = emb.perdidas === 1 ? '1 oportunidad' : emb.perdidas + ' oportunidades';
+    $('inf-dias').textContent = emb.diasMediosParaCerrar === null ? '—' : emb.diasMediosParaCerrar;
+
+    var lista = $('inf-motivos');
+    lista.textContent = '';
+
+    if (mot.totalPerdidas === 0) {
+      var p = document.createElement('p');
+      p.className = 'explica';
+      p.textContent = 'No se ha perdido ninguna en este periodo. Cuando pase, aquí estará el porqué.';
+      lista.appendChild(p);
+      return;
+    }
+
+    var top = Math.max.apply(null, mot.motivos.map(function (m) { return m.cuantas; }));
+    mot.motivos.forEach(function (m) {
+      var fila = document.createElement('div');
+      fila.className = 'motivo-fila';
+      var etiqueta = document.createElement('span');
+      etiqueta.textContent = m.motivo;
+      var barra = document.createElement('div');
+      barra.className = 'barra-m';
+      var relleno = document.createElement('i');
+      relleno.style.width = Math.round(m.cuantas / top * 100) + '%';
+      barra.appendChild(relleno);
+      var cifra = document.createElement('span');
+      cifra.className = 'cifra';
+      cifra.textContent = m.cuantas + ' · ' + euros(m.importe) + ' · ' + m.porcentaje + ' %';
+      fila.appendChild(etiqueta);
+      fila.appendChild(barra);
+      fila.appendChild(cifra);
+      lista.appendChild(fila);
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#inf-periodos .periodo-btn'), function (b) {
+    b.addEventListener('click', function () {
+      periodoElegido = b.dataset.p;
+      Array.prototype.forEach.call(document.querySelectorAll('#inf-periodos .periodo-btn'), function (o) {
+        o.classList.toggle('on', o === b);
+      });
+      cargarInformes();
+    });
+  });
+
+  // La descarga pasa por fetch porque el endpoint pide el token: un <a href> no lo lleva.
+  async function descargarCsv(ruta, nombre) {
+    var r = await fetch(ruta, { headers: { Authorization: 'Bearer ' + sesion.token } });
+    if (!r.ok) { return; }
+    var blob = await r.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  $('inf-csv-embudo').addEventListener('click', function () {
+    descargarCsv('/informes/embudo.csv?periodo=' + encodeURIComponent(periodoElegido), 'embudo.csv');
+  });
+
+  $('inf-csv-motivos').addEventListener('click', function () {
+    descargarCsv('/informes/motivos-perdida.csv?periodo=' + encodeURIComponent(periodoElegido), 'motivos-perdida.csv');
+  });
+
   // ---------- Embudo ----------
-  var MOTIVOS = { 1: 'Precio', 2: 'Plazo', 3: 'Competencia', 4: 'No era el momento', 5: 'No contesta', 6: 'Otro' };
   var oportunidadAPerder = null;
 
   function euros(n) {
-    return Number(n).toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €';
+    // `useGrouping: 'always'` a propósito: el español no separa los millares en números de cuatro
+    // cifras, pero en una fila de indicadores «6356 €» junto a «40.296 €» se lee como un error.
+    return Number(n).toLocaleString('es-ES', {
+      minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: 'always'
+    }) + ' €';
   }
 
   function subVistaEmbudo(cual) {
@@ -1833,47 +2048,6 @@
       tab.appendChild(c);
     });
 
-    await cargarMotivos();
-  }
-
-  async function cargarMotivos() {
-    var inf = await api('/informes/motivos-perdida');
-    var cont = $('emb-motivos');
-    cont.textContent = '';
-
-    if (inf.totalPerdidas === 0) {
-      var p = document.createElement('p');
-      p.className = 'explica';
-      p.textContent = 'Todavía no se ha perdido ninguna. Cuando pase, aquí estará el porqué.';
-      cont.appendChild(p);
-      return;
-    }
-
-    var maximo = Math.max.apply(null, inf.motivos.map(function (m) { return m.cuantas; }));
-    inf.motivos.forEach(function (m) {
-      var fila = document.createElement('div');
-      fila.className = 'motivo-fila';
-      var etiqueta = document.createElement('span');
-      etiqueta.textContent = MOTIVOS[m.motivo] || 'Otro';
-      var barra = document.createElement('div');
-      barra.className = 'barra-m';
-      var relleno = document.createElement('i');
-      relleno.style.width = Math.round(m.cuantas / maximo * 100) + '%';
-      barra.appendChild(relleno);
-      var cifra = document.createElement('span');
-      cifra.className = 'cifra';
-      cifra.textContent = m.cuantas + ' · ' + euros(m.importe);
-      fila.appendChild(etiqueta);
-      fila.appendChild(barra);
-      fila.appendChild(cifra);
-      cont.appendChild(fila);
-    });
-
-    var pie = document.createElement('p');
-    pie.className = 'explica';
-    pie.textContent = 'Ganadas: ' + inf.totalGanadas + ' (' + euros(inf.importeGanado) + ') · ' +
-      'Perdidas: ' + inf.totalPerdidas + ' (' + euros(inf.importePerdido) + ').';
-    cont.appendChild(pie);
   }
 
   $('emb-nueva').addEventListener('click', async function () {

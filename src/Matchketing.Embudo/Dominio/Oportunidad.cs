@@ -11,6 +11,33 @@ public sealed record OportunidadGanada(Guid OportunidadId, Guid EmpresaId, Guid 
 public sealed record OportunidadPerdida(Guid OportunidadId, Guid EmpresaId, Guid ContactoId, MotivoPerdida Motivo, DateTimeOffset OcurridoEn) : IEventoDominio;
 
 /// <summary>
+/// Que una oportunidad estuvo en una etapa. Se anota al crearla y en cada movimiento, y no se borra
+/// nunca: es lo único con lo que se puede decir de verdad cuántas llegaron a «Propuesta». Sin este
+/// rastro, cualquier porcentaje de conversión sería inventado.
+/// </summary>
+public sealed class PasoEtapa : EntidadBase<Guid>
+{
+    private PasoEtapa(Guid id)
+        : base(id)
+    {
+    }
+
+    internal PasoEtapa(Guid id, Guid oportunidadId, Guid etapaId, DateTimeOffset entroEn)
+        : base(id)
+    {
+        OportunidadId = oportunidadId;
+        EtapaId = etapaId;
+        EntroEn = entroEn;
+    }
+
+    public Guid OportunidadId { get; private set; }
+
+    public Guid EtapaId { get; private set; }
+
+    public DateTimeOffset EntroEn { get; private set; }
+}
+
+/// <summary>
 /// Una venta en curso. Su estado se **deriva** de si está cerrada o no (invariante O2), su
 /// probabilidad la pone la etapa (O4), y perderla **exige motivo** (O1).
 /// </summary>
@@ -18,6 +45,8 @@ public sealed class Oportunidad : RaizAgregadoEmpresa<Guid>
 {
     public const int LongitudMaximaTitulo = 160;
     public const int LongitudMaximaDetalle = 500;
+
+    private readonly List<PasoEtapa> pasos = [];
 
     private Oportunidad(Guid id)
         : base(id, Guid.Empty) => Titulo = null!;
@@ -36,6 +65,7 @@ public sealed class Oportunidad : RaizAgregadoEmpresa<Guid>
         EntroEnEtapaEn = ahora;
         CreadoEn = ahora;
         ActualizadoEn = ahora;
+        pasos.Add(new PasoEtapa(Guid.NewGuid(), id, etapaId, ahora));
     }
 
     public Guid ContactoId { get; private set; }
@@ -50,6 +80,9 @@ public sealed class Oportunidad : RaizAgregadoEmpresa<Guid>
     public Guid EmbudoId { get; private set; }
 
     public Guid EtapaId { get; private set; }
+
+    /// <summary>Por qué etapas ha pasado, en orden. Append-only.</summary>
+    public IReadOnlyList<PasoEtapa> Pasos => pasos.OrderBy(p => p.EntroEn).ToList();
 
     /// <summary>Cuándo entró en la etapa actual. Es la base del aviso de estancamiento.</summary>
     public DateTimeOffset EntroEnEtapaEn { get; private set; }
@@ -133,6 +166,7 @@ public sealed class Oportunidad : RaizAgregadoEmpresa<Guid>
         EtapaId = etapaId;
         EntroEnEtapaEn = reloj.AhoraUtc;
         ActualizadoEn = reloj.AhoraUtc;
+        pasos.Add(new PasoEtapa(Guid.NewGuid(), Id, etapaId, reloj.AhoraUtc));
         return Resultado.Ok();
     }
 

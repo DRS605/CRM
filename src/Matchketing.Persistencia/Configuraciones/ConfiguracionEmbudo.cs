@@ -77,5 +77,25 @@ public sealed class ConfiguracionOportunidad : IEntityTypeConfiguration<Oportuni
         b.HasIndex(o => new { o.EmpresaId, o.ContactoId }).HasDatabaseName("ix_oportunidad_empresa_contacto");
         b.HasIndex(o => new { o.EmpresaId, o.CerradaEn }).HasDatabaseName("ix_oportunidad_empresa_cerrada");
         b.HasOne<Etapa>().WithMany().HasForeignKey(o => o.EtapaId).OnDelete(DeleteBehavior.Restrict);
+
+        // El histórico de etapas es parte del agregado: se guarda y se carga con la oportunidad.
+        b.HasMany(o => o.Pasos).WithOne().HasForeignKey(p => p.OportunidadId).OnDelete(DeleteBehavior.Cascade);
+        b.Navigation(o => o.Pasos).HasField("pasos").UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+public sealed class ConfiguracionPasoEtapa : IEntityTypeConfiguration<PasoEtapa>
+{
+    public void Configure(EntityTypeBuilder<PasoEtapa> b)
+    {
+        ArgumentNullException.ThrowIfNull(b);
+
+        b.ToTable("paso_etapa", "embudo");
+        b.HasKey(p => p.Id);
+        b.Property(p => p.Id).HasColumnName("id");
+        b.Property(p => p.OportunidadId).HasColumnName("oportunidad_id");
+        b.Property(p => p.EtapaId).HasColumnName("etapa_id");
+        b.Property(p => p.EntroEn).HasColumnName("entro_en");
+        b.HasIndex(p => new { p.EtapaId, p.OportunidadId }).HasDatabaseName("ix_paso_etapa_etapa_oportunidad");
     }
 }

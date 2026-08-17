@@ -15,8 +15,3 @@ public sealed record ColumnaEmbudo(
 public sealed record Tablero(
     Guid EmbudoId, string Nombre, IReadOnlyList<ColumnaEmbudo> Columnas,
     int TotalAbiertas, decimal ImporteAbierto, decimal PrevisionPonderada, int Estancadas);
-
-public sealed record MotivoConteo(MotivoPerdida Motivo, int Cuantas, decimal Importe);
-
-/// <summary>Informe de por qué se pierde, en orden. El más útil que tendrá el gerente.</summary>
-public sealed record InformeMotivos(IReadOnlyList<MotivoConteo> Motivos, int TotalPerdidas, decimal ImportePerdido, int TotalGanadas, decimal ImporteGanado);

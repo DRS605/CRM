@@ -23,6 +23,4 @@ public interface IRepositorioOportunidades
 public interface IConsultaEmbudo
 {
     Task<Tablero?> TableroAsync(Guid? embudoId, CancellationToken ct = default);
-
-    Task<InformeMotivos> MotivosAsync(CancellationToken ct = default);
 }

@@ -163,17 +163,5 @@ public static class EndpointsEmbudo
             return Results.NoContent();
         })
         .WithSummary("Da la oportunidad por perdida. El motivo es obligatorio.");
-
-        rutas.MapGet("/informes/motivos-perdida", async (ServicioEmbudo servicio, IContextoEmpresa contexto, CancellationToken ct) =>
-        {
-            if (!contexto.Tiene(Permisos.InformeLeer))
-            {
-                return Results.Forbid();
-            }
-
-            return Results.Ok(await servicio.MotivosAsync(ct).ConfigureAwait(false));
-        })
-        .WithTags("Informes").RequireAuthorization()
-        .WithSummary("Por qué se pierde, en orden. Con el total ganado para comparar.");
     }
 }

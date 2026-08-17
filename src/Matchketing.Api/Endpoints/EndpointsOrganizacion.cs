@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Matchketing.Api.Comun;
 using Matchketing.Api.Contratos;
+using Matchketing.Auditoria.Aplicacion;
+using Matchketing.Auditoria.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
 using Matchketing.Nucleo.Tiempo;
@@ -89,6 +91,7 @@ public static class EndpointsOrganizacion
                     provincia = empresa.Valor.Provincia,
                     pesoEncaje = empresa.Valor.PesoEncaje,
                     horasRebote = empresa.Valor.HorasRebote,
+                    mesesRetencionLeads = empresa.Valor.MesesRetencionLeads,
                 })
                 : ResultadosHttp.Problema(empresa.Error!);
         })
@@ -97,6 +100,7 @@ public static class EndpointsOrganizacion
         grupo.MapPut("/activa/ajustes-match", async (
             PeticionAjustesMatch p,
             ServicioEmpresas empresas,
+            IRegistradorAuditoria auditoria,
             Matchketing.Nucleo.Comun.IContextoEmpresa contexto,
             IUnidadDeTrabajo unidad,
             CancellationToken ct) =>
@@ -117,9 +121,41 @@ public static class EndpointsOrganizacion
                 return ResultadosHttp.Problema(r.Error!);
             }
 
+            auditoria.Registrar("empresa", id, Acciones.AjustesCambiados, new { p.PesoEncaje, p.HorasRebote });
             await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
             return Results.NoContent();
         })
         .WithSummary("Ajusta el peso del Encaje y las horas de rebote de leads.");
+
+        grupo.MapPut("/activa/ajustes-retencion", async (
+            PeticionAjustesRetencion p,
+            ServicioEmpresas empresas,
+            IRegistradorAuditoria auditoria,
+            Matchketing.Nucleo.Comun.IContextoEmpresa contexto,
+            IUnidadDeTrabajo unidad,
+            CancellationToken ct) =>
+        {
+            if (!contexto.Tiene(Permisos.EmpresaAjustes))
+            {
+                return Results.Forbid();
+            }
+
+            if (contexto.EmpresaId is not { } id)
+            {
+                return Results.BadRequest(new { codigo = "empresa.sin_seleccionar", mensaje = "No hay empresa activa." });
+            }
+
+            var r = await empresas.AjustarRetencionAsync(id, p.MesesRetencionLeads, ct).ConfigureAwait(false);
+            if (r.Fallido)
+            {
+                return ResultadosHttp.Problema(r.Error!);
+            }
+
+            // Este ajuste decide cuándo se borran datos de gente. Cambiarlo se audita siempre.
+            auditoria.Registrar("empresa", id, Acciones.AjustesCambiados, new { p.MesesRetencionLeads });
+            await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+            return Results.NoContent();
+        })
+        .WithSummary("Ajusta el plazo de conservación de leads que no llegaron a nada.");
     }
 }

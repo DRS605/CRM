@@ -98,7 +98,39 @@
   .btn.fantasma { border-color: transparent; color: var(--grafito); }
   .btn.fantasma:hover { border-color: var(--trazo); }
   .btn[disabled] { opacity: .55; cursor: default; }
+
+  /* Botón de lo que no se puede deshacer. Va en ámbar, no en rojo: en este sistema no hay rojo, y
+     el ámbar ya significa «para y lee» en todos los avisos. Nunca es el botón principal de su panel:
+     tiene que costar un poco más encontrarlo que a los demás. */
+  .btn.peligro { border-color: var(--ambar); color: var(--ambar); background: var(--superficie); }
+  .btn.peligro:hover { background: color-mix(in srgb, var(--ambar) 12%, transparent); }
   @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+
+  /* Estado de privacidad en una línea. El color lo pone la bolita: verde se puede, ámbar ojo. */
+  .semaforo {
+    display: flex; gap: 10px; align-items: baseline; font-size: 14px;
+    padding: 12px 14px; border-radius: 10px;
+    border: 1px solid var(--trazo); background: var(--papel);
+  }
+  .semaforo .bolita { background: var(--ambar); position: relative; top: 4px; }
+  .semaforo.si .bolita { background: var(--verde); }
+  .semaforo.no .bolita { background: var(--ambar); }
+
+  .zona-derechos, .zona-peligro {
+    border-top: 1px solid var(--trazo-suave); padding-top: 18px; margin-top: 4px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .zona-derechos h2, .zona-peligro h2 { font-size: 15px; }
+
+  .permiso {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    font-size: 13.5px; padding-bottom: 12px; border-bottom: 1px solid var(--trazo-suave);
+  }
+  .permiso:last-child { border-bottom: 0; padding-bottom: 0; }
+  .permiso .de { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .permiso .cual { font-weight: 600; }
+  .permiso .como { color: var(--grafito); font-size: 12.5px; }
+  .permiso .retirado { color: var(--grafito); text-decoration: line-through; }
 
   .aviso {
     font-size: 13.5px; padding: 10px 13px; border-radius: 9px;
@@ -693,6 +725,67 @@
         </div>
 
         <div class="panel" style="max-width:820px">
+          <h2>Privacidad</h2>
+          <p class="explica">La respuesta a «¿le puedo mandar esto?», dicha en una frase. No hay que
+            deducirla mirando una lista de casillas.</p>
+
+          <div class="semaforo" id="pv-estado"><span class="bolita"></span><span id="pv-explica">—</span></div>
+
+          <div class="filas" id="pv-permisos"></div>
+
+          <p class="explica" id="pv-sin-alta" hidden>De la baja solo vuelve quien la pidió: no se le
+            puede apuntar un permiso nuevo desde aquí.</p>
+
+          <div id="pv-alta" style="display:flex;flex-direction:column;gap:14px">
+          <div class="rejilla-form" style="margin-top:4px">
+            <div class="campo">
+              <label for="pv-finalidad">Apuntar un permiso para</label>
+              <select id="pv-finalidad">
+                <option value="2">Comunicaciones comerciales</option>
+                <option value="1">Atender su solicitud</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="pv-base">Base legal</label>
+              <select id="pv-base">
+                <option value="1">Consentimiento</option>
+                <option value="2">Interés legítimo</option>
+                <option value="3">Contrato</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="pv-canal">¿Por dónde lo dio?</label>
+              <input id="pv-canal" type="text" placeholder="alta manual, feria, teléfono…" />
+            </div>
+          </div>
+          <div class="campo">
+            <label for="pv-texto">Qué aceptó exactamente</label>
+            <input id="pv-texto" type="text" placeholder="Acepto recibir ofertas de Instalaciones Ribera." />
+            <span class="pista">Sin esto no hay prueba de qué consintió, solo tu palabra.</span>
+          </div>
+
+          <div class="acciones">
+            <button class="btn" type="button" id="pv-otorgar">Apuntar permiso</button>
+          </div>
+          </div>
+
+          <div class="aviso" id="pv-aviso" hidden></div>
+          <div class="acciones">
+            <button class="btn fantasma" type="button" id="pv-copiar">Copiar su enlace de baja</button>
+          </div>
+
+          <div class="zona-derechos">
+            <h2>Sus derechos</h2>
+            <p class="explica">Si pide una copia de sus datos o pide que los borres, se resuelve aquí.
+              Borrar es borrar: desaparece de todas las tablas y no hay vuelta.</p>
+            <div class="acciones">
+              <button class="btn fantasma" type="button" id="pv-exportar">Descargar sus datos</button>
+              <button class="btn peligro" type="button" id="pv-borrar">Borrar todos sus datos</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="max-width:820px">
           <h2>Añadir nota</h2>
           <textarea id="fi-nota" rows="3" placeholder="Lo que ha pasado, en una línea."></textarea>
           <div class="aviso" id="con-aviso-ficha" hidden></div>
@@ -906,7 +999,69 @@
         <div class="acciones"><button class="btn fantasma" type="button" id="sn-cerrar">Cerrar</button></div>
       </div>
 
-      <footer class="nota"><span class="bolita"></span> Módulos 1 a 7 de 8 terminados</footer>
+      <div class="panel" id="panel-retencion" style="max-width:820px">
+        <h2>Conservación de datos</h2>
+        <p class="explica">Un lead que sigue siendo lead, que nadie ha tocado y que nunca llegó a
+          tener una oportunidad se borra al cumplir este plazo. No es limpieza: guardar para siempre
+          el teléfono de alguien que preguntó un precio en 2019 no tiene ninguna base.</p>
+
+        <div class="campo" style="max-width:300px">
+          <label for="retencion">Meses que se conserva un lead</label>
+          <input id="retencion" type="number" min="3" max="120" value="24" />
+          <span class="pista">Los clientes y los contactos con oportunidad no se tocan nunca.</span>
+        </div>
+
+        <div class="aviso" id="aviso-retencion" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="btn-guardar-retencion">Guardar plazo</button>
+          <button class="btn fantasma" type="button" id="btn-aplicar-retencion">Aplicar ahora</button>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-auditoria" style="max-width:820px">
+        <h2>Registro de actividad</h2>
+        <p class="explica">Quién hizo qué y cuándo, en lo que de verdad importa: fusiones, cierres,
+          permisos, bajas y borrados. <strong>No se puede editar ni borrar</strong>, tampoco desde la
+          base de datos, y nunca guarda datos personales: solo cifras e identificadores.</p>
+        <div id="au-lista"></div>
+        <div class="acciones"><button class="btn fantasma" type="button" id="au-recargar">Actualizar</button></div>
+      </div>
+
+      <div class="panel" style="max-width:820px">
+        <h2>Tu cuenta</h2>
+        <div class="rejilla-form">
+          <div class="campo"><label for="cc-actual">Contraseña actual</label><input id="cc-actual" type="password" autocomplete="current-password" /></div>
+          <div class="campo"><label for="cc-nueva">Contraseña nueva</label><input id="cc-nueva" type="password" autocomplete="new-password" /></div>
+        </div>
+        <div class="aviso" id="aviso-contrasena" hidden></div>
+        <div class="acciones"><button class="btn" type="button" id="btn-contrasena">Cambiar contraseña</button></div>
+      </div>
+
+      <div class="panel" id="panel-cierre" style="max-width:820px">
+        <h2>Cerrar la cuenta</h2>
+        <p class="explica">Antes de irte, llévate tus datos: la copia trae contactos, cuentas,
+          cronología, oportunidades y formularios en un solo fichero.</p>
+        <div class="acciones">
+          <button class="btn" type="button" id="btn-exportar-empresa">Descargar todos los datos</button>
+        </div>
+
+        <div class="zona-peligro">
+          <h2>Borrar la empresa y todo lo suyo</h2>
+          <p class="explica">Se borran los contactos, la cronología, las oportunidades, las tareas y
+            los formularios. <strong>No hay copia de seguridad ni forma de deshacerlo.</strong> Para
+            confirmarlo, escribe el nombre exacto de la empresa.</p>
+          <div class="campo" style="max-width:340px">
+            <label for="cierre-confirmacion">Nombre de la empresa</label>
+            <input id="cierre-confirmacion" type="text" placeholder="—" />
+          </div>
+          <div class="aviso" id="aviso-cierre" hidden></div>
+          <div class="acciones">
+            <button class="btn peligro" type="button" id="btn-borrar-empresa">Borrar la empresa para siempre</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="nota"><span class="bolita"></span> Los ocho módulos terminados</footer>
     </section>
   </main>
 </div>
@@ -1066,6 +1221,8 @@
     var peso = Math.round(Number(e.pesoEncaje) * 100);
     $('peso').value = peso;
     $('rebote').value = e.horasRebote;
+    $('retencion').value = e.mesesRetencionLeads;
+    $('cierre-confirmacion').placeholder = e.nombre;
     pintarBalanza(peso);
   }
 
@@ -1095,6 +1252,218 @@
     }
   });
 
+  // ---------- Ajustes: conservación, registro, cuenta y cierre ----------
+
+  $('btn-guardar-retencion').addEventListener('click', async function () {
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('aviso-retencion'), '');
+    try {
+      await api('/empresas/activa/ajustes-retencion', {
+        metodo: 'PUT',
+        cuerpo: { mesesRetencionLeads: Number($('retencion').value) }
+      });
+      mostrarAviso($('aviso-retencion'), 'Guardado. Se aplicará en el repaso de esta noche.', true);
+    } catch (e) {
+      mostrarAviso($('aviso-retencion'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  $('btn-aplicar-retencion').addEventListener('click', async function () {
+    if (!window.confirm('Se van a borrar ahora los leads que ya han cumplido el plazo. No se puede deshacer. ¿Sigo?')) { return; }
+
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('aviso-retencion'), '');
+    try {
+      var r = await api('/cumplimiento/retencion', { metodo: 'POST' });
+      mostrarAviso($('aviso-retencion'), r.leadsBorrados === 0
+        ? 'No había ningún lead que hubiera cumplido el plazo.'
+        : 'Borrados ' + r.leadsBorrados + ' leads y ' + r.filasBorradas + ' filas en total.', true);
+      await cargarContactos();
+      await cargarAuditoria();
+    } catch (e) {
+      mostrarAviso($('aviso-retencion'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  var ACCIONES = {
+    'contacto.fusionado': 'Fusionó dos contactos',
+    'contacto.asignado': 'Cambió el comercial de un contacto',
+    'contacto.baja': 'Un contacto se dio de baja',
+    'contacto.borrado': 'Borró todos los datos de un contacto',
+    'contacto.exportado': 'Descargó los datos de un contacto',
+    'oportunidad.ganada': 'Ganó una oportunidad',
+    'oportunidad.perdida': 'Perdió una oportunidad',
+    'consentimiento.otorgado': 'Apuntó un permiso',
+    'consentimiento.retirado': 'Retiró un permiso',
+    'ajustes.cambiados': 'Cambió los ajustes de la empresa',
+    'retencion.aplicada': 'Se aplicó la conservación de datos',
+    'empresa.exportada': 'Descargó todos los datos de la empresa',
+    'empresa.borrada': 'Borró la empresa'
+  };
+
+  var FINALIDADES = { Comercial: 'comunicaciones comerciales', AtenderSolicitud: 'atender su solicitud' };
+  var BASES = { Consentimiento: 'consentimiento', InteresLegitimo: 'interés legítimo', Contrato: 'contrato' };
+  var MOTIVOS_PERDIDA = {
+    Precio: 'por precio', Plazo: 'por plazo', Competencia: 'se fue a la competencia',
+    NoEraElMomento: 'no era el momento', NoContesta: 'no contestó', Otro: 'otro motivo'
+  };
+
+  function plural(n, uno, varios) { return n + ' ' + (n === 1 ? uno : varios); }
+
+  /// El detalle se guarda en JSON porque es lo que aguanta cualquier acción futura sin migrar la
+  /// tabla. Pero enseñárselo tal cual a quien vende cocinas no es enseñarle nada: aquí se traduce a
+  /// una frase, y lo que no se sepa traducir se calla en vez de aparecer como un volcado.
+  function resumirDetalle(accion, texto) {
+    if (!texto) { return ''; }
+
+    var d;
+    try { d = JSON.parse(texto); } catch (e) { return ''; }
+
+    if (accion === 'oportunidad.ganada') { return euros(d.importe); }
+    if (accion === 'oportunidad.perdida') {
+      return [euros(d.importe), MOTIVOS_PERDIDA[d.motivo] || null].filter(Boolean).join(', ');
+    }
+    if (accion === 'consentimiento.otorgado') {
+      return (FINALIDADES[d.finalidad] || d.finalidad) + ', por ' + (BASES[d.baseLegal] || d.baseLegal);
+    }
+    if (accion === 'consentimiento.retirado') { return FINALIDADES[d.finalidad] || d.finalidad; }
+    if (accion === 'contacto.fusionado') { return plural(d.actividadesMovidas, 'actividad traída', 'actividades traídas'); }
+    if (accion === 'contacto.baja') {
+      return d.consentimientosRetirados > 0
+        ? plural(d.consentimientosRetirados, 'permiso retirado', 'permisos retirados')
+        : (d.origen === 'manual' ? 'apuntada a mano' : 'no tenía ningún permiso vigente');
+    }
+    if (accion === 'contacto.borrado' || accion === 'empresa.borrada') {
+      return plural(d.total, 'fila borrada', 'filas borradas');
+    }
+    if (accion === 'retencion.aplicada') {
+      return plural(d.leads, 'lead borrado', 'leads borrados') + ' de más de ' + d.meses + ' meses';
+    }
+    if (accion === 'ajustes.cambiados') {
+      if (d.mesesRetencionLeads) { return 'conservación: ' + d.mesesRetencionLeads + ' meses'; }
+      if (d.pesoEncaje !== undefined) {
+        return 'encaje al ' + Math.round(d.pesoEncaje * 100) + ' %, rebote a las ' + d.horasRebote + ' h';
+      }
+    }
+
+    return '';
+  }
+
+  async function cargarAuditoria() {
+    var caja = $('au-lista');
+    caja.textContent = '';
+
+    var lineas;
+    try {
+      lineas = await api('/auditoria?cuantos=60');
+    } catch (e) {
+      // Un comercial no tiene permiso para ver el registro; el panel simplemente no aplica.
+      $('panel-auditoria').hidden = true;
+      return;
+    }
+
+    $('panel-auditoria').hidden = false;
+
+    if (lineas.length === 0) {
+      var p = document.createElement('p');
+      p.className = 'explica';
+      p.textContent = 'Todavía no ha pasado nada digno de registrar. Es buena señal.';
+      caja.appendChild(p);
+      return;
+    }
+
+    var filas = document.createElement('div');
+    filas.className = 'filas';
+    lineas.forEach(function (l) {
+      var fila = document.createElement('div');
+      fila.className = 'permiso';
+
+      var de = document.createElement('div');
+      de.className = 'de';
+      var cual = document.createElement('span');
+      cual.className = 'cual';
+      cual.textContent = ACCIONES[l.accion] || l.accion;
+      var como = document.createElement('span');
+      como.className = 'como';
+      var resumen = resumirDetalle(l.accion, l.detalle);
+      como.textContent = l.actor + ' · ' + fecha(l.en) + (resumen ? ' · ' + resumen : '');
+      de.appendChild(cual);
+      de.appendChild(como);
+      fila.appendChild(de);
+      filas.appendChild(fila);
+    });
+    caja.appendChild(filas);
+  }
+
+  $('au-recargar').addEventListener('click', cargarAuditoria);
+
+  $('btn-contrasena').addEventListener('click', async function () {
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('aviso-contrasena'), '');
+    try {
+      await api('/auth/contrasena', {
+        metodo: 'POST',
+        cuerpo: { actual: $('cc-actual').value, nueva: $('cc-nueva').value }
+      });
+      $('cc-actual').value = '';
+      $('cc-nueva').value = '';
+      mostrarAviso($('aviso-contrasena'), 'Contraseña cambiada. Tu sesión sigue abierta.', true);
+    } catch (e) {
+      mostrarAviso($('aviso-contrasena'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  function descargar(nombre, datos) {
+    var enlace = document.createElement('a');
+    enlace.href = URL.createObjectURL(new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' }));
+    enlace.download = nombre;
+    enlace.click();
+    URL.revokeObjectURL(enlace.href);
+  }
+
+  $('btn-exportar-empresa').addEventListener('click', async function () {
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('aviso-cierre'), '');
+    try {
+      descargar('matchketing-' + $('aj-nombre').textContent.toLowerCase().replace(/\s+/g, '-') + '.json',
+        await api('/cumplimiento/empresa/exportar'));
+      await cargarAuditoria();
+    } catch (e) {
+      mostrarAviso($('aviso-cierre'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  $('btn-borrar-empresa').addEventListener('click', async function () {
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('aviso-cierre'), '');
+    try {
+      var r = await api('/cumplimiento/empresa/borrar', {
+        metodo: 'POST',
+        cuerpo: { confirmacion: $('cierre-confirmacion').value }
+      });
+      // No hay pantalla a la que volver: la empresa ya no existe y el token apunta a la nada.
+      window.alert('Empresa borrada. Se han eliminado ' + r.contactos + ' contactos y todo lo suyo.');
+      cerrarSesion();
+    } catch (e) {
+      mostrarAviso($('aviso-cierre'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
   Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
     b.addEventListener('click', function () {
       Array.prototype.forEach.call(document.querySelectorAll('.item'), function (o) {
@@ -1106,7 +1475,7 @@
       if (b.dataset.vista === 'contactos') { subVista('con-lista'); cargarContactos(); }
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
       if (b.dataset.vista === 'hoy') { cargarHoy(); }
-      if (b.dataset.vista === 'ajustes') { cargarFormularios(); }
+      if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); }
       if (b.dataset.vista === 'informes') { cargarInformes(); }
     });
   });
@@ -1124,7 +1493,7 @@
 
   // ---------- Contactos ----------
   var ESTADOS = { 1: ['Lead', 'e-lead'], 2: ['Cliente', 'e-cliente'], 3: ['Perdido', 'e-perdido'], 4: ['Baja', 'e-baja'] };
-  var TIPOS = { 1: 'Nota', 2: 'Llamada', 3: 'Correo', 4: 'Reunión', 5: 'Formulario', 6: 'Visita web', 7: 'Sistema' };
+  var TIPOS = { 1: 'Nota', 2: 'Llamada', 3: 'Correo', 4: 'Reunión', 5: 'Formulario', 6: 'Visita web', 7: 'Sistema', 8: 'Rebote' };
   var contactoAbierto = null;
   var temporizadorBusqueda = null;
 
@@ -1212,7 +1581,7 @@
     }
     ficha.cronologia.forEach(function (a) {
       var hito = document.createElement('div');
-      hito.className = 'hito' + (a.tipo === 7 ? ' sistema' : '');
+      hito.className = 'hito' + (a.tipo === 7 || a.tipo === 8 ? ' sistema' : '');
       var pt = document.createElement('span');
       pt.className = 'punto-hito';
       var cuerpo = document.createElement('div');
@@ -1231,8 +1600,142 @@
     });
 
     await pintarMatch(id);
+    await pintarPrivacidad(id);
     subVista('con-ficha');
   }
+
+  // ---------- Privacidad de la ficha ----------
+
+  var privacidad = null;
+
+  async function pintarPrivacidad(contactoId) {
+    privacidad = await api('/cumplimiento/contactos/' + contactoId);
+
+    var semaforo = $('pv-estado');
+    semaforo.className = 'semaforo ' + (privacidad.puedeEnviarComercial ? 'si' : 'no');
+    $('pv-explica').textContent = privacidad.explicacion;
+
+    // A quien está de baja no se le puede apuntar un permiso nuevo, así que el formulario se retira.
+    // Enseñar un botón que solo sabe devolver un error es peor que no enseñar nada.
+    $('pv-alta').hidden = privacidad.deBaja;
+    $('pv-alta').style.display = privacidad.deBaja ? 'none' : 'flex';
+    $('pv-sin-alta').hidden = !privacidad.deBaja;
+    $('pv-copiar').hidden = privacidad.deBaja;
+
+    var caja = $('pv-permisos');
+    caja.textContent = '';
+    privacidad.consentimientos.forEach(function (c) {
+      var fila = document.createElement('div');
+      fila.className = 'permiso';
+
+      var de = document.createElement('div');
+      de.className = 'de';
+      var cual = document.createElement('span');
+      cual.className = 'cual' + (c.vigente ? '' : ' retirado');
+      cual.textContent = 'Permiso para ' + c.finalidad;
+      var como = document.createElement('span');
+      como.className = 'como';
+      como.textContent = c.baseLegal + ' · ' + c.canal + ' · ' + fecha(c.otorgadoEn) +
+        (c.vigente ? '' : ' · retirado el ' + fecha(c.retiradoEn));
+      de.appendChild(cual);
+      de.appendChild(como);
+      fila.appendChild(de);
+
+      if (c.vigente) {
+        var quitar = document.createElement('button');
+        quitar.className = 'btn fantasma';
+        quitar.type = 'button';
+        quitar.textContent = 'Retirar';
+        quitar.addEventListener('click', async function () {
+          quitar.disabled = true;
+          try {
+            // La finalidad viaja por su nombre, que es lo que devuelve la ficha traducido; se manda
+            // el número, que es lo que espera la API.
+            await api('/cumplimiento/contactos/' + contactoId + '/consentimientos?finalidad=' +
+              (c.finalidad.indexOf('comercial') >= 0 ? 'Comercial' : 'AtenderSolicitud'), { metodo: 'DELETE' });
+            await pintarPrivacidad(contactoId);
+          } catch (e) {
+            mostrarAviso($('pv-aviso'), e.message);
+            quitar.disabled = false;
+          }
+        });
+        fila.appendChild(quitar);
+      }
+
+      caja.appendChild(fila);
+    });
+  }
+
+  $('pv-otorgar').addEventListener('click', async function () {
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('pv-aviso'), '');
+    try {
+      await api('/cumplimiento/contactos/' + contactoAbierto + '/consentimientos', {
+        metodo: 'POST',
+        cuerpo: {
+          finalidad: Number($('pv-finalidad').value),
+          base: Number($('pv-base').value),
+          canal: $('pv-canal').value,
+          textoAceptado: $('pv-texto').value
+        }
+      });
+      $('pv-canal').value = '';
+      $('pv-texto').value = '';
+      await pintarPrivacidad(contactoAbierto);
+      mostrarAviso($('pv-aviso'), 'Permiso apuntado.', true);
+    } catch (e) {
+      mostrarAviso($('pv-aviso'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  $('pv-copiar').addEventListener('click', async function () {
+    if (!privacidad) { return; }
+
+    try {
+      await navigator.clipboard.writeText(privacidad.enlaceBaja);
+      mostrarAviso($('pv-aviso'), 'Enlace copiado. Pégalo al final de tus correos.', true);
+    } catch (e) {
+      // Sin permiso de portapapeles se muestra el enlace para copiarlo a mano: peor, pero funciona.
+      mostrarAviso($('pv-aviso'), privacidad.enlaceBaja);
+    }
+  });
+
+  $('pv-exportar').addEventListener('click', async function () {
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('pv-aviso'), '');
+    try {
+      var datos = await api('/cumplimiento/contactos/' + contactoAbierto + '/exportar');
+      descargar('datos-' + $('fi-nombre').textContent.toLowerCase().replace(/\s+/g, '-') + '.json', datos);
+      mostrarAviso($('pv-aviso'), 'Descargado. Queda apuntado en el registro de actividad.', true);
+    } catch (e) {
+      mostrarAviso($('pv-aviso'), e.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  $('pv-borrar').addEventListener('click', async function () {
+    var quien = $('fi-nombre').textContent;
+    if (!window.confirm('Se van a borrar todos los datos de ' + quien +
+      ': su ficha, su cronología, sus oportunidades y sus tareas. No se puede deshacer. ¿Sigo?')) { return; }
+
+    var boton = this;
+    boton.disabled = true;
+    mostrarAviso($('pv-aviso'), '');
+    try {
+      var r = await api('/cumplimiento/contactos/' + contactoAbierto, { metodo: 'DELETE' });
+      window.alert('Borrado. Se han eliminado ' + r.total + ' filas de ' + quien + '.');
+      subVista('con-lista');
+      await cargarContactos();
+    } catch (e) {
+      mostrarAviso($('pv-aviso'), e.message);
+      boton.disabled = false;
+    }
+  });
 
   async function pintarMatch(contactoId) {
     var m = await api('/match/contactos/' + contactoId);

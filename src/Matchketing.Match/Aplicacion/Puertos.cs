@@ -19,6 +19,12 @@ public interface IRepositorioPuntuaciones
 }
 
 /// <summary>
+/// Un lead que se asignó a alguien y sigue sin que nadie haya hecho nada con él. <c>Desde</c> es el
+/// momento a partir del cual corre su plazo.
+/// </summary>
+public sealed record LeadSinAtender(Guid ContactoId, string Nombre, Guid PropietarioId, DateTimeOffset Desde);
+
+/// <summary>
 /// Las lecturas que el motor necesita y que cruzan módulos: el perfil de lo que se gana, los datos
 /// del contacto y los comerciales con su histórico. Se implementa en persistencia.
 /// </summary>
@@ -36,4 +42,11 @@ public interface IConsultaMatch
 
     /// <summary>Peso del Encaje configurado por la empresa. Por defecto, mitad y mitad.</summary>
     Task<decimal> PesoEncajeAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Leads con dueño a los que nadie ha hecho nada todavía y que no han rebotado ya una vez.
+    /// Devuelve todos los candidatos; quién ha agotado el plazo lo decide el servicio, que es quien
+    /// sabe contar horas laborables.
+    /// </summary>
+    Task<IReadOnlyList<LeadSinAtender>> LeadsSinAtenderAsync(CancellationToken ct = default);
 }

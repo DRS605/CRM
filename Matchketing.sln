@@ -45,6 +45,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Informes", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Informes.Tests", "tests\Matchketing.Informes.Tests\Matchketing.Informes.Tests.csproj", "{05EE9B57-9217-47D6-9669-9385644A4627}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Nucleo.Tests", "tests\Matchketing.Nucleo.Tests\Matchketing.Nucleo.Tests.csproj", "{693F6DB2-28A8-46E0-8684-CC85472EEB2E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Auditoria.Tests", "tests\Matchketing.Auditoria.Tests\Matchketing.Auditoria.Tests.csproj", "{90F957F0-8A26-45AB-BD07-70363F985EAF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Cumplimiento.Tests", "tests\Matchketing.Cumplimiento.Tests\Matchketing.Cumplimiento.Tests.csproj", "{4D6330BF-3DE1-4FD8-A32D-E79906B49BDB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -130,6 +136,18 @@ Global
 		{05EE9B57-9217-47D6-9669-9385644A4627}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05EE9B57-9217-47D6-9669-9385644A4627}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05EE9B57-9217-47D6-9669-9385644A4627}.Release|Any CPU.Build.0 = Release|Any CPU
+		{693F6DB2-28A8-46E0-8684-CC85472EEB2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{693F6DB2-28A8-46E0-8684-CC85472EEB2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{693F6DB2-28A8-46E0-8684-CC85472EEB2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{693F6DB2-28A8-46E0-8684-CC85472EEB2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90F957F0-8A26-45AB-BD07-70363F985EAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90F957F0-8A26-45AB-BD07-70363F985EAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90F957F0-8A26-45AB-BD07-70363F985EAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90F957F0-8A26-45AB-BD07-70363F985EAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D6330BF-3DE1-4FD8-A32D-E79906B49BDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D6330BF-3DE1-4FD8-A32D-E79906B49BDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D6330BF-3DE1-4FD8-A32D-E79906B49BDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D6330BF-3DE1-4FD8-A32D-E79906B49BDB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E5BC1274-F7E8-4B5B-9BFE-911757022089} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
@@ -151,5 +169,8 @@ Global
 		{C73B95EA-AB38-4D79-8D9A-2169BC8E63B1} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
 		{D053F7CF-28B2-48CE-9AA0-EECDB72BBF1B} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
 		{05EE9B57-9217-47D6-9669-9385644A4627} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
+		{693F6DB2-28A8-46E0-8684-CC85472EEB2E} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
+		{90F957F0-8A26-45AB-BD07-70363F985EAF} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
+		{4D6330BF-3DE1-4FD8-A32D-E79906B49BDB} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
 	EndGlobalSection
 EndGlobal

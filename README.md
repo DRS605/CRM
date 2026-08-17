@@ -39,15 +39,21 @@ src/
   Matchketing.Match           Señales, Encaje, Momento y reparto de leads
   Matchketing.Captacion       Formulario embebible y entrada pública de leads
   Matchketing.Informes        Embudo, conversión y motivos de pérdida, con CSV
-  Matchketing.Cumplimiento    Consentimiento con prueba (el resto, en el módulo 8)
+  Matchketing.Cumplimiento    Consentimiento con prueba, baja de un clic, RGPD y retención
+  Matchketing.Auditoria       Quién hizo qué (transversal, como Núcleo)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
-  Matchketing.Api             REST + OpenAPI + JWT + interfaz web
+  Matchketing.Api             REST + OpenAPI + JWT + interfaz web + trabajos en segundo plano
 tests/
-  Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
+  Matchketing.Nucleo.Tests · Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
   Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
+  Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests
   Matchketing.IntegrationTests
 ```
+
+`Matchketing.Auditoria` es la **única excepción** a la regla de que ningún módulo referencia a otro:
+es dominio puro sin frameworks, y los módulos de negocio la usan igual que usan `Matchketing.Nucleo`.
+El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 
 ## Estado
 
@@ -60,7 +66,11 @@ tests/
 | 5. Match v1 | ✅ Terminado |
 | 6. Captación | ✅ Terminado |
 | 7. Informes | ✅ Terminado |
-| 8. Cumplimiento | ⬜ Pendiente |
+| 8. Cumplimiento | ✅ Terminado |
+
+Los ocho módulos están terminados. Lo que se añadió después del octavo —auditoría, trabajos en
+segundo plano, límite de intentos de acceso, sonda de salud real y el rol de base de datos sin
+superusuario— está en [`docs/despliegue.md`](docs/despliegue.md).
 
 ## Puesta en marcha
 
@@ -68,12 +78,16 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 266 pruebas: 184 unitarias + 82 de integración
+dotnet test                                  # 369 pruebas: 257 unitarias + 112 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
-En *Development* la API aplica las migraciones sola y publica Swagger en `/swagger`. Prueba de
-vida: `GET /salud`. La interfaz web se sirve en la raíz.
+En *Development* la API aplica las migraciones sola y publica Swagger en `/swagger`. La interfaz web
+se sirve en la raíz. `GET /salud` es la sonda: devuelve **503** si no llega a la base de datos.
+
+**Antes de poner esto en producción, lee [`docs/despliegue.md`](docs/despliegue.md).** La aplicación
+tiene que conectarse con un rol **sin privilegios de superusuario** o la mitad del aislamiento entre
+empresas —la *row level security* de PostgreSQL— no se aplica.
 
 Los tests de integración usan la base `matchketing_test`; se puede sobrescribir la cadena con la
 variable `MATCHKETING_TEST_CONEXION`.
@@ -112,6 +126,8 @@ ignóralos.
 | `POST` | `/empresas/{id}/seleccionar` | Token nuevo con esa empresa activa |
 | `GET` | `/empresas/activa` | Datos y ajustes de la empresa activa |
 | `PUT` | `/empresas/activa/ajustes-match` | Peso del Encaje y horas de rebote |
+| `POST` | `/auth/contrasena` | Cambia la contraseña. Exige la actual |
+| `PUT` | `/empresas/activa/ajustes-retencion` | Plazo de conservación de leads (3–120 meses) |
 | `GET` | `/contactos?busqueda=` | Listado con búsqueda |
 | `GET` | `/contactos/{id}` | Ficha con la cronología |
 | `POST` | `/contactos` | Crea un contacto. **201** |
@@ -139,5 +155,16 @@ ignóralos.
 | `GET` | `/informes/embudo?periodo=mes` | Etapas, conversión real, previsión y ratios |
 | `GET` | `/informes/motivos-perdida` | Por qué se pierde, en orden |
 | `GET` | `/informes/embudo.csv` · `/motivos-perdida.csv` | CSV para Excel en español |
+| `GET` | `/cumplimiento/contactos/{id}` | Panel de privacidad, con su enlace de baja |
+| `GET` `POST` `DELETE` | `/cumplimiento/contactos/{id}/consentimientos` | Permisos con su prueba |
+| `GET` | `/cumplimiento/contactos/{id}/puede-enviar?finalidad=` | **G1**: sí o no, con el motivo |
+| `GET` | `/cumplimiento/contactos/{id}/exportar` | Derecho de acceso y portabilidad |
+| `DELETE` | `/cumplimiento/contactos/{id}` | Derecho de supresión. Borra de verdad |
+| `GET` | `/cumplimiento/empresa/exportar` | Copia completa de la empresa |
+| `POST` | `/cumplimiento/empresa/borrar` | Cierre de cuenta, escribiendo su nombre |
+| `POST` | `/cumplimiento/retencion` | Aplica ya la retención de leads |
+| `GET` | `/b/{token}` | **Página de baja** (pública). Pregunta; no da de baja |
+| `POST` | `/b/{token}` | Confirma la baja (pública) |
+| `GET` | `/auditoria` | Quién hizo qué y cuándo |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

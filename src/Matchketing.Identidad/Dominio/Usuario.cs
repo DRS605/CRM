@@ -104,6 +104,38 @@ public sealed class Usuario : RaizAgregado<Guid>
         return Resultado.Ok();
     }
 
+    /// <summary>
+    /// Cambia la contraseña comprobando antes la actual. La comprobación se hace **aquí dentro**, con
+    /// el verificador que se le pasa, para que sea imposible cambiarla sin ella: un método que solo
+    /// recibiera la nueva acabaría llamándose desde algún sitio que se olvidó de pedir la vieja.
+    /// </summary>
+    public Resultado CambiarContrasena(string? actual, string? nueva, Func<string, string, bool> verificar, Func<string, string> hashear, IReloj reloj)
+    {
+        ArgumentNullException.ThrowIfNull(verificar);
+        ArgumentNullException.ThrowIfNull(hashear);
+        ArgumentNullException.ThrowIfNull(reloj);
+
+        if (!verificar(actual ?? string.Empty, HashContrasena))
+        {
+            return Resultado.Fallo(Error.NoAutorizado("contrasena.actual_incorrecta", "La contraseña actual no es correcta."));
+        }
+
+        var error = ValidarContrasena(nueva);
+        if (error is not null)
+        {
+            return Resultado.Fallo(error);
+        }
+
+        if (verificar(nueva!, HashContrasena))
+        {
+            return Resultado.Fallo(Error.Validacion("contrasena.repetida", "La contraseña nueva es igual que la actual."));
+        }
+
+        HashContrasena = hashear(nueva!);
+        ActualizadoEn = reloj.AhoraUtc;
+        return Resultado.Ok();
+    }
+
     public void VerificarEmail(IReloj reloj)
     {
         ArgumentNullException.ThrowIfNull(reloj);

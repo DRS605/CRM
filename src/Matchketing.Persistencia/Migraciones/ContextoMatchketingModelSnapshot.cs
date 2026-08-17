@@ -23,10 +23,59 @@ namespace Matchketing.Persistencia.Migraciones
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Matchketing.Auditoria.Dominio.RegistroAuditoria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("accion");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("Detalle")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("detalle");
+
+                    b.Property<Guid>("EmpresaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("empresa_id");
+
+                    b.Property<DateTimeOffset>("En")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("en");
+
+                    b.Property<string>("Entidad")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("entidad");
+
+                    b.Property<Guid?>("EntidadId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entidad_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId", "En")
+                        .HasDatabaseName("ix_auditoria_empresa_fecha");
+
+                    b.HasIndex("EmpresaId", "EntidadId")
+                        .HasDatabaseName("ix_auditoria_empresa_entidad");
+
+                    b.ToTable("registro", "auditoria");
+                });
+
             modelBuilder.Entity("Matchketing.Captacion.Dominio.EnvioFormulario", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -72,7 +121,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Captacion.Dominio.Formulario", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -141,7 +189,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Contactos.Dominio.Actividad", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -192,7 +239,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Contactos.Dominio.Contacto", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -271,7 +317,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Contactos.Dominio.Cuenta", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -332,7 +377,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Cumplimiento.Dominio.Consentimiento", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -392,7 +436,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Embudo.Dominio.Embudo", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -425,7 +468,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Embudo.Dominio.Etapa", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -462,7 +504,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Embudo.Dominio.Oportunidad", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -549,7 +590,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Embudo.Dominio.PasoEtapa", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -578,7 +618,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Identidad.Dominio.Membresia", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -619,7 +658,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Identidad.Dominio.Usuario", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -673,7 +711,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Match.Dominio.PuntuacionMatch", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -723,7 +760,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Match.Dominio.Senal", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -754,7 +790,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Organizacion.Dominio.Empresa", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -773,6 +808,12 @@ namespace Matchketing.Persistencia.Migraciones
                     b.Property<int>("HorasRebote")
                         .HasColumnType("integer")
                         .HasColumnName("horas_rebote");
+
+                    b.Property<int>("MesesRetencionLeads")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(24)
+                        .HasColumnName("meses_retencion_leads");
 
                     b.Property<string>("Nif")
                         .HasMaxLength(20)
@@ -803,7 +844,6 @@ namespace Matchketing.Persistencia.Migraciones
             modelBuilder.Entity("Matchketing.Tareas.Dominio.Tarea", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 

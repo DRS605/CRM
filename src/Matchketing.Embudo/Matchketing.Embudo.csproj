@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Matchketing.Nucleo\Matchketing.Nucleo.csproj" />
+    <ProjectReference Include="..\Matchketing.Auditoria\Matchketing.Auditoria.csproj" />
   </ItemGroup>
 </Project>

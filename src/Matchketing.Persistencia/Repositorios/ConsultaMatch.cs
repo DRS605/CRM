@@ -184,6 +184,28 @@ public sealed class ConsultaMatch(ContextoMatchketing bd, IContextoEmpresa conte
     }
 
     /// <summary>
+    /// «Sin atender» quiere decir sin **ninguna** actividad saliente: ni una llamada, ni un correo,
+    /// ni una reunión. Las entrantes no cuentan —que el lead insista no significa que le hayamos
+    /// atendido— y las internas tampoco: una nota que dice «parece interesante» no es atender a nadie.
+    ///
+    /// Se excluyen los que ya llevan un <see cref="TipoActividad.Rebote"/>: el rebote es una segunda
+    /// oportunidad, no una rueda que gira cada noche hasta que el lead haya pasado por toda la
+    /// plantilla y nadie se sienta responsable de él.
+    ///
+    /// El plazo corre desde el alta del contacto, que en el flujo que de verdad importa —un lead que
+    /// entra por un formulario y se asigna en el mismo instante— es cuando se le asignó.
+    /// </summary>
+    public async Task<IReadOnlyList<LeadSinAtender>> LeadsSinAtenderAsync(CancellationToken ct = default) =>
+        await bd.Contactos
+            .Where(c => c.Activo && c.Estado == EstadoContacto.Lead && c.PropietarioId != null)
+            .Where(c => !bd.Actividades.Any(a => a.ContactoId == c.Id
+                && (a.Sentido == SentidoActividad.Saliente || a.Tipo == TipoActividad.Rebote)))
+            .OrderBy(c => c.CreadoEn)
+            .Select(c => new LeadSinAtender(c.Id, c.Nombre, c.PropietarioId!.Value, c.CreadoEn))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+    /// <summary>
     /// El filtro se aplica sobre <paramref name="origen"/>, nunca sobre la proyección: EF no sabe
     /// traducir un WHERE contra un registro ya proyectado.
     /// </summary>

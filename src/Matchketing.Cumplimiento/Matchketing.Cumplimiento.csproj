@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Matchketing.Nucleo\Matchketing.Nucleo.csproj" />
+    <!-- Auditoría es transversal, como Núcleo: dominio puro, sin frameworks. Los módulos de negocio
+         pueden referenciarla para dejar el apunte donde se toma la decisión, y no en la capa de
+         transporte, que es justo donde se acaba olvidando. -->
+    <ProjectReference Include="..\Matchketing.Auditoria\Matchketing.Auditoria.csproj" />
   </ItemGroup>
 </Project>

@@ -18,6 +18,13 @@ public sealed class Empresa : RaizAgregado<Guid>
     /// <summary>Peso del Encaje frente al Momento en la puntuación Match. Por defecto, mitad y mitad.</summary>
     public const decimal PesoEncajePorDefecto = 0.5m;
 
+    /// <summary>
+    /// Meses que se conserva un lead que nunca llegó a nada. Dos años: bastante para que una
+    /// oportunidad lenta madure, poco para acabar con una base de datos de gente que preguntó un
+    /// precio hace media década y ya no se acuerda de haberlo hecho.
+    /// </summary>
+    public const int MesesRetencionPorDefecto = 24;
+
     private Empresa(Guid id)
         : base(id)
     {
@@ -32,6 +39,7 @@ public sealed class Empresa : RaizAgregado<Guid>
         Provincia = provincia;
         PesoEncaje = PesoEncajePorDefecto;
         HorasRebote = 4;
+        MesesRetencionLeads = MesesRetencionPorDefecto;
         Activa = true;
         CreadoEn = ahora;
         ActualizadoEn = ahora;
@@ -49,6 +57,9 @@ public sealed class Empresa : RaizAgregado<Guid>
 
     /// <summary>Horas laborables sin primera acción antes de que un lead rebote a otro comercial.</summary>
     public int HorasRebote { get; private set; }
+
+    /// <summary>Meses tras los que se borra un lead que sigue siendo lead y nadie ha tocado.</summary>
+    public int MesesRetencionLeads { get; private set; }
 
     public bool Activa { get; private set; }
 
@@ -105,6 +116,26 @@ public sealed class Empresa : RaizAgregado<Guid>
 
         PesoEncaje = pesoEncaje;
         HorasRebote = horasRebote;
+        ActualizadoEn = reloj.AhoraUtc;
+        return Resultado.Ok();
+    }
+
+    /// <summary>
+    /// Plazo de conservación de leads. El mínimo son 3 meses: por debajo de eso el sistema borraría
+    /// leads que todavía se están trabajando, y un CRM que se come los leads no es un CRM. El máximo
+    /// son 10 años, el plazo mercantil más largo que puede justificar conservarlos.
+    /// </summary>
+    public Resultado AjustarRetencion(int mesesRetencionLeads, IReloj reloj)
+    {
+        ArgumentNullException.ThrowIfNull(reloj);
+
+        if (mesesRetencionLeads is < 3 or > 120)
+        {
+            return Resultado.Fallo(Error.Validacion(
+                "empresa.retencion_invalida", "El plazo de conservación de leads debe estar entre 3 y 120 meses."));
+        }
+
+        MesesRetencionLeads = mesesRetencionLeads;
         ActualizadoEn = reloj.AhoraUtc;
         return Resultado.Ok();
     }

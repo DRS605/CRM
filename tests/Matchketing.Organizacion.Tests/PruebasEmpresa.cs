@@ -69,6 +69,39 @@ public sealed class PruebasEmpresa
     }
 
     [Fact]
+    public void Una_empresa_nace_conservando_los_leads_dos_anos()
+    {
+        Empresa.Crear("Ribera", null, null, Reloj).Valor.MesesRetencionLeads.Should().Be(24);
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(36)]
+    [InlineData(120)]
+    public void El_plazo_de_conservacion_admite_lo_razonable(int meses)
+    {
+        var empresa = Empresa.Crear("Ribera", null, null, Reloj).Valor;
+
+        empresa.AjustarRetencion(meses, Reloj).Exito.Should().BeTrue();
+
+        empresa.MesesRetencionLeads.Should().Be(meses);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(121)]
+    public void Un_plazo_absurdo_se_rechaza(int meses)
+    {
+        // Por debajo de tres meses el sistema borraría leads que todavía se están trabajando, y un
+        // CRM que se come los leads no es un CRM.
+        var empresa = Empresa.Crear("Ribera", null, null, Reloj).Valor;
+
+        empresa.AjustarRetencion(meses, Reloj).Error!.Codigo.Should().Be("empresa.retencion_invalida");
+        empresa.MesesRetencionLeads.Should().Be(24, "un ajuste inválido no cambia el que había");
+    }
+
+    [Fact]
     public void Los_campos_opcionales_en_blanco_se_guardan_como_nulos()
     {
         var r = Empresa.Crear("Ribera", "   ", "", Reloj);

@@ -1,3 +1,5 @@
+using Matchketing.Auditoria.Aplicacion;
+using Matchketing.Auditoria.Dominio;
 using Matchketing.Contactos.Dominio;
 using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Resultados;
@@ -10,6 +12,7 @@ public sealed class ServicioContactos(
     IRepositorioContactos contactos,
     IRepositorioCuentas cuentas,
     IRepositorioActividades actividades,
+    IRegistradorAuditoria auditoria,
     IContextoEmpresa contexto,
     IReloj reloj)
 {
@@ -60,16 +63,41 @@ public sealed class ServicioContactos(
             return Resultado.Fallo<Contacto>(Error.NoEncontrado("contacto.no_encontrado", "El contacto no existe."));
         }
 
+        var anterior = contacto.PropietarioId;
         var r = contacto.Actualizar(contacto.Nombre, contacto.Email, contacto.Telefono, contacto.Cargo, contacto.CuentaId, propietarioId, reloj);
-        return r.Fallido ? Resultado.Fallo<Contacto>(r.Error!) : Resultado.Ok(contacto);
+        if (r.Fallido)
+        {
+            return Resultado.Fallo<Contacto>(r.Error!);
+        }
+
+        // Solo cuando cambia de manos de verdad. El reparto automático de un lead nuevo también pasa
+        // por aquí, y auditar cada lead que entra convertiría el registro en un diario de tráfico
+        // donde ya no se vería lo que importa.
+        if (anterior is not null && anterior != propietarioId)
+        {
+            auditoria.Registrar("contacto", id, Acciones.ContactoAsignado, new { de = anterior, a = propietarioId });
+        }
+
+        return Resultado.Ok(contacto);
     }
 
     public async Task<Resultado> CambiarEstadoAsync(Guid id, EstadoContacto estado, CancellationToken ct = default)
     {
         var contacto = await contactos.BuscarPorIdAsync(id, ct).ConfigureAwait(false);
-        return contacto is null
-            ? Resultado.Fallo(Error.NoEncontrado("contacto.no_encontrado", "El contacto no existe."))
-            : contacto.CambiarEstado(estado, reloj);
+        if (contacto is null)
+        {
+            return Resultado.Fallo(Error.NoEncontrado("contacto.no_encontrado", "El contacto no existe."));
+        }
+
+        var r = contacto.CambiarEstado(estado, reloj);
+        if (r.Exito && estado == EstadoContacto.Baja)
+        {
+            // Una baja apuntada a mano —«me lo ha dicho por teléfono»— también es una baja, y también
+            // hay que poder demostrar de dónde salió.
+            auditoria.Registrar("contacto", id, Acciones.ContactoBaja, new { origen = "manual" });
+        }
+
+        return r;
     }
 
     public async Task<Resultado> DesactivarAsync(Guid id, CancellationToken ct = default)

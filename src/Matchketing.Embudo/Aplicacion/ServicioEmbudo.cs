@@ -1,3 +1,5 @@
+using Matchketing.Auditoria.Aplicacion;
+using Matchketing.Auditoria.Dominio;
 using Matchketing.Embudo.Dominio;
 using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Resultados;
@@ -9,6 +11,7 @@ public sealed class ServicioEmbudo(
     IRepositorioEmbudos embudos,
     IRepositorioOportunidades oportunidades,
     IConsultaEmbudo consulta,
+    IRegistradorAuditoria auditoria,
     IContextoEmpresa contexto,
     IReloj reloj)
 {
@@ -88,7 +91,15 @@ public sealed class ServicioEmbudo(
         }
 
         var r = oportunidad.Ganar(reloj);
-        return r.Fallido ? Resultado.Fallo<Oportunidad>(r.Error!) : Resultado.Ok(oportunidad);
+        if (r.Fallido)
+        {
+            return Resultado.Fallo<Oportunidad>(r.Error!);
+        }
+
+        // Cerrar una venta cambia las cifras de todos los informes y el histórico con el que el motor
+        // calcula el Encaje. Quién la cerró y cuándo no puede quedar solo en el `cerrada_en`.
+        auditoria.Registrar("oportunidad", id, Acciones.OportunidadGanada, new { importe = oportunidad.Importe });
+        return Resultado.Ok(oportunidad);
     }
 
     public async Task<Resultado<Oportunidad>> PerderAsync(Guid id, MotivoPerdida? motivo, string? detalle, CancellationToken ct = default)
@@ -100,7 +111,15 @@ public sealed class ServicioEmbudo(
         }
 
         var r = oportunidad.Perder(motivo, detalle, reloj);
-        return r.Fallido ? Resultado.Fallo<Oportunidad>(r.Error!) : Resultado.Ok(oportunidad);
+        if (r.Fallido)
+        {
+            return Resultado.Fallo<Oportunidad>(r.Error!);
+        }
+
+        // El motivo sí; el detalle **no**: es texto libre y ahí escribe la gente cosas como «me lo
+        // dijo su mujer por teléfono». En un registro que no se puede borrar, no.
+        auditoria.Registrar("oportunidad", id, Acciones.OportunidadPerdida, new { importe = oportunidad.Importe, motivo = motivo?.ToString() });
+        return Resultado.Ok(oportunidad);
     }
 
     public Task<IReadOnlyList<Oportunidad>> DeContactoAsync(Guid contactoId, CancellationToken ct = default) =>

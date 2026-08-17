@@ -26,7 +26,23 @@ public static class EndpointsIdentidad
             var r = await servicio.IniciarSesionAsync(p.Email, p.Contrasena, ct).ConfigureAwait(false);
             return r.Exito ? Results.Ok(r.Valor) : ResultadosHttp.Problema(r.Error!);
         })
-        .WithSummary("Inicia sesión.");
+        .RequireRateLimiting("acceso")
+        .WithSummary("Inicia sesión. Limitado a 20 intentos cada cinco minutos por IP.");
+
+        grupo.MapPost("/contrasena", async (
+            PeticionCambioContrasena p, ClaimsPrincipal quien, ServicioIdentidad servicio, CancellationToken ct) =>
+        {
+            ArgumentNullException.ThrowIfNull(quien);
+
+            var usuarioId = Guid.Parse(quien.FindFirstValue(Claims.UsuarioId)!);
+            var r = await servicio.CambiarContrasenaAsync(usuarioId, p.Actual, p.Nueva, ct).ConfigureAwait(false);
+            return r.Exito ? Results.NoContent() : ResultadosHttp.Problema(r.Error!);
+        })
+        .RequireAuthorization()
+        // El mismo límite que el acceso: este endpoint también comprueba una contraseña, así que
+        // serviría igual de bien para adivinarla si se dejara sin techo.
+        .RequireRateLimiting("acceso")
+        .WithSummary("Cambia la contraseña. Hay que dar la actual.");
 
         grupo.MapGet("/yo", async (ClaimsPrincipal quien, ServicioIdentidad identidad, ServicioEmpresas empresas, CancellationToken ct) =>
         {

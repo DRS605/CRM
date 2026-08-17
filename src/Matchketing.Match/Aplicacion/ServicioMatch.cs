@@ -122,7 +122,11 @@ public sealed class ServicioMatch(
     /// Propone el comercial con mejor match para este contacto. Devuelve también el porqué, para
     /// que la asignación no parezca una lotería.
     /// </summary>
-    public async Task<Resultado<AsignacionPropuesta>> ProponerComercialAsync(Guid contactoId, CancellationToken ct = default)
+    /// <param name="excluir">
+    /// Comercial al que no dárselo. Lo usa el rebote: proponer otra vez a quien no lo atendió sería
+    /// darle una segunda oportunidad al reloj, no al lead.
+    /// </param>
+    public async Task<Resultado<AsignacionPropuesta>> ProponerComercialAsync(Guid contactoId, CancellationToken ct = default, Guid? excluir = null)
     {
         var datos = await consulta.DatosDeAsync(contactoId, ct).ConfigureAwait(false);
         if (datos is null)
@@ -131,11 +135,32 @@ public sealed class ServicioMatch(
         }
 
         var candidatos = await consulta.ComercialesAsync(datos.Sector, ct).ConfigureAwait(false);
+        if (excluir is { } fuera)
+        {
+            candidatos = candidatos.Where(c => c.UsuarioId != fuera).ToList();
+        }
+
         var propuesta = Repartidor.Repartir(candidatos, datos.Provincia, datos.Sector);
 
         return propuesta is null
             ? Resultado.Fallo<AsignacionPropuesta>(Error.NoEncontrado("reparto.sin_comerciales", "No hay ningún comercial al que asignar el lead."))
             : Resultado.Ok(propuesta);
+    }
+
+    /// <summary>
+    /// Leads que han agotado su plazo de primera atención. El plazo se cuenta en **horas laborables**
+    /// (ver <see cref="HorasLaborables"/>), que es la única forma de que «cuatro horas» no acabe
+    /// significando «el sábado por la noche».
+    ///
+    /// Devuelve la lista; no reasigna. Reasignar es cambiar el dueño de un contacto, y eso es del
+    /// módulo Contactos: quien orquesta el rebote junta las dos piezas.
+    /// </summary>
+    public async Task<IReadOnlyList<LeadSinAtender>> LeadsVencidosAsync(int horasRebote, CancellationToken ct = default)
+    {
+        var ahora = reloj.AhoraUtc;
+        var candidatos = await consulta.LeadsSinAtenderAsync(ct).ConfigureAwait(false);
+
+        return candidatos.Where(l => HorasLaborables.Sumar(l.Desde, horasRebote) <= ahora).ToList();
     }
 
     private async Task GuardarAsync(Guid empresaId, Guid contactoId, ResultadoMatch resultado, CancellationToken ct)

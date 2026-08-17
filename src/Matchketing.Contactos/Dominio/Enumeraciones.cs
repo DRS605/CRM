@@ -27,6 +27,13 @@ public enum TipoActividad
 
     /// <summary>Anotación del propio sistema: fusión, cambio de propietario, importación…</summary>
     Sistema = 7,
+
+    /// <summary>
+    /// El lead cambió de comercial porque nadie lo atendió a tiempo. Tiene tipo propio, y no es un
+    /// <see cref="Sistema"/> más, porque es la marca que evita que el mismo lead rebote todas las
+    /// noches: buscarla por el texto de la anotación habría sido cuestión de tiempo que se rompiese.
+    /// </summary>
+    Rebote = 8,
 }
 
 public enum SentidoActividad

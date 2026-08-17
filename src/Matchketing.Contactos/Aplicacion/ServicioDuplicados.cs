@@ -1,3 +1,5 @@
+using Matchketing.Auditoria.Aplicacion;
+using Matchketing.Auditoria.Dominio;
 using Matchketing.Contactos.Dominio;
 using Matchketing.Nucleo.Resultados;
 using Matchketing.Nucleo.Tiempo;
@@ -12,6 +14,7 @@ public sealed class ServicioDuplicados(
     IRepositorioContactos contactos,
     IRepositorioActividades actividades,
     IConsultaContactos consulta,
+    IRegistradorAuditoria auditoria,
     IReloj reloj)
 {
     public Task<IReadOnlyList<PropuestaDuplicado>> ProponerAsync(CancellationToken ct = default) =>
@@ -51,6 +54,9 @@ public sealed class ServicioDuplicados(
             actividades.Anadir(apunte.Valor);
         }
 
+        // La fusión es la operación más difícil de deshacer del módulo: junta dos historias en una y
+        // ninguna interfaz permite separarlas. Como mínimo, que quede escrito quién la hizo.
+        auditoria.Registrar("contacto", supervivienteId, Acciones.ContactoFusionado, new { absorbido = absorbidoId, actividadesMovidas = movidas });
         return Resultado.Ok(movidas);
     }
 }

@@ -36,4 +36,12 @@ public sealed class ServicioEmpresas(IRepositorioEmpresas empresas, IReloj reloj
             ? Resultado.Fallo(Error.NoEncontrado("empresa.no_encontrada", "La empresa no existe."))
             : empresa.AjustarMatch(pesoEncaje, horasRebote, reloj);
     }
+
+    public async Task<Resultado> AjustarRetencionAsync(Guid id, int mesesRetencionLeads, CancellationToken ct = default)
+    {
+        var empresa = await empresas.BuscarPorIdAsync(id, ct).ConfigureAwait(false);
+        return empresa is null
+            ? Resultado.Fallo(Error.NoEncontrado("empresa.no_encontrada", "La empresa no existe."))
+            : empresa.AjustarRetencion(mesesRetencionLeads, reloj);
+    }
 }

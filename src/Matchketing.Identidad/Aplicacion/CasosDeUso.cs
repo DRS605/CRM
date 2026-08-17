@@ -93,6 +93,29 @@ public sealed class ServicioIdentidad(
         return Resultado.Ok(ConstruirSesion(usuario, membresia, nombreEmpresa));
     }
 
+    /// <summary>
+    /// Cambio de contraseña con la actual por delante. No emite token nuevo: el que la persona tiene
+    /// en la mano sigue valiendo hasta que caduque, y obligar a entrar otra vez justo después de
+    /// cambiarla solo consigue que parezca que algo ha ido mal.
+    /// </summary>
+    public async Task<Resultado> CambiarContrasenaAsync(Guid usuarioId, string? actual, string? nueva, CancellationToken ct = default)
+    {
+        var usuario = await usuarios.BuscarPorIdAsync(usuarioId, ct).ConfigureAwait(false);
+        if (usuario is null)
+        {
+            return Resultado.Fallo(Error.NoEncontrado("usuario.no_encontrado", "El usuario no existe."));
+        }
+
+        var r = usuario.CambiarContrasena(actual, nueva, hasher.Verificar, hasher.Hashear, reloj);
+        if (r.Fallido)
+        {
+            return r;
+        }
+
+        await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+        return Resultado.Ok();
+    }
+
     public void AnadirMembresia(Membresia membresia) => membresias.Anadir(membresia);
 
     private RespuestaSesion ConstruirSesion(Usuario usuario, Membresia? membresia, string? nombreEmpresa)

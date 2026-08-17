@@ -45,7 +45,17 @@ Nada de `BYPASSRLS`, y nada de hacerlo propietario de las tablas: el disparador 
 una empresa funcionen), así que un rol de aplicación propietario podría editar el registro de
 auditoría.
 
-Para comprobar que ha quedado bien, **con la conexión de la aplicación** (no con la de administrador):
+Hay un script que comprueba todo esto de golpe, y que la integración continua ejecuta en cada empujón:
+
+```bash
+./scripts/comprobar-aislamiento.sh          # sobre matchketing_test, tras 'dotnet test'
+./scripts/comprobar-aislamiento.sh mi_base mi_admin mi_clave mi_host 5432
+```
+
+Crea un rol de usar y tirar, comprueba las cuatro cosas que importan y lo borra. Si algo falla, dice
+cuál y sale con error.
+
+A mano, **con la conexión de la aplicación** (no con la de administrador):
 
 ```sql
 SELECT current_user, usesuper FROM pg_user WHERE usename = current_user;

@@ -3,6 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Matchketing.Persistencia;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Matchketing.IntegrationTests;
@@ -12,6 +15,25 @@ public sealed class PruebasFlujoSistema(ApiDePrueba api)
 {
     private static async Task<JsonElement> LeerAsync(HttpResponseMessage r) =>
         JsonDocument.Parse(await r.Content.ReadAsStringAsync()).RootElement.Clone();
+
+    [Fact]
+    public void La_api_de_pruebas_usa_la_base_de_pruebas()
+    {
+        // El test más aburrido del repositorio y uno de los más necesarios.
+        //
+        // `Program.cs` leía la cadena de conexión en una variable local, arriba del todo, antes de que
+        // `WebApplicationFactory` hubiera añadido su configuración. Resultado: **todas** las pruebas de
+        // integración borraban y recreaban la base de *desarrollo* en cada ejecución, y la variable
+        // `MATCHKETING_TEST_CONEXION` que documenta el README no hacía nada. Pasaban las 112, porque
+        // una base es una base; lo que se perdía era el trabajo de quien tuviera datos delante.
+        //
+        // Se descubrió mirando `pg_stat_activity` mientras corrían: la única conexión era a
+        // `matchketing`. Ningún test lo habría notado, así que aquí está el que lo nota.
+        using var alcance = api.Services.CreateScope();
+        var bd = alcance.ServiceProvider.GetRequiredService<ContextoMatchketing>();
+
+        bd.Database.GetConnectionString().Should().Be(ApiDePrueba.Conexion);
+    }
 
     [Fact]
     public async Task La_sonda_de_salud_comprueba_la_base_de_datos()

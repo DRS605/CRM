@@ -19,32 +19,50 @@ using Matchketing.Organizacion.Aplicacion;
 using Matchketing.Persistencia;
 using Matchketing.Persistencia.Repositorios;
 using Matchketing.Persistencia.Seguridad;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var constructor = WebApplication.CreateBuilder(args);
 
-var cadena = constructor.Configuration.GetConnectionString("Matchketing")
+// **Toda** la configuración se lee de forma diferida, dentro de las fábricas del contenedor, y nunca
+// aquí arriba con `constructor.Configuration[...]`.
+//
+// No es estilo: leerla aquí ejecuta la lectura antes de que se hayan añadido las fuentes que aporta
+// quien hospeda la aplicación. `WebApplicationFactory` de los tests de integración añade la suya
+// —con la base `matchketing_test`— cuando esta línea ya se ha ejecutado, así que una cadena capturada
+// en una variable local se queda con el valor por defecto. Eso es exactamente lo que pasaba: los
+// tests borraban y recreaban la base de **desarrollo** en cada ejecución, y la variable
+// `MATCHKETING_TEST_CONEXION` que documenta el README no servía para nada.
+//
+// Hay un test que lo vigila: `La_api_de_pruebas_usa_la_base_de_pruebas`.
+static string CadenaDeConexion(IConfiguration config) =>
+    config.GetConnectionString("Matchketing")
     ?? "Host=localhost;Port=5432;Database=matchketing;Username=postgres;Password=postgres";
 
-var ajustesJwt = new AjustesJwt(
-    constructor.Configuration["Jwt:Clave"] ?? "clave-de-desarrollo-no-usar-en-produccion-0123456789",
-    constructor.Configuration["Jwt:Emisor"] ?? "matchketing",
-    constructor.Configuration["Jwt:Audiencia"] ?? "matchketing",
-    int.TryParse(constructor.Configuration["Jwt:MinutosVigencia"], out var m) ? m : 480);
+constructor.Services.AddHttpContextAccessor();
+constructor.Services.AddSingleton<IReloj, RelojSistema>();
+constructor.Services.AddSingleton(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new AjustesJwt(
+        config["Jwt:Clave"] ?? "clave-de-desarrollo-no-usar-en-produccion-0123456789",
+        config["Jwt:Emisor"] ?? "matchketing",
+        config["Jwt:Audiencia"] ?? "matchketing",
+        int.TryParse(config["Jwt:MinutosVigencia"], out var minutos) ? minutos : 480);
+});
 
 // El secreto de los enlaces de baja es **distinto** al del JWT a propósito: los tokens de sesión
 // caducan en horas y su clave puede rotarse sin avisar a nadie; los enlaces de baja tienen que
 // seguir funcionando dentro de años. Compartir la clave habría atado las dos rotaciones y la primera
 // rotación del JWT habría matado todos los enlaces de baja emitidos.
-var ajustesBaja = new AjustesBaja(
-    constructor.Configuration["Baja:Secreto"] ?? "secreto-de-desarrollo-para-enlaces-de-baja-0123456789",
-    constructor.Configuration["Baja:UrlBase"] ?? "https://app.matchketing.es");
-
-constructor.Services.AddHttpContextAccessor();
-constructor.Services.AddSingleton<IReloj, RelojSistema>();
-constructor.Services.AddSingleton(ajustesJwt);
-constructor.Services.AddSingleton(ajustesBaja);
+constructor.Services.AddSingleton(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new AjustesBaja(
+        config["Baja:Secreto"] ?? "secreto-de-desarrollo-para-enlaces-de-baja-0123456789",
+        config["Baja:UrlBase"] ?? "https://app.matchketing.es");
+});
 constructor.Services.AddScoped<ContextoEmpresaHttp>();
 constructor.Services.AddScoped<IContextoEmpresa>(sp => sp.GetRequiredService<ContextoEmpresaHttp>());
 constructor.Services.AddScoped<IContextoEmpresaPublico>(sp => sp.GetRequiredService<ContextoEmpresaHttp>());
@@ -53,7 +71,7 @@ constructor.Services.AddSingleton<IHasherContrasena, HasherContrasena>();
 
 constructor.Services.AddScoped<InterceptorEmpresa>();
 constructor.Services.AddDbContext<ContextoMatchketing>((sp, o) => o
-    .UseNpgsql(cadena)
+    .UseNpgsql(CadenaDeConexion(sp.GetRequiredService<IConfiguration>()))
     .AddInterceptors(sp.GetRequiredService<InterceptorEmpresa>()));
 constructor.Services.AddScoped<IUnidadDeTrabajo>(sp => sp.GetRequiredService<ContextoMatchketing>());
 constructor.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuarios>();
@@ -129,21 +147,24 @@ constructor.Services.AddRateLimiter(o =>
     };
 });
 
+constructor.Services.AddAuthentication("Bearer").AddJwtBearer();
+
+// Los parámetros de validación se configuran con `AjustesJwt` **resuelto del contenedor**, no con una
+// variable capturada: así el emisor y la clave salen de la misma fuente que usa el generador de
+// tokens, sea la que sea. Con un `AddJwtBearer(o => …)` que capturase una local, quien sobrescriba la
+// configuración firmaría con una clave y validaría con otra.
 constructor.Services
-    .AddAuthentication("Bearer")
-    .AddJwtBearer(o =>
+    .AddOptions<JwtBearerOptions>("Bearer")
+    .Configure<AjustesJwt>((o, ajustes) => o.TokenValidationParameters = new TokenValidationParameters
     {
-        o.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = ajustesJwt.Emisor,
-            ValidAudience = ajustesJwt.Audiencia,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(ajustesJwt.Clave)),
-            ClockSkew = TimeSpan.FromSeconds(30),
-        };
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = ajustes.Emisor,
+        ValidAudience = ajustes.Audiencia,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(ajustes.Clave)),
+        ClockSkew = TimeSpan.FromSeconds(30),
     });
 constructor.Services.AddAuthorization();
 

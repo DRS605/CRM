@@ -78,7 +78,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 369 pruebas: 257 unitarias + 112 de integración
+dotnet test                                  # 370 pruebas: 257 unitarias + 113 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -89,8 +89,18 @@ se sirve en la raíz. `GET /salud` es la sonda: devuelve **503** si no llega a l
 tiene que conectarse con un rol **sin privilegios de superusuario** o la mitad del aislamiento entre
 empresas —la *row level security* de PostgreSQL— no se aplica.
 
-Los tests de integración usan la base `matchketing_test`; se puede sobrescribir la cadena con la
-variable `MATCHKETING_TEST_CONEXION`.
+Los tests de integración usan la base `matchketing_test`, que **borran y recrean** al empezar; se
+puede sobrescribir la cadena con la variable `MATCHKETING_TEST_CONEXION`.
+
+Y hay una comprobación que ningún test de C# puede hacer, porque para hacerla hay que conectarse con
+otro rol de PostgreSQL:
+
+```bash
+./scripts/comprobar-aislamiento.sh           # la RLS, con un rol sin superusuario
+```
+
+La [integración continua](.github/workflows/pruebas.yml) ejecuta las dos cosas en cada empujón, contra
+un PostgreSQL de verdad.
 
 ### Migraciones
 

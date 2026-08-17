@@ -1,0 +1,53 @@
+name: pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    name: build y pruebas
+    runs-on: ubuntu-latest
+
+    # PostgreSQL de verdad, no una base en memoria: la mitad de lo que hay que comprobar aquí —RLS,
+    # filtros globales, `jsonb`, el disparador append-only, los índices— no existe fuera de Postgres.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restaurar
+        run: dotnet restore
+
+      # `TreatWarningsAsErrors` ya está en Directory.Build.props, así que un aviso rompe la
+      # compilación sin necesidad de repetirlo aquí.
+      - name: Compilar
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Probar
+        run: dotnet test --no-build --configuration Release
+        env:
+          MATCHKETING_TEST_CONEXION: Host=localhost;Port=5432;Database=matchketing_test;Username=postgres;Password=postgres
+
+      # La otra barrera del aislamiento: la RLS de PostgreSQL, que las pruebas de C# no pueden
+      # comprobar porque corren como superusuario. Se ejecuta después, sobre la base que dejaron.
+      - name: Comprobar el aislamiento con un rol sin superusuario
+        run: ./scripts/comprobar-aislamiento.sh matchketing_test postgres postgres localhost 5432

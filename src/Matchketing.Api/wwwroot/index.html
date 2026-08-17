@@ -2,8 +2,21 @@
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- `viewport-fit=cover` para que el fondo llegue bajo la barra del móvil; el hueco se recupera con
+     `env(safe-area-inset-bottom)` en la barra de navegación. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>match.keting</title>
+<meta name="description" content="El CRM que te dice a quién llamar hoy, y por qué." />
+
+<!-- Instalable en el móvil. Un comercial no escribe una URL: abre un icono. -->
+<link rel="manifest" href="/manifiesto.webmanifest" />
+<link rel="apple-touch-icon" href="/iconos/mk-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="match.keting" />
+<meta name="mobile-web-app-capable" content="yes" />
+<!-- El color de la barra del sistema, en cada tema. -->
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF8F9" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#120810" />
 <!-- El punto de la marca, también en la pestaña del navegador. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%23D4006E'/%3E%3C/svg%3E" />
 <style>
@@ -162,6 +175,13 @@
     border: 1px solid var(--magenta-borde); border-radius: 20px; padding: 1px 7px;
   }
 
+  /* La lista de etapas que abre «Mover». En columna y a ancho completo: son objetivos de dedo. */
+  .mover-etapas {
+    display: flex; flex-direction: column; gap: 6px; margin-top: 8px;
+    padding-top: 8px; border-top: 1px dashed var(--trazo);
+  }
+  .mover-etapas .mini { width: 100%; }
+
   .zona-derechos, .zona-peligro {
     border-top: 1px solid var(--trazo-suave); padding-top: 18px; margin-top: 4px;
     display: flex; flex-direction: column; gap: 12px;
@@ -187,7 +207,6 @@
 
   /* ============ Aplicación ============ */
   .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100%; }
-  @media (max-width: 760px) { .app { grid-template-columns: 1fr; } .lateral { display: none; } }
 
   .lateral {
     background: var(--superficie); border-right: 1px solid var(--trazo);
@@ -220,9 +239,21 @@
   .quien .n { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .quien .e { color: var(--grafito); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  main { padding: 32px clamp(20px, 4vw, 44px) 64px; display: flex; flex-direction: column; gap: 24px; }
+  /* `min-width: 0` en toda la cadena. `main` es un elemento de rejilla y las secciones son elementos
+     flex, y **ninguno de los dos baja de su contenido por defecto**. Sin esto, el tablero del embudo
+     —que mide 1000 px a propósito— y la tabla de contactos estiraban la página entera en vez de
+     deslizarse dentro de su caja. */
+  main {
+    padding: 32px clamp(20px, 4vw, 44px) 64px; display: flex; flex-direction: column; gap: 24px;
+    min-width: 0;
+  }
   /* Cada vista también espacia a sus hijos: si no, los paneles se tocan y el pie pisa el borde. */
-  main > section { display: flex; flex-direction: column; gap: 20px; }
+  main > section { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+  /* Y también sus hijos. Salió midiendo `scrollWidth` contra `innerWidth` en una pantalla de 390 px,
+     no mirando el CSS: en el móvil todo quedaba corrido hacia la derecha, y en un portátil estrecho
+     igual. */
+  main > section > * { min-width: 0; }
   .titulo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .titulo h1 { font-size: 27px; font-weight: 800; letter-spacing: -.03em; margin: 0; }
   .titulo .sub { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
@@ -540,6 +571,69 @@
   footer.nota {
     font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
     color: var(--grafito); display: flex; align-items: center; gap: 9px;
+  }
+
+  /* ============ Móvil ============
+
+     Va al final del estilo **a propósito**. Aquí había un `@media` colocado antes de las reglas que
+     pretendía anular, así que no hacía absolutamente nada: en un teléfono la barra lateral se apilaba
+     encima del contenido y salía cortada por arriba. Se descubrió abriendo la aplicación en un Pixel 5
+     de verdad, no leyendo el CSS.
+
+     El comercial vive en el móvil, entre visitas y con una mano. Así que en pantallas estrechas el
+     menú deja de ser una columna y pasa a ser una **barra abajo**, que es donde llega el pulgar. */
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+
+    .lateral {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+      flex-direction: row; align-items: center; gap: 0;
+      padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      border-right: 0; border-top: 1px solid var(--trazo);
+    }
+    /* La marca y el bloque de usuario no caben en una barra de pulgar y tampoco hacen falta: quien
+       tiene la aplicación abierta ya sabe cuál es y quién es. Se llega a «Cerrar sesión» por Ajustes. */
+    .lateral .marca, .pie-lateral { display: none; }
+
+    nav { flex-direction: row; flex: 1; gap: 0; }
+    .item {
+      flex: 1; flex-direction: column; gap: 3px; text-align: center; justify-content: center;
+      font-size: 11px; padding: 7px 2px; border-radius: 10px; min-height: 48px;
+      position: relative;
+    }
+    .item.on { font-weight: 700; }
+    /* El marcador pasa de bolita lateral a subrayado: en vertical, un punto encima del texto se lee
+       como suciedad. */
+    .item .marcador { width: 18px; height: 2px; border-radius: 2px; }
+    .item .pendiente { display: none; }
+    /* Arriba a la derecha del elemento, como en cualquier barra de pestañas de móvil. Centrado sobre
+       la etiqueta chocaba con el subrayado del elemento activo. */
+    .cuantas { margin: 0; position: absolute; top: 3px; right: 6px; padding: 0 5px; font-size: 10px; }
+
+    /* Hueco abajo para que la barra no tape la última fila de ninguna pantalla. */
+    main { padding: 20px 16px calc(76px + env(safe-area-inset-bottom)); gap: 18px; }
+    .titulo h1 { font-size: 23px; }
+    .panel { padding: 18px 16px; border-radius: 12px; }
+    .rejilla-form { grid-template-columns: 1fr; }
+
+    /* La tarjeta del repaso, para un pulgar: cada respuesta ocupa el ancho y mide lo que mide un dedo
+       (48 px es el mínimo que recomiendan Android y iOS). El número de la tecla desaparece: en un
+       teléfono no hay teclado, y enseñar un atajo que no existe es ruido. */
+    .repaso-caja h2 { font-size: 1.3rem; }
+    .rp-opciones { flex-direction: column; gap: 8px; margin-top: 18px; }
+    .rp-opciones .btn { width: 100%; justify-content: center; min-height: 50px; font-size: 16px; }
+    .rp-opciones .btn .tecla, .rp-teclas { display: none; }
+    .rp-cifras { gap: 18px 26px; }
+
+    /* Lo ancho de verdad se desliza en su caja, nunca empuja la página. */
+    .tabla-caja, .tablero-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  }
+
+  /* Sin ratón no hay `hover` que valga, y en táctil un `:hover` pegajoso deja botones «encendidos»
+     después de pulsarlos. */
+  @media (hover: none) {
+    .btn:hover { border-color: var(--trazo); }
+    .item:hover { background: none; }
   }
 </style>
 </head>
@@ -906,7 +1000,7 @@
 
         <div class="herramientas" style="margin-top:4px">
           <button class="btn pri" type="button" id="emb-nueva">Nueva oportunidad</button>
-          <span class="contador">Arrastra una tarjeta para cambiarla de etapa.</span>
+          <span class="contador" id="emb-como-mover">Arrastra una tarjeta, o usa «Mover», para cambiarla de etapa.</span>
         </div>
 
         <div class="tablero-scroll" style="margin-top:16px">
@@ -1305,6 +1399,7 @@
     await cargarFormularios();
     await cargarHoy();
     await contarRepaso();
+    irADondePidieron();
   }
 
   async function cargarAjustes() {
@@ -1365,6 +1460,40 @@
     { valor: 6, etiqueta: 'Otro motivo' }
   ];
 
+  // Los atajos del icono instalado abren en `/?ir=repaso`. Mantener pulsado el icono y elegir
+  // «Repaso» tiene que llevar al repaso, no a Hoy y luego dos toques más.
+  function irADondePidieron() {
+    var donde = new URLSearchParams(window.location.search).get('ir');
+    var boton = donde && document.querySelector('.item[data-vista="' + donde + '"]');
+    if (boton) { boton.click(); }
+  }
+
+  // ---------- El móvil: instalable, y el número en el icono ----------
+
+  // El trabajador de servicio solo guarda el armazón (ver sw.js). Si el navegador no lo soporta o
+  // falla el registro, la aplicación funciona igual: nada de lo que hace es imprescindible.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () { /* sin caché, pero funcionando */ });
+    });
+  }
+
+  // El número de decisiones pendientes, **en el icono de la aplicación** cuando está instalada.
+  //
+  // Es el aviso más barato que existe y el que menos molesta: no suena, no vibra, no interrumpe. Solo
+  // está ahí, en la pantalla de inicio, diciendo «tienes once cosas que decidir». Un aviso a las seis
+  // de la tarde del viernes necesitaría Web Push —claves VAPID, cifrado del cuerpo y un trabajo que
+  // los mande—; esto es el 80 % del efecto sin nada de eso.
+  //
+  // Un cero **borra** el distintivo en lugar de pintarlo: un cero permanente en un icono es una
+  // regañina, y de las regañinas se huye desinstalando.
+  function distintivo(cuantas) {
+    if (!navigator.setAppBadge) { return; }
+
+    var promesa = cuantas > 0 ? navigator.setAppBadge(cuantas) : navigator.clearAppBadge();
+    if (promesa && promesa.catch) { promesa.catch(function () { /* sin permiso: da igual */ }); }
+  }
+
   // Solo el número del menú, al entrar. Se pide aparte de la pila porque la aplicación abre en Hoy:
   // descargar las treinta tarjetas de una pantalla que quizá no se visite sería gastar seis consultas
   // para nada.
@@ -1374,6 +1503,7 @@
       var chapa = $('menu-repaso');
       chapa.textContent = String(pila.total);
       chapa.hidden = pila.total === 0;
+      distintivo(pila.total);
     } catch (e) {
       $('menu-repaso').hidden = true;
     }
@@ -1402,6 +1532,7 @@
     var chapa = $('menu-repaso');
     chapa.textContent = String(pila.total);
     chapa.hidden = pila.total === 0;
+    distintivo(pila.total);
 
     if (pila.alDia) {
       $('sub-repaso').textContent = 'nada pendiente';
@@ -1520,6 +1651,7 @@
     var chapa = $('menu-repaso');
     chapa.textContent = String(pila.total);
     chapa.hidden = pila.total === 0;
+    distintivo(pila.total);
 
     if (!pila.alDia) {
       repaso.pila = pila.preguntas;
@@ -2764,6 +2896,13 @@
   // ---------- Embudo ----------
   var oportunidadAPerder = null;
 
+  // Sin ratón no hay arrastre —el de HTML5 no existe en táctil—, así que la ayuda cambia. Decirle a
+  // alguien que arrastre algo que no se puede arrastrar es la forma más rápida de que piense que la
+  // aplicación está rota.
+  if (window.matchMedia('(hover: none)').matches) {
+    $('emb-como-mover').textContent = 'Usa «Mover» para cambiar una tarjeta de etapa.';
+  }
+
   function euros(n) {
     // `useGrouping: 'always'` a propósito: el español no separa los millares en números de cuatro
     // cifras, pero en una fila de indicadores «6356 €» junto a «40.296 €» se lee como un error.
@@ -2895,8 +3034,45 @@
           $('p-detalle').value = '';
           subVistaEmbudo('emb-perder');
         });
+
+        // «Mover» existe porque **arrastrar no funciona con un dedo**: el arrastre de HTML5 no lo
+        // soportan los navegadores táctiles, así que en un móvil el tablero era de solo lectura y el
+        // texto de ayuda decía «arrastra una tarjeta», que era mentira. Se descubrió abriendo el
+        // embudo en una pantalla de 390 px.
+        //
+        // Se ofrece también con ratón: dos toques nunca son peor que un arrastre, y hay gente que
+        // arrastra fatal.
+        var bMover = document.createElement('button');
+        bMover.className = 'mini';
+        bMover.type = 'button';
+        bMover.textContent = 'Mover';
+        bMover.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var abierto = tarj.querySelector('.mover-etapas');
+          if (abierto) { abierto.remove(); return; }
+
+          var lista = document.createElement('div');
+          lista.className = 'mover-etapas';
+          t.columnas.forEach(function (destino) {
+            if (destino.etapaId === col.etapaId) { return; }
+
+            var b = document.createElement('button');
+            b.className = 'mini';
+            b.type = 'button';
+            b.textContent = destino.nombre;
+            b.addEventListener('click', async function (ev2) {
+              ev2.stopPropagation();
+              await api('/oportunidades/' + o.id + '/mover', { metodo: 'POST', cuerpo: { etapaId: destino.etapaId } });
+              await cargarEmbudo();
+            });
+            lista.appendChild(b);
+          });
+          tarj.appendChild(lista);
+        });
+
         acc.appendChild(bGanar);
         acc.appendChild(bPerder);
+        acc.appendChild(bMover);
         tarj.appendChild(acc);
 
         zona.appendChild(tarj);

@@ -1,0 +1,80 @@
+/*
+ * Trabajador de servicio de match.keting.
+ *
+ * Hace **una sola cosa**: guardar el armazón de la aplicación para que abra al instante y para que
+ * abra también cuando no hay cobertura. Un comercial usa esto entre visitas, en un portal, en un
+ * polígono; que la aplicación tarde ocho segundos en pintarse es motivo suficiente para no volver a
+ * abrirla.
+ *
+ * Lo que **no** hace, a propósito:
+ *
+ * - No guarda respuestas de la API. Una pila de repaso de hace tres días es peor que ninguna: harías
+ *   decisiones sobre cosas que ya cambiaron. Los datos siempre son de ahora o no son.
+ * - No encola respuestas para enviarlas luego. Contestar «Ganada» y que se envíe mañana significa que
+ *   durante un día el embudo miente. Si no hay red, la aplicación lo dice y no finge.
+ *
+ * Así que la regla es simple: **el armazón, de la caché; los datos, de la red.**
+ */
+'use strict';
+
+// Al cambiar de versión se descarta la caché anterior entera. Es más barato que invalidar por fichero
+// y no deja nunca una mezcla de dos versiones, que es de lo más difícil de depurar que hay.
+const CACHE = 'matchketing-v1';
+
+const ARMAZON = [
+  '/',
+  '/index.html',
+  '/manifiesto.webmanifest',
+  '/iconos/mk-192.png',
+  '/iconos/mk-512.png',
+];
+
+self.addEventListener('install', evento => {
+  evento.waitUntil(
+    caches.open(CACHE)
+      .then(cache => cache.addAll(ARMAZON))
+      .then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', evento => {
+  evento.waitUntil(
+    caches.keys()
+      .then(claves => Promise.all(claves.filter(c => c !== CACHE).map(c => caches.delete(c))))
+      .then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', evento => {
+  const peticion = evento.request;
+
+  // Solo GET del propio origen. Un POST nunca se sirve de caché, y de otros dominios no nos metemos.
+  if (peticion.method !== 'GET' || new URL(peticion.url).origin !== self.location.origin) {
+    return;
+  }
+
+  const ruta = new URL(peticion.url).pathname;
+
+  // Todo lo que sea datos va a la red y solo a la red. La lista es de rutas de la API; el armazón son
+  // la raíz, el manifiesto y los iconos.
+  const esDato = /^\/(repaso|hoy|contactos|cuentas|oportunidades|embudo|tareas|match|informes|formularios|cumplimiento|auditoria|empresas|auth|salud|f|b)(\/|$|\?)/.test(ruta);
+  if (esDato) {
+    return;
+  }
+
+  // Armazón: primero la caché para que abra instantáneo, y en segundo plano se refresca. Si no hay
+  // red y tampoco caché, se responde con la raíz: es una aplicación de una sola página, así que la
+  // raíz es una respuesta válida para cualquier ruta de navegación.
+  evento.respondWith(
+    caches.match(peticion).then(guardada => {
+      const desdeRed = fetch(peticion)
+        .then(respuesta => {
+          if (respuesta && respuesta.ok) {
+            const copia = respuesta.clone();
+            caches.open(CACHE).then(cache => cache.put(peticion, copia));
+          }
+          return respuesta;
+        })
+        .catch(() => guardada || caches.match('/'));
+
+      return guardada || desdeRed;
+    }));
+});

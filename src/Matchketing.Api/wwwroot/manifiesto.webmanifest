@@ -1,0 +1,35 @@
+{
+  "name": "match.keting",
+  "short_name": "match.keting",
+  "description": "El CRM que te dice a quién llamar hoy, y por qué.",
+  "lang": "es-ES",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FBF8F9",
+  "theme_color": "#D4006E",
+  "icons": [
+    { "src": "/iconos/mk-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/iconos/mk-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/iconos/mk-192-recortable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/iconos/mk-512-recortable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Repaso",
+      "short_name": "Repaso",
+      "description": "Cerrar el seguimiento de la semana",
+      "url": "/?ir=repaso",
+      "icons": [{ "src": "/iconos/mk-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Hoy",
+      "short_name": "Hoy",
+      "description": "A quién llamar hoy",
+      "url": "/?ir=hoy",
+      "icons": [{ "src": "/iconos/mk-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -84,9 +84,12 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 408 pruebas: 285 unitarias + 123 de integración
+dotnet test                                  # 413 pruebas: 285 unitarias + 128 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
+
+Se **instala en el móvil**: manifiesto, iconos y el número de decisiones pendientes en el propio
+icono de la aplicación. Ver [`docs/movil.md`](docs/movil.md).
 
 En *Development* la API aplica las migraciones sola y publica Swagger en `/swagger`. La interfaz web
 se sirve en la raíz. `GET /salud` es la sonda: devuelve **503** si no llega a la base de datos.

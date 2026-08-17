@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 408 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 413 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -106,8 +106,13 @@ claro y oscuro mediante `:root` + `prefers-color-scheme` + `[data-theme]`. **No 
 sistema: lo que en otras herramientas sería rojo aquí va en ámbar.
 
 Cuando cambies algo de la interfaz, **míralo**. Casi todos los defectos de este proyecto —CORS que
-faltaba, conversiones inventadas, Match clavado en 100, JSON crudo en pantalla— salieron de una
-captura, no de un test.
+faltaba, conversiones inventadas, Match clavado en 100, JSON crudo en pantalla, el menú que no existía
+en el móvil— salieron de una captura, no de un test.
+
+Y **míralo también a 390 px**, midiendo `scrollWidth` contra `innerWidth`. Dos defectos de
+desbordamiento vivían ahí desde el módulo 2. Lo adaptable va **al final del estilo**: un `@media`
+colocado antes de la regla que quiere anular no hace nada, y eso ya pasó una vez. Ver
+[`docs/movil.md`](docs/movil.md).
 
 ## Antes de producción
 

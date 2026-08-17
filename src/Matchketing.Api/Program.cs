@@ -18,6 +18,7 @@ using Matchketing.Nucleo.Tiempo;
 using Matchketing.Organizacion.Aplicacion;
 using Matchketing.Persistencia;
 using Matchketing.Persistencia.Repositorios;
+using Matchketing.Repaso.Aplicacion;
 using Matchketing.Persistencia.Seguridad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -107,6 +108,10 @@ constructor.Services.AddScoped<IRepositorioConsentimientos, RepositorioConsentim
 constructor.Services.AddScoped<IAlmacenPersonal, AlmacenPersonal>();
 constructor.Services.AddScoped<IAjustesRetencion, AjustesRetencion>();
 constructor.Services.AddScoped<ServicioCumplimiento>();
+constructor.Services.AddScoped<IConsultaRepaso, ConsultaRepaso>();
+constructor.Services.AddScoped<IRepositorioPospuestas, RepositorioPospuestas>();
+constructor.Services.AddScoped<IAccionesRepaso, AccionesRepaso>();
+constructor.Services.AddScoped<ServicioRepaso>();
 
 // Los tres trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
 constructor.Services.AddHostedService<TrabajoBarridoMatch>();
@@ -223,6 +228,7 @@ app.MapearCaptacion();
 app.MapearInformes();
 app.MapearCumplimiento();
 app.MapearAuditoria();
+app.MapearRepaso();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

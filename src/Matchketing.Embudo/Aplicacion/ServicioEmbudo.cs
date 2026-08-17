@@ -82,6 +82,26 @@ public sealed class ServicioEmbudo(
         return r.Fallido ? Resultado.Fallo<Oportunidad>(r.Error!) : Resultado.Ok(oportunidad);
     }
 
+    /// <summary>
+    /// Cambia solo la fecha de cierre prevista. Existe aparte de <see cref="ActualizarAsync"/> porque
+    /// para mover una fecha con el método general habría que volver a mandar el título, el importe y el
+    /// propietario, y quien llame desde otro sitio —el repaso, por ejemplo— acabaría pisando alguno
+    /// con un nulo.
+    /// </summary>
+    public async Task<Resultado<Oportunidad>> MoverPrevistaCierreAsync(Guid id, DateOnly previstaCierre, CancellationToken ct = default)
+    {
+        var oportunidad = await oportunidades.BuscarPorIdAsync(id, ct).ConfigureAwait(false);
+        if (oportunidad is null)
+        {
+            return Resultado.Fallo<Oportunidad>(Error.NoEncontrado("oportunidad.no_encontrada", "La oportunidad no existe."));
+        }
+
+        var r = oportunidad.Actualizar(
+            oportunidad.Titulo, oportunidad.Importe, previstaCierre, oportunidad.PropietarioId, reloj);
+
+        return r.Fallido ? Resultado.Fallo<Oportunidad>(r.Error!) : Resultado.Ok(oportunidad);
+    }
+
     public async Task<Resultado<Oportunidad>> GanarAsync(Guid id, CancellationToken ct = default)
     {
         var oportunidad = await oportunidades.BuscarPorIdAsync(id, ct).ConfigureAwait(false);

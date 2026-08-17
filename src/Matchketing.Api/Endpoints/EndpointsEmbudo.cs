@@ -64,7 +64,7 @@ public static class EndpointsEmbudo
             // La oportunidad también es algo que le ha pasado al contacto: va a su cronología.
             await contactos.RegistrarActividadAsync(
                 p.ContactoId, TipoActividad.Sistema, SentidoActividad.Interna,
-                $"Nueva oportunidad: «{r.Valor.Titulo}» por {r.Valor.Importe:0.00} €.", null, ct).ConfigureAwait(false);
+                $"Nueva oportunidad: «{r.Valor.Titulo}» por {Castellano.Euros(r.Valor.Importe)}.", null, ct).ConfigureAwait(false);
 
             await match.RegistrarSenalAsync(p.ContactoId, Match.Dominio.TipoSenal.OportunidadCreada, ct).ConfigureAwait(false);
 
@@ -130,7 +130,7 @@ public static class EndpointsEmbudo
 
             await contactos.RegistrarActividadAsync(
                 r.Valor.ContactoId, TipoActividad.Sistema, SentidoActividad.Interna,
-                $"Oportunidad ganada: «{r.Valor.Titulo}» por {r.Valor.Importe:0.00} €.", null, ct).ConfigureAwait(false);
+                $"Oportunidad ganada: «{r.Valor.Titulo}» por {Castellano.Euros(r.Valor.Importe)}.", null, ct).ConfigureAwait(false);
 
             // Quien compra deja de ser un lead. Con ALXOR Core conectado, aquí nacería el presupuesto.
             await contactos.CambiarEstadoAsync(r.Valor.ContactoId, EstadoContacto.Cliente, ct).ConfigureAwait(false);

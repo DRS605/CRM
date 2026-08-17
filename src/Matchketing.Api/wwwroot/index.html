@@ -116,6 +116,52 @@
   .semaforo.si .bolita { background: var(--verde); }
   .semaforo.no .bolita { background: var(--ambar); }
 
+  /* ---------- Repaso ---------- */
+
+  /* Una tarjeta grande y sola. El tamaño no es capricho: si la decisión no ocupa la pantalla, se
+     compite con todo lo demás y se posterga. */
+  .repaso-caja { gap: 6px; }
+  .repaso-caja h2 { font-size: 1.45rem; line-height: 1.25; margin: 2px 0 0; }
+  .rp-porque {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--magenta);
+  }
+  .rp-detalle { font-size: 15px; color: var(--grafito); margin: 0; max-width: 46ch; }
+  .rp-quien { font-size: 13.5px; color: var(--grafito); font-family: var(--mono); }
+
+  .progreso { height: 3px; border-radius: 2px; background: var(--trazo-suave); margin-bottom: 14px; }
+  .progreso i { display: block; height: 100%; border-radius: 2px; background: var(--magenta); transition: width .2s; }
+  @media (prefers-reduced-motion: reduce) { .progreso i { transition: none; } }
+
+  /* Las respuestas se pintan grandes y con su número: la mano va al ratón o al teclado, pero nunca
+     tiene que buscar. Solo la primera va en magenta —es la respuesta probable— porque si todas
+     destacan, ninguna destaca. */
+  .rp-opciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .rp-opciones .btn { font-size: 15px; padding: 12px 18px; }
+  .rp-opciones .btn .tecla {
+    font-family: var(--mono); font-size: 10px; opacity: .55; margin-right: 8px;
+  }
+  .rp-teclas { font-size: 12.5px; color: var(--grafito); margin: 14px 0 0; }
+  .rp-teclas kbd {
+    font-family: var(--mono); font-size: 11px; border: 1px solid var(--trazo);
+    border-radius: 4px; padding: 1px 5px; background: var(--papel);
+  }
+
+  .rp-cifras { display: flex; flex-wrap: wrap; gap: 26px; margin: 16px 0 4px; }
+  .rp-cifra { display: flex; flex-direction: column; gap: 2px; }
+  .rp-cifra b { font-size: 1.6rem; font-weight: 650; letter-spacing: -.02em; }
+  .rp-cifra span { font-size: 12.5px; color: var(--grafito); }
+  .rp-cifra i { font-style: normal; font-size: 12px; color: var(--verde); }
+  .rp-cifra i.baja { color: var(--grafito); }
+
+  /* Cuántas preguntas quedan, junto a «Repaso» en el menú. Sin número si no hay ninguna: un cero
+     rojo en un menú es una regañina permanente. */
+  .cuantas {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px;
+    background: var(--magenta-velo); color: var(--magenta);
+    border: 1px solid var(--magenta-borde); border-radius: 20px; padding: 1px 7px;
+  }
+
   .zona-derechos, .zona-peligro {
     border-top: 1px solid var(--trazo-suave); padding-top: 18px; margin-top: 4px;
     display: flex; flex-direction: column; gap: 12px;
@@ -571,6 +617,7 @@
     <div class="marca">match<span class="punto">.</span>keting</div>
     <nav id="menu">
       <button class="item on" type="button" data-vista="hoy"><span class="marcador"></span>Hoy</button>
+      <button class="item" type="button" data-vista="repaso"><span class="marcador"></span>Repaso<span class="cuantas" id="menu-repaso" hidden></span></button>
       <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos</button>
       <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo</button>
       <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes</button>
@@ -589,6 +636,54 @@
   </aside>
 
   <main>
+    <!-- Repaso -->
+    <section id="vista-repaso" hidden>
+      <div class="titulo">
+        <h1>Repaso</h1>
+        <span class="sub" id="sub-repaso">—</span>
+      </div>
+
+      <!-- Una sola tarjeta a pantalla. Ver diez a la vez convierte una decisión en una lista, y una
+           lista se posterga. -->
+      <div class="panel repaso-caja" id="rp-tarjeta" hidden style="max-width:640px">
+        <div class="progreso"><i id="rp-barra" style="width:0%"></i></div>
+        <span class="rp-porque" id="rp-porque">—</span>
+        <h2 id="rp-titular">—</h2>
+        <p class="rp-detalle" id="rp-detalle">—</p>
+        <div class="rp-quien" id="rp-quien" hidden></div>
+        <div class="rp-opciones" id="rp-opciones"></div>
+        <div class="aviso" id="rp-aviso" hidden></div>
+        <p class="rp-teclas">Con el teclado: <kbd>1</kbd>…<kbd>4</kbd> para responder, <kbd>Esc</kbd> para dejarlo.</p>
+      </div>
+
+      <!-- Motivo de pérdida: el único dato extra de todo el módulo, y también de un toque. -->
+      <div class="panel repaso-caja" id="rp-motivo" hidden style="max-width:640px">
+        <span class="rp-porque">Perdida</span>
+        <h2 id="rp-motivo-que">—</h2>
+        <p class="rp-detalle">¿Por qué se ha perdido? Es lo que alimenta el informe de por qué se
+          pierde, el único que de verdad cambia cómo vendes.</p>
+        <div class="rp-opciones" id="rp-motivos"></div>
+        <div class="acciones"><button class="btn fantasma" type="button" id="rp-motivo-volver">Volver</button></div>
+      </div>
+
+      <!-- Al día -->
+      <div class="hecho-caja" id="rp-aldia" hidden>
+        <span class="bolita"></span>
+        <div class="grande">Al día</div>
+        <p>No hay nada que decidir. Cierra el portátil.</p>
+      </div>
+
+      <!-- El resumen: lo que el comercial se lleva por haber repasado -->
+      <div class="panel" id="rp-resumen" hidden style="max-width:640px">
+        <span class="rp-porque">Tu semana</span>
+        <h2 id="rp-resumen-titular">—</h2>
+        <div class="rp-cifras" id="rp-cifras"></div>
+        <div class="acciones">
+          <button class="btn fantasma" type="button" id="rp-otra-vuelta">Ver si queda algo</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Hoy -->
     <section id="vista-hoy">
       <div class="titulo">
@@ -1209,6 +1304,7 @@
     await cargarAjustes();
     await cargarFormularios();
     await cargarHoy();
+    await contarRepaso();
   }
 
   async function cargarAjustes() {
@@ -1249,6 +1345,264 @@
       mostrarAviso($('aviso-ajustes'), e.message);
     } finally {
       boton.disabled = false;
+    }
+  });
+
+  // ---------- Repaso ----------
+  //
+  // La pila se descarga **una vez** y se contesta en memoria, avanzando de tarjeta en tarjeta. Volver
+  // a pedirla en cada respuesta metería un viaje al servidor entre toque y toque, y con tres segundos
+  // por tarjeta eso se nota como si la aplicación fuera lenta.
+
+  var repaso = { pila: [], indice: 0, total: 0, pendiente: null };
+
+  var MOTIVOS_LISTA = [
+    { valor: 1, etiqueta: 'Por precio' },
+    { valor: 2, etiqueta: 'Por plazo' },
+    { valor: 3, etiqueta: 'Se fue a la competencia' },
+    { valor: 4, etiqueta: 'No era el momento' },
+    { valor: 5, etiqueta: 'No contestó' },
+    { valor: 6, etiqueta: 'Otro motivo' }
+  ];
+
+  // Solo el número del menú, al entrar. Se pide aparte de la pila porque la aplicación abre en Hoy:
+  // descargar las treinta tarjetas de una pantalla que quizá no se visite sería gastar seis consultas
+  // para nada.
+  async function contarRepaso() {
+    try {
+      var pila = await api('/repaso');
+      var chapa = $('menu-repaso');
+      chapa.textContent = String(pila.total);
+      chapa.hidden = pila.total === 0;
+    } catch (e) {
+      $('menu-repaso').hidden = true;
+    }
+  }
+
+  function subVistaRepaso(cual) {
+    ['rp-tarjeta', 'rp-motivo', 'rp-aldia', 'rp-resumen'].forEach(function (v) {
+      $(v).hidden = v !== cual;
+    });
+    mostrarAviso($('rp-aviso'), '');
+  }
+
+  async function cargarRepaso() {
+    var pila;
+    try {
+      pila = await api('/repaso');
+    } catch (e) {
+      subVistaRepaso('rp-aldia');
+      return;
+    }
+
+    repaso.pila = pila.preguntas;
+    repaso.indice = 0;
+    repaso.total = pila.total;
+
+    var chapa = $('menu-repaso');
+    chapa.textContent = String(pila.total);
+    chapa.hidden = pila.total === 0;
+
+    if (pila.alDia) {
+      $('sub-repaso').textContent = 'nada pendiente';
+      await pintarResumen();
+      subVistaRepaso('rp-aldia');
+      return;
+    }
+
+    var minutos = Math.max(1, Math.round(pila.segundosEstimados / 60));
+    $('sub-repaso').textContent = pila.total + (pila.total === 1 ? ' decisión' : ' decisiones') +
+      ' · ' + (minutos === 1 ? 'un minuto' : 'unos ' + minutos + ' minutos');
+
+    pintarTarjeta();
+  }
+
+  function pintarTarjeta() {
+    if (repaso.indice >= repaso.pila.length) {
+      // Se acabó el lote. Se vuelve a pedir la pila: puede que queden más, y puede que alguna
+      // respuesta haya tumbado tarjetas que ya no aplican.
+      terminarRonda();
+      return;
+    }
+
+    var p = repaso.pila[repaso.indice];
+    subVistaRepaso('rp-tarjeta');
+
+    $('rp-barra').style.width = Math.round(repaso.indice / repaso.pila.length * 100) + '%';
+    $('rp-porque').textContent = (repaso.indice + 1) + ' de ' + repaso.pila.length;
+    $('rp-titular').textContent = p.titular;
+    $('rp-detalle').textContent = p.detalle;
+
+    var quien = $('rp-quien');
+    var pistas = [];
+    if (p.nombreContacto && p.titular !== p.nombreContacto) { pistas.push(p.nombreContacto); }
+    if (p.telefono) { pistas.push(p.telefono); }
+    quien.textContent = pistas.join(' · ');
+    quien.hidden = pistas.length === 0;
+
+    var caja = $('rp-opciones');
+    caja.textContent = '';
+    p.opciones.forEach(function (o, i) {
+      var boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'btn' + (o.principal ? ' pri' : ' fantasma');
+      var tecla = document.createElement('span');
+      tecla.className = 'tecla';
+      tecla.textContent = String(i + 1);
+      boton.appendChild(tecla);
+      boton.appendChild(document.createTextNode(o.etiqueta));
+      boton.addEventListener('click', function () { elegir(o); });
+      caja.appendChild(boton);
+    });
+
+    // El foco va a la respuesta probable: con Intro se avanza sin mover la mano.
+    var primero = caja.querySelector('.btn');
+    if (primero) { primero.focus(); }
+  }
+
+  function elegir(opcion) {
+    if (opcion.pideMotivo) {
+      // Lo irreversible pide su dato. Es el único sitio del repaso donde hay un segundo toque.
+      repaso.pendiente = opcion;
+      $('rp-motivo-que').textContent = repaso.pila[repaso.indice].titular;
+      pintarMotivos();
+      subVistaRepaso('rp-motivo');
+      return;
+    }
+
+    responder(opcion.respuesta, null);
+  }
+
+  function pintarMotivos() {
+    var caja = $('rp-motivos');
+    caja.textContent = '';
+    MOTIVOS_LISTA.forEach(function (m, i) {
+      var boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'btn fantasma';
+      var tecla = document.createElement('span');
+      tecla.className = 'tecla';
+      tecla.textContent = String(i + 1);
+      boton.appendChild(tecla);
+      boton.appendChild(document.createTextNode(m.etiqueta));
+      boton.addEventListener('click', function () { responder(repaso.pendiente.respuesta, m.valor); });
+      caja.appendChild(boton);
+    });
+    var primero = caja.querySelector('.btn');
+    if (primero) { primero.focus(); }
+  }
+
+  async function responder(respuesta, motivo) {
+    var pregunta = repaso.pila[repaso.indice];
+    Array.prototype.forEach.call(document.querySelectorAll('#rp-opciones .btn, #rp-motivos .btn'),
+      function (b) { b.disabled = true; });
+
+    try {
+      var r = await api('/repaso/responder', {
+        metodo: 'POST',
+        cuerpo: { clave: pregunta.clave, respuesta: respuesta, motivo: motivo }
+      });
+      repaso.pendiente = null;
+      repaso.indice++;
+      pintarTarjeta();
+      mostrarAviso($('rp-aviso'), r.efecto, true);
+    } catch (e) {
+      // Si el servidor dice que no, la tarjeta se queda: nunca desaparece de la pantalla algo que no
+      // se llegó a hacer.
+      subVistaRepaso('rp-tarjeta');
+      pintarTarjeta();
+      mostrarAviso($('rp-aviso'), e.message);
+    }
+  }
+
+  async function terminarRonda() {
+    var pila = await api('/repaso');
+    var chapa = $('menu-repaso');
+    chapa.textContent = String(pila.total);
+    chapa.hidden = pila.total === 0;
+
+    if (!pila.alDia) {
+      repaso.pila = pila.preguntas;
+      repaso.indice = 0;
+      repaso.total = pila.total;
+      pintarTarjeta();
+      return;
+    }
+
+    $('sub-repaso').textContent = 'al día';
+    await pintarResumen();
+    subVistaRepaso('rp-resumen');
+    await cargarHoy();
+  }
+
+  async function pintarResumen() {
+    var r = await api('/repaso/resumen?dias=7');
+    $('rp-resumen-titular').textContent = r.titular;
+
+    var caja = $('rp-cifras');
+    caja.textContent = '';
+
+    var cifras = [
+      { n: r.llamadas, que: r.llamadas === 1 ? 'llamada' : 'llamadas', comparar: r.llamadasSemanaAnterior },
+      { n: r.contactosNuevos, que: r.contactosNuevos === 1 ? 'contacto nuevo' : 'contactos nuevos' },
+      { n: r.oportunidadesAbiertas, que: r.oportunidadesAbiertas === 1 ? 'oportunidad' : 'oportunidades' },
+      { n: r.tareasCerradas, que: r.tareasCerradas === 1 ? 'tarea cerrada' : 'tareas cerradas' }
+    ];
+
+    if (r.ratioCierre !== null && r.ratioCierre !== undefined) {
+      cifras.push({ texto: r.ratioCierre + ' %', que: 'de lo cerrado, ganado' });
+    }
+
+    cifras.forEach(function (c) {
+      var el = document.createElement('div');
+      el.className = 'rp-cifra';
+      var b = document.createElement('b');
+      b.textContent = c.texto !== undefined ? c.texto : String(c.n);
+      var s = document.createElement('span');
+      s.textContent = c.que;
+      el.appendChild(b);
+      el.appendChild(s);
+
+      // Comparar con la semana anterior solo cuando hay con qué comparar y el cambio dice algo.
+      if (c.comparar !== undefined && c.comparar > 0 && c.n !== c.comparar) {
+        var i = document.createElement('i');
+        var mas = c.n > c.comparar;
+        i.className = mas ? '' : 'baja';
+        i.textContent = (mas ? '+' : '') + (c.n - c.comparar) + ' que la semana pasada';
+        el.appendChild(i);
+      }
+
+      caja.appendChild(el);
+    });
+  }
+
+  $('rp-motivo-volver').addEventListener('click', function () {
+    repaso.pendiente = null;
+    subVistaRepaso('rp-tarjeta');
+    pintarTarjeta();
+  });
+
+  $('rp-otra-vuelta').addEventListener('click', cargarRepaso);
+
+  // Teclado. Es lo que separa «tres segundos por tarjeta» de «diez»: la mano no se mueve.
+  document.addEventListener('keydown', function (e) {
+    if ($('vista-repaso').hidden || e.ctrlKey || e.metaKey || e.altKey) { return; }
+
+    if (e.key === 'Escape') {
+      if (!$('rp-motivo').hidden) { $('rp-motivo-volver').click(); return; }
+      var opciones = repaso.pila[repaso.indice] && repaso.pila[repaso.indice].opciones;
+      if (opciones) { elegir(opciones[opciones.length - 1]); }   // «Ahora no» es siempre la última
+      return;
+    }
+
+    var n = Number(e.key);
+    if (!n || n < 1 || n > 9) { return; }
+
+    var caja = $('rp-motivo').hidden ? $('rp-opciones') : $('rp-motivos');
+    var boton = caja.querySelectorAll('.btn')[n - 1];
+    if (boton && !boton.disabled) {
+      e.preventDefault();
+      boton.click();
     }
   });
 
@@ -1469,12 +1823,13 @@
       Array.prototype.forEach.call(document.querySelectorAll('.item'), function (o) {
         o.classList.toggle('on', o === b);
       });
-      ['hoy', 'contactos', 'embudo', 'informes', 'ajustes'].forEach(function (v) {
+      ['hoy', 'repaso', 'contactos', 'embudo', 'informes', 'ajustes'].forEach(function (v) {
         $('vista-' + v).hidden = v !== b.dataset.vista;
       });
       if (b.dataset.vista === 'contactos') { subVista('con-lista'); cargarContactos(); }
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
       if (b.dataset.vista === 'hoy') { cargarHoy(); }
+      if (b.dataset.vista === 'repaso') { cargarRepaso(); }
       if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); }
       if (b.dataset.vista === 'informes') { cargarInformes(); }
     });

@@ -1,6 +1,6 @@
 # Guía para agentes (CLAUDE.md)
 
-**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Los ocho módulos están terminados.
+**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Nueve módulos terminados.
 
 Lee primero [`README.md`](README.md) (estructura y API) y, según lo que vayas a tocar,
 [`docs/modulos/<modulo>.md`](docs/modulos/): cada uno explica **por qué** está hecho así, incluidas las
@@ -26,12 +26,15 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
   en el mismo sitio donde lo relajas.
 - **Ningún número sin motivo.** Si una cifra que se le muestra a una persona no se puede explicar en
   una frase, no se muestra. Vale para el Match y vale para todo lo demás.
+- **Nunca pidas un dato que el sistema puede deducir**, y nunca preguntes dos veces lo mismo por dos
+  caminos. Es la tesis del módulo [Repaso](docs/modulos/repaso.md) y la razón de que un comercial
+  abra esto: en cuanto una pantalla pide escribir o repite una pregunta, se abandona.
 
 ## Compilar y probar
 
 ```bash
 dotnet build
-dotnet test                            # 370 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 408 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -89,6 +92,9 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   clase nueva, márcala con `[Collection(ColeccionApi.Nombre)]` o borrará la base mientras otra la usa.
   Y filtra siempre por identificador al consultar: `FirstAsync()` sin `WHERE` recoge filas de otra
   prueba.
+- **El servidor no formatea números con `:N0`.** Con `InvariantGlobalization` eso produce «8,400 €»,
+  que en España es una cifra distinta, y la cultura `es-ES` no existe sin ICU. Usa
+  `Castellano.Euros(...)`.
 - **Nada de datos personales en `auditoria.registro`.** Hay una red que tapa correos y teléfonos, pero
   no metas texto libre escrito por usuarios: la tabla es append-only y de ahí no sale nada.
 

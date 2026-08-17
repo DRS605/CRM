@@ -1,7 +1,8 @@
 # match.keting
 
-El CRM que te dice **a quién llamar hoy, y por qué**. Para pymes españolas de 1 a 10 personas, con
-uno a tres comerciales.
+El CRM que te dice **a quién llamar hoy, y por qué** — y que te deja cerrar el seguimiento de una
+semana en menos de dos minutos, sin escribir nada. Para pymes españolas de 1 a 10 personas, con uno a
+tres comerciales.
 
 > **Producto independiente.** No es un módulo de ALXOR Core: repositorio, base de datos y login
 > propios. La integración con el ERP es opcional y va por API y eventos.
@@ -15,6 +16,8 @@ Documentación por módulo en [`docs/modulos/`](docs/modulos/).
 ## Principios
 
 - La simplicidad gana a la cantidad de funcionalidades.
+- **El comercial no rellena el CRM: el CRM pregunta y él contesta.** Todo lo que el sistema puede
+  deducir, lo deduce y lo propone. Ver [Repaso](docs/modulos/repaso.md).
 - La aplicación abre en **Hoy**, no en un panel de gráficas. Cuando Hoy se vacía, se dice y se para.
 - **Ningún número sin motivo**: si el Match no puede explicarse en una frase, no se muestra.
 - Nada se envía en nombre de una persona sin que lo vea antes.
@@ -39,6 +42,7 @@ src/
   Matchketing.Match           Señales, Encaje, Momento y reparto de leads
   Matchketing.Captacion       Formulario embebible y entrada pública de leads
   Matchketing.Informes        Embudo, conversión y motivos de pérdida, con CSV
+  Matchketing.Repaso          El repaso semanal: seis preguntas derivadas, cero texto libre
   Matchketing.Cumplimiento    Consentimiento con prueba, baja de un clic, RGPD y retención
   Matchketing.Auditoria       Quién hizo qué (transversal, como Núcleo)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
@@ -47,7 +51,7 @@ tests/
   Matchketing.Nucleo.Tests · Matchketing.Identidad.Tests · Matchketing.Organizacion.Tests
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
   Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
-  Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests
+  Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests · Matchketing.Repaso.Tests
   Matchketing.IntegrationTests
 ```
 
@@ -67,8 +71,10 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 6. Captación | ✅ Terminado |
 | 7. Informes | ✅ Terminado |
 | 8. Cumplimiento | ✅ Terminado |
+| 9. Repaso | ✅ Terminado |
 
-Los ocho módulos están terminados. Lo que se añadió después del octavo —auditoría, trabajos en
+Los ocho módulos del MVP están terminados, más el noveno —**Repaso**—, que es el que hace que un
+comercial abra esto los viernes. Lo que se añadió después del octavo —auditoría, trabajos en
 segundo plano, límite de intentos de acceso, sonda de salud real y el rol de base de datos sin
 superusuario— está en [`docs/despliegue.md`](docs/despliegue.md).
 
@@ -78,7 +84,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 370 pruebas: 257 unitarias + 113 de integración
+dotnet test                                  # 408 pruebas: 285 unitarias + 123 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -176,5 +182,8 @@ ignóralos.
 | `GET` | `/b/{token}` | **Página de baja** (pública). Pregunta; no da de baja |
 | `POST` | `/b/{token}` | Confirma la baja (pública) |
 | `GET` | `/auditoria` | Quién hizo qué y cuándo |
+| `GET` | `/repaso` | **La pila del repaso**: qué decidir, con las respuestas escritas |
+| `POST` | `/repaso/responder` | Contesta una pregunta y hace todo lo que implica |
+| `GET` | `/repaso/resumen?dias=7` | Su semana, contada para él |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

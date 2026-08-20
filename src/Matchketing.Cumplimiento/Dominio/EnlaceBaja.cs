@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Resultados;
 
 namespace Matchketing.Cumplimiento.Dominio;
@@ -30,7 +31,7 @@ public static class EnlaceBaja
         empresaId.TryWriteBytes(carga.AsSpan(0, 16));
         contactoId.TryWriteBytes(carga.AsSpan(16, 16));
 
-        return $"{Codificar(carga)}.{Codificar(Firma(carga, secreto))}";
+        return $"{Base64Url.Codificar(carga)}.{Base64Url.Codificar(Firma(carga, secreto))}";
     }
 
     /// <summary>
@@ -52,8 +53,8 @@ public static class EnlaceBaja
 
         var partes = token.Split('.');
         if (partes.Length != 2
-            || Descodificar(partes[0]) is not { Length: BytesCarga } carga
-            || Descodificar(partes[1]) is not { } firma)
+            || Base64Url.Descodificar(partes[0]) is not { Length: BytesCarga } carga
+            || Base64Url.Descodificar(partes[1]) is not { } firma)
         {
             return invalido;
         }
@@ -68,16 +69,4 @@ public static class EnlaceBaja
     private static byte[] Firma(byte[] carga, string secreto) =>
         HMACSHA256.HashData(Encoding.UTF8.GetBytes(secreto), carga);
 
-    /// <summary>Base64 apto para URL: sin «+», sin «/» y sin relleno, que en una URL molestan.</summary>
-    private static string Codificar(byte[] datos) =>
-        Convert.ToBase64String(datos).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-    private static byte[]? Descodificar(string texto)
-    {
-        var completo = texto.Replace('-', '+').Replace('_', '/');
-        completo += new string('=', (4 - (completo.Length % 4)) % 4);
-
-        var destino = new byte[completo.Length / 4 * 3];
-        return Convert.TryFromBase64String(completo, destino, out var escritos) ? destino[..escritos] : null;
-    }
 }

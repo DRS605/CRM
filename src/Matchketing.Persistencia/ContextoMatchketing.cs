@@ -50,6 +50,8 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
 
     public DbSet<Repaso.Dominio.Pospuesta> Pospuestas => Set<Repaso.Dominio.Pospuesta>();
 
+    public DbSet<Avisos.Dominio.SuscripcionAviso> Suscripciones => Set<Avisos.Dominio.SuscripcionAviso>();
+
     /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
     public Guid? EmpresaActual => contexto.EmpresaId;
 
@@ -98,6 +100,7 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
         modelo.Entity<Cumplimiento.Dominio.Consentimiento>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
         modelo.Entity<Auditoria.Dominio.RegistroAuditoria>().HasQueryFilter(r => r.EmpresaId == EmpresaActual);
         modelo.Entity<Repaso.Dominio.Pospuesta>().HasQueryFilter(p => p.EmpresaId == EmpresaActual);
+        modelo.Entity<Avisos.Dominio.SuscripcionAviso>().HasQueryFilter(s => s.EmpresaId == EmpresaActual);
 
         // Los identificadores los genera **el dominio**, nunca la base: todos los agregados hacen
         // `Guid.NewGuid()` al crearse. Hay que decírselo a EF, porque si cree que los genera la base

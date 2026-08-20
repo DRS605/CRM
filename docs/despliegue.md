@@ -81,12 +81,13 @@ matchketing_app`.
 
 ## 2. Secretos
 
-Tres valores que **no** pueden quedarse en los de desarrollo:
+Cuatro valores que **no** pueden quedarse en los de desarrollo:
 
 | Ajuste | Para qué | Si se rota… |
 | --- | --- | --- |
 | `Jwt:Clave` | Firma los tokens de sesión. | Todo el mundo tiene que volver a entrar. Inocuo. |
 | `Baja:Secreto` | Firma los enlaces de baja. | **Mata todos los enlaces de baja emitidos.** Ver abajo. |
+| `Avisos:ClavePrivada` | Firma el token VAPID de los avisos push. | **Deja a toda la plantilla sin avisos**, en silencio, hasta el viernes. Ver abajo. |
 | `ConnectionStrings:Matchketing` | Con el rol del punto 1. | — |
 
 `Baja:Secreto` es distinto del JWT precisamente para que las dos rotaciones no estén atadas. Los
@@ -96,6 +97,14 @@ hacerlo, hay que asumir que quien tenga un correo antiguo verá «este enlace no
 
 `Baja:UrlBase` tiene que ser la dirección pública desde la que se sirve la aplicación: es la que se
 pega en los correos.
+
+Las claves de avisos (`Avisos:ClavePublica`, `Avisos:ClavePrivada`, `Avisos:Sujeto`) **se generan
+solas al arrancar si no están**, y se avisa por registro. Eso vale para desarrollo y no vale para
+producción: la clave pública va dentro de cada suscripción del navegador, así que unas claves nuevas
+invalidan todas las suscripciones existentes. Un reinicio sin las claves fijadas dejaría a toda la
+plantilla sin avisos y nadie se enteraría hasta el viernes por la tarde. Genéralas una vez, guárdalas
+con el resto de secretos y no las toques. Son un par ECDSA P-256 en base64url; la aplicación las
+imprime al arrancar cuando las genera.
 
 ## 3. Migraciones
 
@@ -116,19 +125,25 @@ exactamente el estado en el que no hay que mandarle tráfico.
 
 ## 5. Trabajos en segundo plano
 
-Tres trabajos corren dentro del propio proceso (`Trabajos/`):
+Cuatro trabajos corren dentro del propio proceso (`Trabajos/`):
 
 | Trabajo | Cada | Qué hace |
 | --- | --- | --- |
 | Barrido de Match | 24 h | Recalcula el Match de todos los contactos: el Momento decae con el tiempo y el tiempo pasa sin que nadie pulse nada. |
 | Rebote de leads | 30 min | Reasigna los leads sin atender pasadas las horas laborables configuradas. |
 | Retención de leads | 24 h | Borra los leads que han cumplido su plazo de conservación. |
+| Aviso del repaso | 30 min | Solo actúa los viernes entre las 18:00 y las 18:59 (hora de España): manda el aviso push a quien tenga decisiones pendientes. |
 
 Van dentro del proceso porque a esta escala montar un planificador aparte añade una pieza que puede
-fallar sola. **Con varias instancias hay que ejecutarlos en una sola**: los tres son idempotentes en
-el sentido de que no corrompen nada si se solapan, pero el de retención borraría en paralelo y el de
-rebote podría reasignar dos veces el mismo lead. La forma más simple es una variable de entorno que
-los active solo en una instancia; si algún día hace falta más, toca un cerrojo en la base.
+fallar sola. **Con varias instancias hay que ejecutarlos en una sola**: ninguno corrompe nada al
+solaparse, pero el de retención borraría en paralelo y el de rebote podría reasignar dos veces el
+mismo lead. La forma más simple es una variable de entorno que los active solo en una instancia; si
+algún día hace falta más, toca un cerrojo en la base.
+
+El del aviso es la excepción: aguanta solaparse sin consecuencias porque su idempotencia no depende
+del planificador sino del dato, `SuscripcionAviso.UltimoAvisoEn`. Aunque corra en cuatro instancias,
+no salen cuatro avisos. Está hecho así a propósito, porque el día que haya dos procesos y lleguen dos
+avisos es el día en que la gente los apaga.
 
 El rebote va cada media hora y no una vez al día por un motivo concreto: un plazo de cuatro horas
 laborables que se comprobara solo de madrugada se convertiría en un plazo de un día.

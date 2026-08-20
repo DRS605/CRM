@@ -17,5 +17,6 @@
     <ProjectReference Include="..\Matchketing.Cumplimiento\Matchketing.Cumplimiento.csproj" />
     <ProjectReference Include="..\Matchketing.Informes\Matchketing.Informes.csproj" />
     <ProjectReference Include="..\Matchketing.Repaso\Matchketing.Repaso.csproj" />
+    <ProjectReference Include="..\Matchketing.Avisos\Matchketing.Avisos.csproj" />
   </ItemGroup>
 </Project>

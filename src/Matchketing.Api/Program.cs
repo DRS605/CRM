@@ -5,6 +5,8 @@ using Matchketing.Api.Comun;
 using Matchketing.Api.Endpoints;
 using Matchketing.Api.Trabajos;
 using Matchketing.Auditoria.Aplicacion;
+using Matchketing.Avisos.Aplicacion;
+using Matchketing.Avisos.Dominio;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Cumplimiento.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
@@ -112,11 +114,44 @@ constructor.Services.AddScoped<IConsultaRepaso, ConsultaRepaso>();
 constructor.Services.AddScoped<IRepositorioPospuestas, RepositorioPospuestas>();
 constructor.Services.AddScoped<IAccionesRepaso, AccionesRepaso>();
 constructor.Services.AddScoped<ServicioRepaso>();
+constructor.Services.AddScoped<IRepositorioSuscripciones, RepositorioSuscripciones>();
+constructor.Services.AddScoped<IConsultaPendientes, ConsultaPendientes>();
+constructor.Services.AddScoped<ServicioAvisos>();
+
+// Las claves VAPID. En desarrollo se generan al arrancar, y eso es correcto **solo** en desarrollo:
+// cada reinicio invalida las suscripciones existentes. En producción vienen de la configuración, y si
+// faltan la aplicación arranca igual pero sin avisos; caerse por no poder mandar un aviso semanal
+// sería peor que no mandarlo.
+constructor.Services.AddSingleton(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var sujeto = config["Avisos:Sujeto"] ?? "mailto:avisos@matchketing.es";
+    var cargadas = ClavesVapid.De(config["Avisos:ClavePublica"], config["Avisos:ClavePrivada"], sujeto);
+
+    if (cargadas.Exito)
+    {
+        return cargadas.Valor;
+    }
+
+    var registro = sp.GetRequiredService<ILoggerFactory>().CreateLogger("Avisos");
+    var generadas = ClavesVapid.Generar(sujeto);
+    registro.LogWarning(
+        "Sin claves VAPID en la configuración: se han generado unas de usar y tirar. Los avisos push " +
+        "funcionarán hasta el próximo reinicio. Para producción, pon estas en la configuración: " +
+        "Avisos:ClavePublica={Publica} Avisos:ClavePrivada={Privada}", generadas.Publica, generadas.Privada);
+
+    return generadas;
+});
+
+// Cliente propio para los servicios de push: son terceros lentos y no queremos que un aviso atascado
+// se coma el grupo de conexiones que atiende a las personas.
+constructor.Services.AddHttpClient<IEmisorAvisos, EmisorWebPush>(c => c.Timeout = TimeSpan.FromSeconds(10));
 
 // Los tres trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
 constructor.Services.AddHostedService<TrabajoBarridoMatch>();
 constructor.Services.AddHostedService<TrabajoReboteLeads>();
 constructor.Services.AddHostedService<TrabajoRetencion>();
+constructor.Services.AddHostedService<TrabajoAvisoRepaso>();
 
 // Límite de intentos en el acceso. Sin esto, la única defensa de una contraseña es su longitud, y
 // probar cien mil contraseñas contra un correo conocido no cuesta nada de dinero ni de tiempo.
@@ -229,6 +264,7 @@ app.MapearInformes();
 app.MapearCumplimiento();
 app.MapearAuditoria();
 app.MapearRepaso();
+app.MapearAvisos();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

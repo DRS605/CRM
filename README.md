@@ -43,6 +43,7 @@ src/
   Matchketing.Captacion       Formulario embebible y entrada pública de leads
   Matchketing.Informes        Embudo, conversión y motivos de pérdida, con CSV
   Matchketing.Repaso          El repaso semanal: seis preguntas derivadas, cero texto libre
+  Matchketing.Avisos          Web Push propio: VAPID, cifrado del cuerpo y el empujón del viernes
   Matchketing.Cumplimiento    Consentimiento con prueba, baja de un clic, RGPD y retención
   Matchketing.Auditoria       Quién hizo qué (transversal, como Núcleo)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
@@ -52,7 +53,7 @@ tests/
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
   Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
   Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests · Matchketing.Repaso.Tests
-  Matchketing.IntegrationTests
+  Matchketing.Avisos.Tests · Matchketing.IntegrationTests
 ```
 
 `Matchketing.Auditoria` es la **única excepción** a la regla de que ningún módulo referencia a otro:
@@ -72,11 +73,14 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 7. Informes | ✅ Terminado |
 | 8. Cumplimiento | ✅ Terminado |
 | 9. Repaso | ✅ Terminado |
+| 10. Avisos | ✅ Terminado |
 
-Los ocho módulos del MVP están terminados, más el noveno —**Repaso**—, que es el que hace que un
-comercial abra esto los viernes. Lo que se añadió después del octavo —auditoría, trabajos en
-segundo plano, límite de intentos de acceso, sonda de salud real y el rol de base de datos sin
-superusuario— está en [`docs/despliegue.md`](docs/despliegue.md).
+Los ocho módulos del MVP están terminados, más dos que son los que hacen que un comercial vuelva:
+**Repaso**, que reduce cerrar la semana a dos minutos, y **[Avisos](docs/modulos/avisos.md)**, que
+hace que se acuerde —un aviso al móvil, los viernes a las seis, y solo si hay algo que decidir—. Lo
+que se añadió después del octavo —auditoría, trabajos en segundo plano, límite de intentos de acceso,
+sonda de salud real y el rol de base de datos sin superusuario— está en
+[`docs/despliegue.md`](docs/despliegue.md).
 
 ## Puesta en marcha
 
@@ -84,7 +88,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 413 pruebas: 285 unitarias + 128 de integración
+dotnet test                                  # 490 pruebas: 334 unitarias + 156 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -188,5 +192,9 @@ ignóralos.
 | `GET` | `/repaso` | **La pila del repaso**: qué decidir, con las respuestas escritas |
 | `POST` | `/repaso/responder` | Contesta una pregunta y hace todo lo que implica |
 | `GET` | `/repaso/resumen?dias=7` | Su semana, contada para él |
+| `GET` | `/avisos/clave` | La clave pública VAPID con la que se suscribe el navegador |
+| `GET` | `/avisos/aparatos` | Sus aparatos con avisos activados. Sin el endpoint |
+| `POST` | `/avisos/suscripcion` | Da de alta este aparato. Idempotente |
+| `DELETE` | `/avisos/suscripcion?endpoint=` | Lo apaga. **Nunca falla**, ni si no existía |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

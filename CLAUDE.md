@@ -1,6 +1,6 @@
 # Guía para agentes (CLAUDE.md)
 
-**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Nueve módulos terminados.
+**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Diez módulos terminados.
 
 Lee primero [`README.md`](README.md) (estructura y API) y, según lo que vayas a tocar,
 [`docs/modulos/<modulo>.md`](docs/modulos/): cada uno explica **por qué** está hecho así, incluidas las
@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 413 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 490 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -97,6 +97,14 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   `Castellano.Euros(...)`.
 - **Nada de datos personales en `auditoria.registro`.** Hay una red que tapa correos y teléfonos, pero
   no metas texto libre escrito por usuarios: la tabla es append-only y de ahí no sale nada.
+- **`pushManager.subscribe()` puede no fallar nunca.** Si el navegador no alcanza el servicio de push
+  de su fabricante, reintenta por dentro y la promesa se queda colgada para siempre: el botón se
+  queda gris y en pantalla no aparece nada. Todo lo que dependa de un servicio externo del navegador
+  va con plazo. Y `e.message` puede venir vacío, así que un `catch` que solo lo propague no enseña
+  nada: usa `motivoDe(...)`, que nunca devuelve vacío. Ver [`docs/modulos/avisos.md`](docs/modulos/avisos.md).
+- **El trabajador de servicio sirve el armazón desde la caché**, así que un cambio en `index.html` no
+  se ve en la primera recarga. Al probar en un navegador automatizado, usa un perfil limpio; si no,
+  estarás mirando la versión anterior y buscando un fallo que ya arreglaste. Pasó.
 
 ## Interfaz
 

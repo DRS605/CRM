@@ -1,8 +1,10 @@
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Contactos.Dominio;
+using Matchketing.Avisos.Aplicacion;
 using Matchketing.Cumplimiento.Aplicacion;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Match.Aplicacion;
+using Matchketing.Nucleo.Tiempo;
 using Matchketing.Organizacion.Aplicacion;
 using Matchketing.Persistencia;
 
@@ -144,5 +146,67 @@ public sealed class TrabajoRetencion(IServiceProvider servicios, ILogger<Trabajo
         return r.Valor.LeadsBorrados == 0
             ? null
             : $"{r.Valor.LeadsBorrados} leads borrados por antigüedad ({r.Valor.Meses} meses), {r.Valor.FilasBorradas} filas.";
+    }
+}
+
+/// <summary>
+/// El empujón del viernes por la tarde: manda un aviso a quien tenga decisiones pendientes en el
+/// repaso.
+///
+/// Es la última pieza de la tesis del repaso. El repaso hace que cerrar la semana cueste dos minutos;
+/// esto hace que uno **se acuerde**. Sin el aviso, el repaso lo hace quien ya era ordenado, que es
+/// justo quien menos lo necesitaba.
+///
+/// Se comprueba cada media hora y solo actúa en la ventana del viernes por la tarde. La idempotencia
+/// no la da el reloj sino <c>SuscripcionAviso.UltimoAvisoEn</c>: si el trabajo corre dos veces —dos
+/// instancias, un reintento— no llegan dos avisos.
+/// </summary>
+public sealed class TrabajoAvisoRepaso(IServiceProvider servicios, ILogger<TrabajoAvisoRepaso> logger)
+    : TrabajoPeriodico(servicios, logger)
+{
+    /// <summary>Viernes a las 18:00, hora de España. Ver <see cref="HorasLaborables"/>.</summary>
+    private const int HoraDelAviso = 18;
+
+    protected override string Nombre => "Aviso del repaso";
+
+    protected override TimeSpan Cada => TimeSpan.FromMinutes(30);
+
+    protected override TimeSpan Espera => TimeSpan.FromMinutes(5);
+
+    protected override async Task<string?> ParaEmpresaAsync(IServiceProvider ambito, Guid empresaId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(ambito);
+
+        if (!EsLaHora(ambito.GetRequiredService<IReloj>().AhoraUtc))
+        {
+            return null;
+        }
+
+        var avisos = ambito.GetRequiredService<ServicioAvisos>();
+        var unidad = ambito.GetRequiredService<IUnidadDeTrabajo>();
+
+        var resumen = await avisos.AvisarDelRepasoAsync(ct).ConfigureAwait(false);
+        if (resumen.Enviados + resumen.Borrados == 0)
+        {
+            return resumen.Fallidos == 0 ? null : $"{resumen.Fallidos} avisos no salieron; se reintentan.";
+        }
+
+        await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+
+        return $"{resumen.Enviados} avisos enviados" +
+            (resumen.Borrados > 0 ? $", {resumen.Borrados} suscripciones caducadas borradas" : string.Empty) +
+            (resumen.Fallidos > 0 ? $", {resumen.Fallidos} fallidos" : string.Empty) + ".";
+    }
+
+    /// <summary>
+    /// Viernes entre las 18:00 y las 18:59, en hora local española. La ventana es de una hora porque el
+    /// trabajo se comprueba cada treinta minutos: con una ventana más estrecha, una pasada que llegue
+    /// tarde se salta la semana entera.
+    /// </summary>
+    private static bool EsLaHora(DateTimeOffset ahoraUtc)
+    {
+        // `HorasLaborables` ya sabe convertir a hora española y aguanta que falte la base de zonas.
+        var local = HorasLaborables.EnHoraLocal(ahoraUtc);
+        return local.DayOfWeek == DayOfWeek.Friday && local.Hour == HoraDelAviso;
     }
 }

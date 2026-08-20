@@ -31,6 +31,12 @@ public static class HorasLaborables
     public static TimeSpan JornadaCompleta => TimeSpan.FromHours(UltimaHora - PrimeraHora);
 
     /// <summary>
+    /// El mismo instante, en hora española. Se expone porque hay más cosas que se cuentan en hora
+    /// local y no en UTC: el aviso del viernes a las seis de la tarde es a las seis **de aquí**.
+    /// </summary>
+    public static DateTimeOffset EnHoraLocal(DateTimeOffset instante) => TimeZoneInfo.ConvertTime(instante, Zona);
+
+    /// <summary>
     /// Instante en el que se cumplen <paramref name="horas"/> horas laborables contadas desde
     /// <paramref name="desde"/>. Si arranca fuera de horario, empieza a contar en la siguiente
     /// apertura: un lead que entra a medianoche tiene su plazo desde las nueve de la mañana.

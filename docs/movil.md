@@ -88,14 +88,21 @@ Lo que **no** hace, a propósito:
 * **No encola respuestas para enviarlas luego.** Contestar «Ganada» y que se envíe mañana significa que
   durante un día el embudo miente. Si no hay red, la aplicación lo dice y no finge.
 
-## Lo que falta
+## El aviso del viernes: ya está
 
-**Un aviso el viernes a las seis.** El distintivo en el icono es el 80 % del efecto, pero solo lo ves
-si mueves el teléfono. Un aviso de verdad necesita **Web Push**: claves VAPID, firma ES256, cifrado
-AES128GCM del cuerpo, una tabla de suscripciones y un trabajo que las recorra. Son unas trescientas
-líneas de criptografía y, sobre todo, **no se puede probar de verdad aquí**, porque hace falta un
-servicio de push real al que llegar. Preferimos no decir que funciona algo que no hemos visto
-funcionar.
+El distintivo en el icono es el 80 % del efecto, pero solo lo ves si mueves el teléfono. El aviso de
+verdad —Web Push, con claves VAPID y el cuerpo cifrado— es el [módulo 10](modulos/avisos.md), y está
+terminado: un aviso a la semana, los viernes a las seis, y solo si hay al menos tres decisiones
+pendientes.
+
+Lo que **no** se ha podido ver funcionar desde aquí es el último tramo: el alta del navegador contra
+el servicio de push de su fabricante va por MTalk (`mtalk.google.com:5228`), que no es HTTPS y no sale
+de este contenedor. Todo lo demás sí está comprobado, incluido el cifrado contra una implementación
+ajena y el trabajador de servicio recibiendo un push de verdad. El detalle de qué está probado y qué
+no está en [`modulos/avisos.md`](modulos/avisos.md); no diremos que funciona el tramo que no hemos
+visto funcionar.
+
+## Lo que falta
 
 **Trabajar sin cobertura.** Hoy la aplicación abre sin red pero no puede hacer nada: es honesto y es
 poco. Encolar respuestas exigiría resolver qué pasa cuando dos comerciales contestan lo mismo desde dos

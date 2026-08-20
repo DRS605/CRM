@@ -85,6 +85,45 @@ public sealed class PruebasMovil(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task El_trabajador_de_servicio_sabe_recibir_un_aviso_push()
+    {
+        var js = await api.CreateClient().GetStringAsync(new Uri("/sw.js", UriKind.Relative));
+
+        // Sin estos dos oyentes, el aviso del viernes llega al navegador y no pasa nada. Es la clase de
+        // fallo que solo se descubre un viernes a las seis y una semana después.
+        js.Should().Contain("addEventListener('push'");
+        js.Should().Contain("addEventListener('notificationclick'");
+
+        // Un push que no muestra nada puede costar el permiso: el navegador lo revoca y se pierden
+        // todos los avisos futuros. Por eso hay un texto genérico para cuando el cuerpo no se entiende.
+        js.Should().Contain("showNotification");
+        js.Should().Contain("Tienes algo que revisar.");
+
+        // La etiqueta hace que un aviso sustituya al anterior. Tres avisos del repaso apilados en la
+        // bandeja son tres motivos para apagarlos.
+        js.Should().Contain("tag: 'repaso'");
+    }
+
+    [Fact]
+    public async Task La_pagina_pone_plazo_al_alta_de_avisos()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // `pushManager.subscribe()` no siempre falla: cuando el navegador no alcanza el servicio de
+        // push de su fabricante, reintenta por dentro y la promesa se queda colgada para siempre. Sin
+        // plazo, el botón se queda gris y en pantalla no aparece nada.
+        html.Should().Contain("conPlazo(", "un alta sin plazo deja el botón gris para siempre");
+        html.Should().Contain("EsperaSuscripcion");
+        html.Should().Contain("PlazoAgotado");
+
+        // Y un rechazo sin `message` tampoco puede quedarse en silencio.
+        html.Should().Contain("function motivoDe(");
+        html.Should().NotContain(
+            "catch(function (e) { return e.message; })",
+            "un catch que solo propaga e.message no enseña nada cuando el rechazo viene sin texto");
+    }
+
+    [Fact]
     public async Task Los_atajos_del_icono_apuntan_a_rutas_que_existen()
     {
         var cliente = api.CreateClient();

@@ -496,6 +496,40 @@
   .cola-caja .cual { font-size: 13.5px; font-weight: 600; }
   .cola-caja .como { font-size: 12px; color: var(--grafito); }
 
+  /* ---- Webhooks ---- */
+  .casillas { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+  .casillas label {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+    font-family: var(--mono); color: var(--tinta); cursor: pointer;
+  }
+  .vacio-linea { font-size: 13.5px; color: var(--grafito); padding: 6px 0 10px; }
+
+  /* El secreto, en ámbar y en monoespaciado: hay que copiarlo entero y sin confundir caracteres. */
+  .secreto-caja {
+    border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
+    border-radius: 11px; padding: 13px; margin: 12px 0; display: flex; flex-direction: column; gap: 6px;
+  }
+  .secreto-caja code {
+    font-family: var(--mono); font-size: 12.5px; word-break: break-all;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 7px; padding: 9px 10px;
+  }
+  .wh-item {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px 0; border-bottom: 1px solid var(--trazo-suave);
+  }
+  .wh-item:last-child { border-bottom: 0; }
+  .wh-item .acciones { margin: 0; }
+  .wh-fila { display: flex; align-items: flex-start; gap: 12px; }
+  .wh-fila .de { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .wh-fila .url { font-family: var(--mono); font-size: 12px; color: var(--grafito); word-break: break-all; }
+  .wh-fila .eventos { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
+  .wh-entregas { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .wh-entregas .e {
+    font-family: var(--mono); font-size: 11.5px; color: var(--grafito);
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .wh-entregas .e.mal { color: var(--ambar); }
+
 
   /* ---- Match ---- */
   .match-caja { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
@@ -1326,6 +1360,45 @@
         </div>
       </div>
 
+      <div class="panel" id="panel-webhooks" style="max-width:820px">
+        <h2>Webhooks</h2>
+        <p class="explica">Avisamos a otro sistema cuando pasa algo aquí: entra un lead, se gana una
+          venta, alguien se da de baja. Lo típico es enlazarlo con el ERP para que el pedido se emita
+          sin teclearlo dos veces. Cada envío va firmado para que tu servidor pueda comprobar que
+          viene de nosotros.</p>
+
+        <div class="filas" id="wh-lista"></div>
+        <div class="vacio-linea" id="wh-vacio" hidden>Todavía no hay ninguno.</div>
+
+        <div class="rejilla-form">
+          <div class="campo">
+            <label for="wh-url">Dirección (https)</label>
+            <input id="wh-url" type="url" placeholder="https://tu-servidor.es/hooks/matchketing" />
+          </div>
+          <div class="campo">
+            <label for="wh-descripcion">Para qué es</label>
+            <input id="wh-descripcion" type="text" placeholder="Pedidos al ERP" maxlength="160" />
+          </div>
+        </div>
+
+        <div class="campo">
+          <label>Qué escuchar</label>
+          <div class="casillas" id="wh-eventos"></div>
+        </div>
+
+        <!-- El secreto aparece **una sola vez**. Se enseña grande y con su aviso, porque quien no lo
+             copie ahora tendrá que rotarlo, y rotar corta la integración hasta que lo cambie. -->
+        <div class="secreto-caja" id="wh-secreto" hidden>
+          <span class="rp-porque">Cópialo ahora</span>
+          <code id="wh-secreto-valor">—</code>
+          <p class="explica" id="wh-secreto-aviso">—</p>
+          <div class="acciones"><button class="btn fantasma" type="button" id="wh-secreto-vale">Ya lo tengo</button></div>
+        </div>
+
+        <div class="aviso" id="wh-aviso" hidden></div>
+        <div class="acciones"><button class="btn" type="button" id="wh-crear">Añadir webhook</button></div>
+      </div>
+
       <div class="panel" style="max-width:820px">
         <h2>Tu cuenta</h2>
         <div class="rejilla-form">
@@ -1921,6 +1994,229 @@
       mostrarAviso($('av-aviso'), motivoDe(e, 'No se han podido apagar los avisos. Vuelve a intentarlo.'));
     }
     await pintarAvisos();
+  });
+
+  // ---------- Webhooks ----------
+
+  var CATALOGO = [
+    ['lead.creado', 'Entra un lead'],
+    ['oportunidad.movida', 'Cambia de etapa'],
+    ['oportunidad.ganada', 'Se gana'],
+    ['oportunidad.perdida', 'Se pierde'],
+    ['contacto.baja', 'Alguien se da de baja'],
+  ];
+
+  function pintarCasillas() {
+    var caja = $('wh-eventos');
+    if (caja.childElementCount > 0) { return; }
+
+    CATALOGO.forEach(function (par) {
+      var etiqueta = document.createElement('label');
+      var casilla = document.createElement('input');
+      casilla.type = 'checkbox';
+      casilla.value = par[0];
+      etiqueta.appendChild(casilla);
+      // El nombre técnico **y** qué significa: el técnico es el que va en el JSON y el que hay que
+      // poner en el otro sistema, así que esconderlo obligaría a ir a la documentación.
+      etiqueta.appendChild(document.createTextNode(par[1] + ' (' + par[0] + ')'));
+      caja.appendChild(etiqueta);
+    });
+  }
+
+  function eventosElegidos() {
+    return Array.prototype.filter.call($('wh-eventos').querySelectorAll('input'), function (c) { return c.checked; })
+      .map(function (c) { return c.value; });
+  }
+
+  async function cargarWebhooks() {
+    pintarCasillas();
+
+    var lista;
+    try {
+      lista = await api('/webhooks');
+    } catch (e) {
+      // Sin permiso de ajustes el panel entero no aplica: se esconde en vez de enseñar un error que
+      // no se puede resolver desde aquí.
+      $('panel-webhooks').hidden = true;
+      return;
+    }
+
+    $('panel-webhooks').hidden = false;
+    var caja = $('wh-lista');
+    caja.textContent = '';
+    $('wh-vacio').hidden = lista.length > 0;
+
+    lista.forEach(function (w) {
+      // No se reutiliza `.permiso`: esa clase es una fila de dos lados y aquí hacen falta tres alturas
+      // —lo que es, qué hace y sus envíos—, así que apiladas.
+      var fila = document.createElement('div');
+      fila.className = 'wh-item';
+
+      var arriba = document.createElement('div');
+      arriba.className = 'wh-fila';
+
+      var de = document.createElement('div');
+      de.className = 'de';
+
+      var cual = document.createElement('span');
+      cual.className = 'cual';
+      cual.textContent = w.descripcion;
+      de.appendChild(cual);
+
+      var url = document.createElement('span');
+      url.className = 'url';
+      url.textContent = w.url;
+      de.appendChild(url);
+
+      var eventos = document.createElement('span');
+      eventos.className = 'eventos';
+      eventos.textContent = w.eventos.join(' · ') +
+        (w.pendientesAhora > 0 ? '  ·  ' + w.pendientesAhora + ' sin salir' : '');
+      de.appendChild(eventos);
+
+      if (!w.activa) {
+        var porque = document.createElement('span');
+        porque.className = 'eventos';
+        porque.style.color = 'var(--ambar)';
+        porque.textContent = 'Apagado: ' + (w.motivoApagado || 'sin motivo apuntado');
+        de.appendChild(porque);
+      }
+
+      arriba.appendChild(de);
+      arriba.appendChild(chipEstadoWebhook(w));
+
+      var acciones = document.createElement('div');
+      acciones.className = 'acciones';
+      acciones.appendChild(botonWebhook('Ver envíos', 'fantasma', function () { verEntregas(w.id, fila); }));
+
+      if (!w.activa) {
+        acciones.appendChild(botonWebhook('Volver a encender', 'fantasma', async function () {
+          await api('/webhooks/' + w.id + '/reactivar', { metodo: 'POST' });
+          await cargarWebhooks();
+        }));
+      }
+
+      acciones.appendChild(botonWebhook('Secreto nuevo', 'fantasma', async function () {
+        // Rotar corta la integración hasta que se cambie al otro lado, así que se pregunta.
+        if (!window.confirm('El secreto anterior dejará de valer al momento. ¿Seguimos?')) { return; }
+        var r = await api('/webhooks/' + w.id + '/secreto', { metodo: 'POST' });
+        ensenarSecreto(r.secreto, r.aviso);
+      }));
+
+      acciones.appendChild(botonWebhook('Quitar', 'fantasma', async function () {
+        if (!window.confirm('Se quita «' + w.descripcion + '». Lo que quedara sin salir se descarta.')) { return; }
+        await api('/webhooks/' + w.id, { metodo: 'DELETE' });
+        await cargarWebhooks();
+      }));
+
+      fila.appendChild(arriba);
+      fila.appendChild(acciones);
+      caja.appendChild(fila);
+    });
+  }
+
+  function chipEstadoWebhook(w) {
+    var chip = document.createElement('span');
+    chip.className = 'chip ' + (w.activa ? 'e-cliente' : 'e-perdido');
+    var pt = document.createElement('span');
+    pt.className = 'pt';
+    chip.appendChild(pt);
+    chip.appendChild(document.createTextNode(w.activa ? 'Activo' : 'Apagado'));
+    return chip;
+  }
+
+  /// Un botón de la lista de webhooks, con el fallo ya contado si la petición no sale.
+  ///
+  /// Se llama `botonWebhook` y no `boton` porque **ya hay un `boton` más abajo en este mismo fichero**.
+  /// Dos declaraciones de función con el mismo nombre no dan ningún error: la última gana por el izado,
+  /// y la primera desaparece sin dejar rastro. Aquí eso se vio porque los botones salían sin la clase
+  /// `btn`; podría haberse visto en algo mucho menos evidente.
+  function botonWebhook(texto, clase, alPulsar) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ' + clase;
+    b.textContent = texto;
+    b.addEventListener('click', async function () {
+      b.disabled = true;
+      mostrarAviso($('wh-aviso'), '');
+      try {
+        await alPulsar();
+      } catch (e) {
+        mostrarAviso($('wh-aviso'), motivoDe(e, 'No se ha podido completar.'));
+      }
+      b.disabled = false;
+    });
+    return b;
+  }
+
+  async function verEntregas(id, fila) {
+    var vieja = fila.querySelector('.wh-entregas');
+    if (vieja) { vieja.remove(); return; }
+
+    var entregas = await api('/webhooks/' + id + '/entregas');
+    var caja = document.createElement('div');
+    caja.className = 'wh-entregas';
+
+    if (entregas.length === 0) {
+      var nada = document.createElement('span');
+      nada.className = 'e';
+      nada.textContent = 'Todavía no se ha enviado nada.';
+      caja.appendChild(nada);
+    }
+
+    entregas.forEach(function (e) {
+      var linea = document.createElement('span');
+      linea.className = 'e' + (e.estado === 'agotada' ? ' mal' : '');
+      // Lo que hace falta para saber qué pasó: cuándo, qué evento, cómo acabó y por qué. El cuerpo no
+      // se enseña a propósito: una baja lleva el correo dentro.
+      linea.textContent = [
+        fecha(e.creadaEn),
+        e.evento,
+        e.estado,
+        e.intentos > 1 ? e.intentos + ' intentos' : '',
+        e.ultimoCodigo ? 'HTTP ' + e.ultimoCodigo : '',
+        e.ultimoFallo || '',
+      ].filter(Boolean).join('  ·  ');
+      caja.appendChild(linea);
+    });
+
+    fila.appendChild(caja);
+  }
+
+  function ensenarSecreto(secreto, aviso) {
+    $('wh-secreto-valor').textContent = secreto;
+    $('wh-secreto-aviso').textContent = aviso;
+    $('wh-secreto').hidden = false;
+    $('wh-secreto').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  $('wh-secreto-vale').addEventListener('click', function () { $('wh-secreto').hidden = true; });
+
+  $('wh-crear').addEventListener('click', async function () {
+    this.disabled = true;
+    mostrarAviso($('wh-aviso'), '');
+
+    try {
+      var r = await api('/webhooks', {
+        metodo: 'POST',
+        cuerpo: {
+          url: $('wh-url').value.trim(),
+          descripcion: $('wh-descripcion').value.trim(),
+          eventos: eventosElegidos(),
+        }
+      });
+
+      $('wh-url').value = '';
+      $('wh-descripcion').value = '';
+      Array.prototype.forEach.call($('wh-eventos').querySelectorAll('input'), function (c) { c.checked = false; });
+
+      ensenarSecreto(r.secreto, r.aviso);
+      await cargarWebhooks();
+    } catch (e) {
+      mostrarAviso($('wh-aviso'), motivoDe(e, 'No se ha podido añadir el webhook.'));
+    }
+
+    this.disabled = false;
   });
 
   // ---------- El móvil: instalable, y el número en el icono ----------
@@ -2555,7 +2851,7 @@
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
       if (b.dataset.vista === 'hoy') { cargarHoy(); }
       if (b.dataset.vista === 'repaso') { cargarRepaso(); }
-      if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); pintarAvisos(); }
+      if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); pintarAvisos(); cargarWebhooks(); }
       if (b.dataset.vista === 'informes') { cargarInformes(); }
     });
   });

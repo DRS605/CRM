@@ -6,6 +6,9 @@ namespace Matchketing.Embudo.Dominio;
 
 public sealed record OportunidadCreada(Guid OportunidadId, Guid EmpresaId, Guid ContactoId, DateTimeOffset OcurridoEn) : IEventoDominio;
 
+public sealed record OportunidadMovida(
+    Guid OportunidadId, Guid EmpresaId, Guid ContactoId, Guid EtapaId, Guid EtapaAnteriorId, DateTimeOffset OcurridoEn) : IEventoDominio;
+
 public sealed record OportunidadGanada(Guid OportunidadId, Guid EmpresaId, Guid ContactoId, decimal Importe, DateTimeOffset OcurridoEn) : IEventoDominio;
 
 public sealed record OportunidadPerdida(Guid OportunidadId, Guid EmpresaId, Guid ContactoId, MotivoPerdida Motivo, DateTimeOffset OcurridoEn) : IEventoDominio;
@@ -163,10 +166,17 @@ public sealed class Oportunidad : RaizAgregadoEmpresa<Guid>
             return Resultado.Ok();
         }
 
+        var anterior = EtapaId;
+
         EtapaId = etapaId;
         EntroEnEtapaEn = reloj.AhoraUtc;
         ActualizadoEn = reloj.AhoraUtc;
         pasos.Add(new PasoEtapa(Guid.NewGuid(), Id, etapaId, reloj.AhoraUtc));
+
+        // Después de la salida temprana de «ya está en esa etapa»: mover una oportunidad a donde ya
+        // estaba no es un movimiento, y emitirlo llenaría el embudo de eventos que no dicen nada.
+        RegistrarEvento(new OportunidadMovida(Id, EmpresaId, ContactoId, etapaId, anterior, reloj.AhoraUtc));
+
         return Resultado.Ok();
     }
 

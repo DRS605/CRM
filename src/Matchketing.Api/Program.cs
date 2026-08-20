@@ -7,6 +7,7 @@ using Matchketing.Api.Trabajos;
 using Matchketing.Auditoria.Aplicacion;
 using Matchketing.Avisos.Aplicacion;
 using Matchketing.Avisos.Dominio;
+using Matchketing.Webhooks.Aplicacion;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Cumplimiento.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
@@ -117,6 +118,8 @@ constructor.Services.AddScoped<ServicioRepaso>();
 constructor.Services.AddScoped<IRepositorioSuscripciones, RepositorioSuscripciones>();
 constructor.Services.AddScoped<IConsultaPendientes, ConsultaPendientes>();
 constructor.Services.AddScoped<ServicioAvisos>();
+constructor.Services.AddScoped<IRepositorioWebhooks, RepositorioWebhooks>();
+constructor.Services.AddScoped<ServicioWebhooks>();
 
 // Las claves VAPID. En desarrollo se generan al arrancar, y eso es correcto **solo** en desarrollo:
 // cada reinicio invalida las suscripciones existentes. En producción vienen de la configuración, y si
@@ -147,11 +150,19 @@ constructor.Services.AddSingleton(sp =>
 // se coma el grupo de conexiones que atiende a las personas.
 constructor.Services.AddHttpClient<IEmisorAvisos, EmisorWebPush>(c => c.Timeout = TimeSpan.FromSeconds(10));
 
-// Los tres trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
+// Y otro para los webhooks, por el mismo motivo y con una cautela más: **no seguir redirecciones**. Un
+// 301 hacia otro dominio convertiría nuestra petición firmada, con el cuerpo entero dentro, en una
+// petición a un sitio que el cliente nunca configuró.
+constructor.Services
+    .AddHttpClient<IEnviaWebhook, EnviaWebhook>(c => c.Timeout = EnviaWebhook.Espera)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+
+// Los cinco trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
 constructor.Services.AddHostedService<TrabajoBarridoMatch>();
 constructor.Services.AddHostedService<TrabajoReboteLeads>();
 constructor.Services.AddHostedService<TrabajoRetencion>();
 constructor.Services.AddHostedService<TrabajoAvisoRepaso>();
+constructor.Services.AddHostedService<TrabajoEntregaWebhooks>();
 
 // Límite de intentos en el acceso. Sin esto, la única defensa de una contraseña es su longitud, y
 // probar cien mil contraseñas contra un correo conocido no cuesta nada de dinero ni de tiempo.
@@ -265,6 +276,7 @@ app.MapearCumplimiento();
 app.MapearAuditoria();
 app.MapearRepaso();
 app.MapearAvisos();
+app.MapearWebhooks();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

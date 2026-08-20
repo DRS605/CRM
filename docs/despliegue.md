@@ -125,7 +125,7 @@ exactamente el estado en el que no hay que mandarle tráfico.
 
 ## 5. Trabajos en segundo plano
 
-Cuatro trabajos corren dentro del propio proceso (`Trabajos/`):
+Cinco trabajos corren dentro del propio proceso (`Trabajos/`):
 
 | Trabajo | Cada | Qué hace |
 | --- | --- | --- |
@@ -133,6 +133,7 @@ Cuatro trabajos corren dentro del propio proceso (`Trabajos/`):
 | Rebote de leads | 30 min | Reasigna los leads sin atender pasadas las horas laborables configuradas. |
 | Retención de leads | 24 h | Borra los leads que han cumplido su plazo de conservación. |
 | Aviso del repaso | 30 min | Solo actúa los viernes entre las 18:00 y las 18:59 (hora de España): manda el aviso push a quien tenga decisiones pendientes. |
+| Entrega de webhooks | 1 min | Vacía el buzón de salida. Cada minuto porque una integración se espera «ya»; la pasada es una consulta por índice que devuelve cero filas cuando no hay nada. |
 
 Van dentro del proceso porque a esta escala montar un planificador aparte añade una pieza que puede
 fallar sola. **Con varias instancias hay que ejecutarlos en una sola**: ninguno corrompe nada al

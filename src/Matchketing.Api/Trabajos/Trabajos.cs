@@ -7,6 +7,7 @@ using Matchketing.Match.Aplicacion;
 using Matchketing.Nucleo.Tiempo;
 using Matchketing.Organizacion.Aplicacion;
 using Matchketing.Persistencia;
+using Matchketing.Webhooks.Aplicacion;
 
 namespace Matchketing.Api.Trabajos;
 
@@ -208,5 +209,52 @@ public sealed class TrabajoAvisoRepaso(IServiceProvider servicios, ILogger<Traba
         // `HorasLaborables` ya sabe convertir a hora española y aguanta que falte la base de zonas.
         var local = HorasLaborables.EnHoraLocal(ahoraUtc);
         return local.DayOfWeek == DayOfWeek.Friday && local.Hour == HoraDelAviso;
+    }
+}
+
+/// <summary>
+/// Vacía el buzón de salida de los webhooks.
+///
+/// Es el otro extremo del patrón: el cambio de negocio escribe la fila en su misma transacción y se
+/// va; esto la manda. Corre **cada minuto** porque un webhook es una integración y la gente espera
+/// que llegue «ya»: media hora de retraso en un «oportunidad ganada» convierte un enlace con el ERP
+/// en algo que nadie usa.
+///
+/// Un minuto suena a mucho para un trabajo periódico, pero la pasada es baratísima cuando no hay nada:
+/// una consulta por el índice <c>ix_entrega_pendientes</c> que devuelve cero filas. Lo caro es
+/// entregar, y eso solo pasa cuando hay algo que entregar.
+/// </summary>
+public sealed class TrabajoEntregaWebhooks(IServiceProvider servicios, ILogger<TrabajoEntregaWebhooks> logger)
+    : TrabajoPeriodico(servicios, logger)
+{
+    protected override string Nombre => "Entrega de webhooks";
+
+    protected override TimeSpan Cada => TimeSpan.FromMinutes(1);
+
+    /// <summary>Medio minuto: que la aplicación acabe de arrancar antes de empezar a mandar.</summary>
+    protected override TimeSpan Espera => TimeSpan.FromSeconds(30);
+
+    protected override async Task<string?> ParaEmpresaAsync(IServiceProvider ambito, Guid empresaId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(ambito);
+
+        var webhooks = ambito.GetRequiredService<ServicioWebhooks>();
+        var unidad = ambito.GetRequiredService<IUnidadDeTrabajo>();
+
+        var r = await webhooks.EntregarPendientesAsync(ct).ConfigureAwait(false);
+        if (r.Entregadas + r.Reintentar + r.Agotadas == 0)
+        {
+            return null;
+        }
+
+        // Se guarda **siempre** que se haya intentado algo, incluidos los fallos: el número de intentos
+        // y el próximo turno viven en la fila, así que si esto no se guardara, la siguiente pasada
+        // volvería a intentar lo mismo desde cero y no se agotaría nunca.
+        await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+
+        return $"{r.Entregadas} entregados" +
+            (r.Reintentar > 0 ? $", {r.Reintentar} para reintentar" : string.Empty) +
+            (r.Agotadas > 0 ? $", {r.Agotadas} agotados" : string.Empty) +
+            (r.Apagadas > 0 ? $", {r.Apagadas} webhooks apagados por fallar demasiado" : string.Empty) + ".";
     }
 }

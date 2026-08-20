@@ -81,7 +81,29 @@ public sealed class PruebasMovil(ApiDePrueba api)
 
         // La regla del trabajador: guarda el armazón y **nunca** los datos. Una pila de repaso de hace
         // tres días es peor que ninguna, porque tomarías decisiones sobre cosas que ya cambiaron.
-        js.Should().Contain("esDato").And.Contain("repaso");
+        js.Should().Contain("esArmazon");
+    }
+
+    [Fact]
+    public async Task El_trabajador_decide_por_lista_blanca_y_no_por_lista_negra()
+    {
+        var js = await api.CreateClient().GetStringAsync(new Uri("/sw.js", UriKind.Relative));
+
+        // Esto ya falló una vez y por eso está aquí. La regla era una lista **negra** con los prefijos
+        // de la API, y todo lo que no estuviera en ella se guardaba en caché. Al añadir el módulo de
+        // webhooks su ruta no estaba, así que el trabajador servía `/webhooks` desde la caché: se creaba
+        // uno y el listado seguía devolviendo el de antes hasta recargar la página.
+        //
+        // Una lista negra falla abierto: se rompe sola cada vez que alguien añade un módulo, y sin
+        // avisar. La lista blanca falla cerrado: una ruta nueva va a la red, que es lo correcto por
+        // defecto, y lo que hay que acordarse de añadir es un fichero estático —que se nota al momento
+        // porque deja de guardarse—.
+        js.Should().Contain("esArmazon", "la decisión se toma sobre lo que SÍ es armazón");
+        js.Should().Contain("if (!esArmazon)");
+
+        // Y ni rastro de la lista negra de antes.
+        js.Should().NotContain("esDato");
+        js.Should().NotContain("|contactos|");
     }
 
     [Fact]
@@ -160,7 +182,7 @@ public sealed class PruebasMovil(ApiDePrueba api)
         // mañana, durante un día el embudo miente. Se resuelve no recalculando nada aquí —el embudo,
         // Hoy y los informes siguen contando lo que dice el servidor— y enseñando la cola como lo que
         // es. Lo que sujeta la primera mitad es que el trabajador de servicio siga sin guardar datos.
-        js.Should().Contain("esDato");
+        js.Should().Contain("esArmazon");
         js.Should().Contain("No guarda respuestas de la API");
         js.Should().Contain("nada se recalcula en el móvil");
 

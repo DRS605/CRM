@@ -11,6 +11,13 @@ public sealed record ContactoCreado(Guid ContactoId, Guid EmpresaId, string Orig
 public sealed record ContactoFusionado(Guid SupervivienteId, Guid AbsorbidoId, Guid EmpresaId, DateTimeOffset OcurridoEn) : IEventoDominio;
 
 /// <summary>
+/// Se ha dado de baja. Lleva el correo dentro porque es el único identificador que sirve al otro lado:
+/// quien recibe esto tiene que dejar de escribir a esa dirección en **su** sistema, y allí la clave es
+/// la dirección, no nuestro identificador.
+/// </summary>
+public sealed record ContactoDadoDeBaja(Guid ContactoId, Guid EmpresaId, string? Email, DateTimeOffset OcurridoEn) : IEventoDominio;
+
+/// <summary>
 /// Una persona. Puede pertenecer a una <see cref="Cuenta"/> o no (B2C). Necesita al menos un medio
 /// de contacto —correo o teléfono— porque un contacto al que no se puede llamar ni escribir no
 /// sirve de nada (invariante C1).
@@ -128,8 +135,18 @@ public sealed class Contacto : RaizAgregadoEmpresa<Guid>
     public void DarDeBaja(IReloj reloj)
     {
         ArgumentNullException.ThrowIfNull(reloj);
+
+        // Si ya estaba de baja no se vuelve a emitir. La página de baja se puede recargar, y dos avisos
+        // de la misma baja al sistema de correo son dos oportunidades de que uno se procese mal.
+        var yaEstaba = Estado == EstadoContacto.Baja;
+
         Estado = EstadoContacto.Baja;
         ActualizadoEn = reloj.AhoraUtc;
+
+        if (!yaEstaba)
+        {
+            RegistrarEvento(new ContactoDadoDeBaja(Id, EmpresaId, Email, reloj.AhoraUtc));
+        }
     }
 
     public void Desactivar(IReloj reloj)

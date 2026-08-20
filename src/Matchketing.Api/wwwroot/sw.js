@@ -20,7 +20,7 @@
 
 // Al cambiar de versión se descarta la caché anterior entera. Es más barato que invalidar por fichero
 // y no deja nunca una mezcla de dos versiones, que es de lo más difícil de depurar que hay.
-const CACHE = 'matchketing-v4';
+const CACHE = 'matchketing-v5';
 
 const ARMAZON = [
   '/',
@@ -54,10 +54,23 @@ self.addEventListener('fetch', evento => {
 
   const ruta = new URL(peticion.url).pathname;
 
-  // Todo lo que sea datos va a la red y solo a la red. La lista es de rutas de la API; el armazón son
-  // la raíz, el manifiesto y los iconos.
-  const esDato = /^\/(repaso|hoy|contactos|cuentas|oportunidades|embudo|tareas|match|informes|formularios|cumplimiento|auditoria|empresas|auth|salud|f|b)(\/|$|\?)/.test(ruta);
-  if (esDato) {
+  // **Lista blanca del armazón, no lista negra de la API.**
+  //
+  // Antes esto era al revés: una expresión con los prefijos de la API («repaso», «contactos», …) y
+  // todo lo demás se guardaba. Eso falla abierto: el día que se añade un módulo nuevo, su ruta no está
+  // en la lista, el trabajador la trata como si fuera un icono y **sirve datos desde la caché**. Pasó
+  // con `/webhooks`: al crear uno, el listado seguía devolviendo el de antes, y solo aparecía tras
+  // recargar. Es justo lo que este fichero dice que nunca hace.
+  //
+  // Al revés falla cerrado: una ruta nueva no está en la lista blanca, así que va a la red. Lo que hay
+  // que acordarse de añadir es un fichero estático nuevo, y eso se nota al instante porque no se
+  // guarda; olvidarse de una ruta de API no se notaba nunca.
+  const esArmazon = ruta === '/'
+    || ruta === '/index.html'
+    || ruta === '/manifiesto.webmanifest'
+    || ruta.startsWith('/iconos/');
+
+  if (!esArmazon) {
     return;
   }
 

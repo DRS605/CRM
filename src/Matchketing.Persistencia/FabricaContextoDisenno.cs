@@ -1,4 +1,5 @@
 using Matchketing.Nucleo.Comun;
+using Matchketing.Nucleo.Tiempo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -16,7 +17,7 @@ public sealed class FabricaContextoDisenno : IDesignTimeDbContextFactory<Context
             ?? "Host=localhost;Port=5432;Database=matchketing;Username=postgres;Password=postgres";
 
         var opciones = new DbContextOptionsBuilder<ContextoMatchketing>().UseNpgsql(cadena).Options;
-        return new ContextoMatchketing(opciones, new ContextoEmpresaVacio());
+        return new ContextoMatchketing(opciones, new ContextoEmpresaVacio(), new RelojSistema());
     }
 
     private sealed class ContextoEmpresaVacio : IContextoEmpresa

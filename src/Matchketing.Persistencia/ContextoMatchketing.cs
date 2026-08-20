@@ -2,6 +2,7 @@ using Matchketing.Contactos.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
 using Matchketing.Nucleo.Comun;
+using Matchketing.Nucleo.Tiempo;
 using Matchketing.Organizacion.Dominio;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,8 @@ namespace Matchketing.Persistencia;
 /// Contexto único de la aplicación. Cada módulo aporta sus configuraciones y usa su propio esquema
 /// de PostgreSQL, de forma que las fronteras entre módulos también se ven en la base de datos.
 /// </summary>
-public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> opciones, IContextoEmpresa contexto)
+public sealed class ContextoMatchketing(
+    DbContextOptions<ContextoMatchketing> opciones, IContextoEmpresa contexto, IReloj reloj)
     : DbContext(opciones), IUnidadDeTrabajo
 {
     public DbSet<Usuario> Usuarios => Set<Usuario>();
@@ -52,10 +54,27 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
 
     public DbSet<Avisos.Dominio.SuscripcionAviso> Suscripciones => Set<Avisos.Dominio.SuscripcionAviso>();
 
+    public DbSet<Webhooks.Dominio.SuscripcionWebhook> Webhooks => Set<Webhooks.Dominio.SuscripcionWebhook>();
+
+    public DbSet<Webhooks.Dominio.Entrega> EntregasWebhook => Set<Webhooks.Dominio.Entrega>();
+
     /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
     public Guid? EmpresaActual => contexto.EmpresaId;
 
-    public Task<int> GuardarCambiosAsync(CancellationToken ct = default) => SaveChangesAsync(ct);
+    /// <summary>
+    /// El único guardado de la aplicación, y por eso el sitio donde se despachan los eventos de
+    /// dominio: pasa por aquí lo que hace un endpoint y lo que hace el repaso, sin excepción.
+    ///
+    /// Va antes de `SaveChangesAsync` **a propósito**, no en un interceptor: así las filas de entrega
+    /// que se añadan entran en el mismo `SaveChanges` que el cambio que las provocó, y no hay ninguna
+    /// duda sobre si EF las ve o no. Un interceptor de guardado corre cuando los cambios ya se han
+    /// recogido, y ahí el orden depende de detalles internos que no conviene apostar.
+    /// </summary>
+    public async Task<int> GuardarCambiosAsync(CancellationToken ct = default)
+    {
+        await DespachadorEventos.DespacharAsync(this, reloj, ct).ConfigureAwait(false);
+        return await SaveChangesAsync(ct).ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Vuelve a fijar <c>app.empresa_actual</c> en la conexión que ya esté abierta. Lo necesita la
@@ -101,6 +120,8 @@ public sealed class ContextoMatchketing(DbContextOptions<ContextoMatchketing> op
         modelo.Entity<Auditoria.Dominio.RegistroAuditoria>().HasQueryFilter(r => r.EmpresaId == EmpresaActual);
         modelo.Entity<Repaso.Dominio.Pospuesta>().HasQueryFilter(p => p.EmpresaId == EmpresaActual);
         modelo.Entity<Avisos.Dominio.SuscripcionAviso>().HasQueryFilter(s => s.EmpresaId == EmpresaActual);
+        modelo.Entity<Webhooks.Dominio.SuscripcionWebhook>().HasQueryFilter(s => s.EmpresaId == EmpresaActual);
+        modelo.Entity<Webhooks.Dominio.Entrega>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
 
         // Los identificadores los genera **el dominio**, nunca la base: todos los agregados hacen
         // `Guid.NewGuid()` al crearse. Hay que decírselo a EF, porque si cree que los genera la base

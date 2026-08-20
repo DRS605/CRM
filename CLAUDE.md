@@ -1,6 +1,6 @@
 # Guía para agentes (CLAUDE.md)
 
-**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Diez módulos terminados.
+**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Once módulos terminados.
 
 Lee primero [`README.md`](README.md) (estructura y API) y, según lo que vayas a tocar,
 [`docs/modulos/<modulo>.md`](docs/modulos/): cada uno explica **por qué** está hecho así, incluidas las
@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 495 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 599 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -115,6 +115,29 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **Un color tampoco puede ir sin motivo.** El magenta significa «aquí está la acción». Usarlo para
   decir «esta es la última columna» (`:last-child`) hacía que la etapa vacía se llevara la mirada y la
   que tenía 71.800 € quedara apagada. Si algo se pinta, tiene que estar diciendo un dato.
+- **El trabajador de servicio decide por lista blanca, no por lista negra.** Antes tenía una expresión
+  con los prefijos de la API y guardaba en caché todo lo que no encajara. Al añadir `/webhooks`, su ruta
+  no estaba en la lista y el trabajador **servía datos de la API desde la caché**: se creaba un webhook
+  y el listado seguía devolviendo el de antes. Si añades ficheros estáticos, mételos en `esArmazon`; si
+  añades una ruta de API, no tienes que hacer nada, y eso es el objetivo.
+- **Dos funciones con el mismo nombre en `index.html` no dan ningún error.** Todo vive en un IIFE, así
+  que la última declaración gana por el izado y la primera desaparece sin rastro. Pasó con `boton`, y se
+  vio solo porque los botones salían sin su clase. Antes de añadir una función, comprueba que el nombre
+  esté libre.
+- **Cuando cambies un endpoint, reinicia la API antes de probar en el navegador.** Los estáticos se
+  sirven de disco y se recargan solos; el código compilado no. Media hora perdida buscando un 404 que
+  era un proceso viejo.
+
+## Eventos de dominio
+
+Los agregados registran eventos (`RegistrarEvento`) y **hay un consumidor**: `DespachadorEventos`, que
+los convierte en entregas de webhook dentro de `GuardarCambiosAsync`. Dos consecuencias:
+
+- Si añades un evento de dominio y quieres que salga hacia fuera, se traduce en `DespachadorEventos`.
+  La mayoría **no** se traducen, y eso es lo normal: el catálogo público son cinco cosas.
+- Si emites un evento desde un sitio nuevo, sale por webhook **gratis**. Es lo que hace que ganar una
+  oportunidad desde el repaso emita igual que ganarla desde el tablero. Ver
+  [`docs/modulos/webhooks.md`](docs/modulos/webhooks.md).
 
 ## Interfaz
 

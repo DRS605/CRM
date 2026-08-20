@@ -44,6 +44,7 @@ src/
   Matchketing.Informes        Embudo, conversión y motivos de pérdida, con CSV
   Matchketing.Repaso          El repaso semanal: seis preguntas derivadas, cero texto libre
   Matchketing.Avisos          Web Push propio: VAPID, cifrado del cuerpo y el empujón del viernes
+  Matchketing.Webhooks        Avisar a otro sistema: firma HMAC, buzón de salida y reintentos
   Matchketing.Cumplimiento    Consentimiento con prueba, baja de un clic, RGPD y retención
   Matchketing.Auditoria       Quién hizo qué (transversal, como Núcleo)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
@@ -53,7 +54,7 @@ tests/
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
   Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
   Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests · Matchketing.Repaso.Tests
-  Matchketing.Avisos.Tests · Matchketing.IntegrationTests
+  Matchketing.Avisos.Tests · Matchketing.Webhooks.Tests · Matchketing.IntegrationTests
 ```
 
 `Matchketing.Auditoria` es la **única excepción** a la regla de que ningún módulo referencia a otro:
@@ -74,10 +75,13 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 8. Cumplimiento | ✅ Terminado |
 | 9. Repaso | ✅ Terminado |
 | 10. Avisos | ✅ Terminado |
+| 11. Webhooks | ✅ Terminado |
 
 Los ocho módulos del MVP están terminados, más dos que son los que hacen que un comercial vuelva:
 **Repaso**, que reduce cerrar la semana a dos minutos, y **[Avisos](docs/modulos/avisos.md)**, que
-hace que se acuerde —un aviso al móvil, los viernes a las seis, y solo si hay algo que decidir—. Lo
+hace que se acuerde —un aviso al móvil, los viernes a las seis, y solo si hay algo que decidir—. El
+undécimo, **[Webhooks](docs/modulos/webhooks.md)**, es el que deja de contarlo dos veces: oportunidad
+ganada aquí, pedido emitido en el ERP. Lo
 que se añadió después del octavo —auditoría, trabajos en segundo plano, límite de intentos de acceso,
 sonda de salud real y el rol de base de datos sin superusuario— está en
 [`docs/despliegue.md`](docs/despliegue.md).
@@ -88,7 +92,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 495 pruebas: 334 unitarias + 161 de integración
+dotnet test                                  # 599 pruebas: 395 unitarias + 204 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -196,5 +200,12 @@ ignóralos.
 | `GET` | `/avisos/aparatos` | Sus aparatos con avisos activados. Sin el endpoint |
 | `POST` | `/avisos/suscripcion` | Da de alta este aparato. Idempotente |
 | `DELETE` | `/avisos/suscripcion?endpoint=` | Lo apaga. **Nunca falla**, ni si no existía |
+| `GET` | `/webhooks/eventos` | El catálogo: cinco eventos, con su nombre público |
+| `GET` | `/webhooks` | Los webhooks de la empresa. **Nunca devuelve el secreto** |
+| `POST` | `/webhooks` | Da de alta uno y devuelve su secreto de firma, la única vez |
+| `GET` | `/webhooks/{id}/entregas` | Los últimos intentos: lo que se mira cuando algo no llega |
+| `POST` | `/webhooks/{id}/secreto` | Secreto nuevo. El anterior deja de valer al momento |
+| `POST` | `/webhooks/{id}/reactivar` | Vuelve a encender uno que se apagó solo |
+| `DELETE` | `/webhooks/{id}` | Lo borra |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

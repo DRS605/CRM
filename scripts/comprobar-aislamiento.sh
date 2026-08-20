@@ -45,10 +45,15 @@ adm <<SQL >/dev/null
 DO \$\$
 DECLARE esquema text;
 BEGIN
+    -- Los esquemas se sacan de la base, **no de una lista escrita aquí**. La lista se quedaba obsoleta
+    -- con cada módulo nuevo: al añadir avisos, webhooks y correo, sus tablas no recibían permisos y el
+    -- guion moría con «permission denied» en vez de comprobarlas. Una lista que hay que acordarse de
+    -- ampliar es una lista que falla abierto, y en una comprobación de aislamiento eso es lo peor que
+    -- puede pasar: parecería que pasa cuando no ha mirado nada.
     FOR esquema IN
         SELECT nspname FROM pg_namespace
-        WHERE nspname IN ('identidad', 'organizacion', 'contactos', 'embudo', 'tareas',
-                          'match', 'captacion', 'cumplimiento', 'auditoria')
+        WHERE nspname NOT LIKE 'pg\\_%'
+          AND nspname NOT IN ('information_schema', 'public')
     LOOP
         EXECUTE format('GRANT USAGE ON SCHEMA %I TO $ROL', esquema);
         EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA %I TO $ROL', esquema);
@@ -66,7 +71,7 @@ SQL
 
 # 1. Sin empresa activa, ni una fila. Es el «falla cerrado»: si esto devuelve datos, cualquier
 #    petición sin token o con un token roto vería la base entera.
-for tabla in contactos.contacto embudo.oportunidad tareas.tarea auditoria.registro cumplimiento.consentimiento avisos.suscripcion webhooks.suscripcion webhooks.entrega; do
+for tabla in contactos.contacto embudo.oportunidad tareas.tarea auditoria.registro cumplimiento.consentimiento avisos.suscripcion webhooks.suscripcion webhooks.entrega correo.plantilla correo.mensaje; do
   visibles=$(app -c "SET app.empresa_actual = ''; SELECT count(*) FROM $tabla")
   [ "$visibles" = "0" ] || fallo "sin empresa activa se ven $visibles filas de $tabla (deberían ser 0)"
 done

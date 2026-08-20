@@ -8,6 +8,7 @@ using Matchketing.Auditoria.Aplicacion;
 using Matchketing.Avisos.Aplicacion;
 using Matchketing.Avisos.Dominio;
 using Matchketing.Webhooks.Aplicacion;
+using Matchketing.Correo.Aplicacion;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Cumplimiento.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
@@ -120,6 +121,37 @@ constructor.Services.AddScoped<IConsultaPendientes, ConsultaPendientes>();
 constructor.Services.AddScoped<ServicioAvisos>();
 constructor.Services.AddScoped<IRepositorioWebhooks, RepositorioWebhooks>();
 constructor.Services.AddScoped<ServicioWebhooks>();
+constructor.Services.AddScoped<IRepositorioCorreo, RepositorioCorreo>();
+constructor.Services.AddScoped<IConsultaDatosDelEnvio, ConsultaDatosDelEnvio>();
+constructor.Services.AddScoped<IPermisoDeEnvio, PermisoDeEnvio>();
+constructor.Services.AddScoped<IApuntaEnCronologia, ApuntaEnCronologia>();
+constructor.Services.AddScoped<IEnviaCorreo, EnviaCorreoSmtp>();
+constructor.Services.AddScoped<ServicioCorreo>();
+
+// El servidor de correo. Si no está configurado, la aplicación arranca igual y los correos se quedan
+// como fallidos con el motivo escrito: caerse al arrancar por no poder mandar un correo sería peor que
+// no poder mandarlo. Se lee de forma diferida, como todo lo demás.
+constructor.Services.AddSingleton(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var ajustes = new AjustesSmtp(
+        config["Smtp:Servidor"],
+        int.TryParse(config["Smtp:Puerto"], System.Globalization.CultureInfo.InvariantCulture, out var puerto) ? puerto : 587,
+        config["Smtp:Usuario"],
+        config["Smtp:Contrasena"],
+        config["Smtp:Remitente"],
+        config["Smtp:NombreRemitente"],
+        !bool.TryParse(config["Smtp:Ssl"], out var ssl) || ssl);
+
+    if (!ajustes.Configurado)
+    {
+        sp.GetRequiredService<ILoggerFactory>().CreateLogger("Correo").LogWarning(
+            "Sin servidor de correo configurado (Smtp:Servidor y Smtp:Remitente). Los correos se " +
+            "encolarán y quedarán como fallidos. Todo lo demás funciona.");
+    }
+
+    return ajustes;
+});
 
 // Las claves VAPID. En desarrollo se generan al arrancar, y eso es correcto **solo** en desarrollo:
 // cada reinicio invalida las suscripciones existentes. En producción vienen de la configuración, y si
@@ -157,12 +189,13 @@ constructor.Services
     .AddHttpClient<IEnviaWebhook, EnviaWebhook>(c => c.Timeout = EnviaWebhook.Espera)
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
-// Los cinco trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
+// Los seis trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
 constructor.Services.AddHostedService<TrabajoBarridoMatch>();
 constructor.Services.AddHostedService<TrabajoReboteLeads>();
 constructor.Services.AddHostedService<TrabajoRetencion>();
 constructor.Services.AddHostedService<TrabajoAvisoRepaso>();
 constructor.Services.AddHostedService<TrabajoEntregaWebhooks>();
+constructor.Services.AddHostedService<TrabajoEnvioCorreos>();
 
 // Límite de intentos en el acceso. Sin esto, la única defensa de una contraseña es su longitud, y
 // probar cien mil contraseñas contra un correo conocido no cuesta nada de dinero ni de tiempo.
@@ -277,6 +310,7 @@ app.MapearAuditoria();
 app.MapearRepaso();
 app.MapearAvisos();
 app.MapearWebhooks();
+app.MapearCorreo();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

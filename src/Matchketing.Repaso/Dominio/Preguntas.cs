@@ -29,6 +29,20 @@ public enum TipoPregunta
 
     /// <summary>Le vendiste y ahí se quedó. En una pyme, la recomendación es el primer canal.</summary>
     ClienteSinSiguientePaso = 6,
+
+    /// <summary>
+    /// Le escribiste y no ha contestado.
+    ///
+    /// Es la pregunta que el repaso no podía hacer hasta que hubo correo dentro, y probablemente la más
+    /// rentable de las siete: un correo sin respuesta es la situación comercial más común que existe y
+    /// la que más se queda sin resolver, porque no genera ninguna tarea ni ninguna alerta. Nadie apunta
+    /// «volver a llamar a quien no me contestó».
+    ///
+    /// Y si además consta que lo **abrió** y no contestó, la pregunta se vuelve muy distinta: ahí no hay
+    /// duda de que le interesó lo suficiente para abrirlo. Por eso una apertura tiene tipo de actividad
+    /// propio y no cuenta como respuesta.
+    /// </summary>
+    CorreoSinRespuesta = 7,
 }
 
 /// <summary>
@@ -52,6 +66,16 @@ public enum Respuesta
 
     LlamarHoy = 11,
     DejarloEstar = 12,
+
+    /// <summary>
+    /// «Ya me contestó.» Apunta la respuesta en la cronología, que es lo que hace que no se vuelva a
+    /// preguntar y lo que además la deja registrada donde tiene que estar.
+    ///
+    /// Existe porque sin ella la pregunta del correo sin respuesta no se podría cerrar diciendo la
+    /// verdad: el comercial que ha recibido la respuesta en su buzón —no aquí— solo podría contestar
+    /// «déjalo estar», y entonces el sistema seguiría creyendo que nadie contestó.
+    /// </summary>
+    YaContesto = 13,
 
     /// <summary>«Ahora no.» Vale para cualquier pregunta y no cambia nada del negocio.</summary>
     Saltar = 99,
@@ -113,6 +137,15 @@ public static class Opciones
         TipoPregunta.ClienteSinSiguientePaso =>
         [
             new(Respuesta.LlamarHoy, "Le llamo hoy", Principal: true),
+            new(Respuesta.DejarloEstar, "Déjalo estar"),
+        ],
+        TipoPregunta.CorreoSinRespuesta =>
+        [
+            // «Le llamo» va primero y no «vuelvo a escribirle» a propósito: si el primer correo no ha
+            // funcionado, el segundo correo casi nunca funciona. Lo que cambia el resultado es el
+            // teléfono, y el repaso está para proponer lo que funciona, no lo que es más cómodo.
+            new(Respuesta.LlamarHoy, "Le llamo hoy", Principal: true),
+            new(Respuesta.YaContesto, "Ya me contestó"),
             new(Respuesta.DejarloEstar, "Déjalo estar"),
         ],
         _ => [],

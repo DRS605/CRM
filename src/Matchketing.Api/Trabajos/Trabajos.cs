@@ -8,6 +8,7 @@ using Matchketing.Nucleo.Tiempo;
 using Matchketing.Organizacion.Aplicacion;
 using Matchketing.Persistencia;
 using Matchketing.Webhooks.Aplicacion;
+using Matchketing.Correo.Aplicacion;
 
 namespace Matchketing.Api.Trabajos;
 
@@ -256,5 +257,57 @@ public sealed class TrabajoEntregaWebhooks(IServiceProvider servicios, ILogger<T
             (r.Reintentar > 0 ? $", {r.Reintentar} para reintentar" : string.Empty) +
             (r.Agotadas > 0 ? $", {r.Agotadas} agotados" : string.Empty) +
             (r.Apagadas > 0 ? $", {r.Apagadas} webhooks apagados por fallar demasiado" : string.Empty) + ".";
+    }
+}
+
+/// <summary>
+/// Vacía el buzón de salida de los correos.
+///
+/// Cada minuto, igual que los webhooks y por un motivo más fuerte: el comercial pulsa «enviar» y se
+/// queda mirando. Media hora de retraso convertiría el correo del CRM en algo que no se usa porque «va
+/// más lento que el correo de verdad».
+///
+/// Aquí es donde se decide si el correo lleva **píxel de apertura**, y se decide por empresa: si esa
+/// empresa no ha encendido el seguimiento, se manda sin `urlPixel` y el correo sale **solo en texto
+/// plano**, sin parte HTML y sin nada que cargar. Ver `Empresa.SigueAperturas`.
+/// </summary>
+public sealed class TrabajoEnvioCorreos(IServiceProvider servicios, ILogger<TrabajoEnvioCorreos> logger)
+    : TrabajoPeriodico(servicios, logger)
+{
+    protected override string Nombre => "Envío de correos";
+
+    protected override TimeSpan Cada => TimeSpan.FromMinutes(1);
+
+    protected override TimeSpan Espera => TimeSpan.FromSeconds(20);
+
+    protected override async Task<string?> ParaEmpresaAsync(IServiceProvider ambito, Guid empresaId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(ambito);
+
+        var correo = ambito.GetRequiredService<ServicioCorreo>();
+        var empresas = ambito.GetRequiredService<ServicioEmpresas>();
+        var unidad = ambito.GetRequiredService<IUnidadDeTrabajo>();
+        var config = ambito.GetRequiredService<IConfiguration>();
+
+        // La misma dirección pública que usan los enlaces de baja: es la única que se sabe que llega
+        // desde fuera. Sin ella no hay píxel posible, así que no se pone.
+        var baseUrl = config["Baja:UrlBase"];
+        var sigue = baseUrl is not null
+            && await empresas.SigueAperturasAsync(empresaId, ct).ConfigureAwait(false);
+
+        var r = await correo.EnviarPendientesAsync(sigue ? baseUrl : null, ct).ConfigureAwait(false);
+        if (r.Enviados + r.Reintentar + r.Fallidos + r.Cancelados == 0)
+        {
+            return null;
+        }
+
+        // Se guarda siempre que se haya intentado algo: el número de intentos y el próximo turno viven
+        // en la fila, así que sin guardar, la pasada siguiente empezaría de cero y no se agotaría nunca.
+        await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+
+        return $"{r.Enviados} enviados" +
+            (r.Reintentar > 0 ? $", {r.Reintentar} para reintentar" : string.Empty) +
+            (r.Fallidos > 0 ? $", {r.Fallidos} fallidos" : string.Empty) +
+            (r.Cancelados > 0 ? $", {r.Cancelados} cancelados por falta de permiso" : string.Empty) + ".";
     }
 }

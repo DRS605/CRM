@@ -57,6 +57,16 @@ public sealed class Pospuesta : RaizAgregadoEmpresa<Guid>
         (TipoPregunta.SilencioCaliente, Respuesta.DejarloEstar) => 30,
         (TipoPregunta.ClienteSinSiguientePaso, Respuesta.DejarloEstar) => 90,
 
+        // Un correo sin contestar: catorce días. Menos que los avisos porque aquí hay una conversación
+        // empezada y enfriarla un mes es perderla; más que una semana porque volver a proponer lo mismo
+        // el viernes siguiente es lo que enseña a contestar «ahora no» sin leer.
+        (TipoPregunta.CorreoSinRespuesta, Respuesta.DejarloEstar) => 14,
+
+        // «Ya me contestó» no necesita aplazamiento largo: la actividad entrante que se acaba de apuntar
+        // ya saca la pregunta de la consulta para siempre. El día de gracia es solo para que no
+        // reaparezca por un desfase de reloj entre el apunte y la siguiente pila.
+        (TipoPregunta.CorreoSinRespuesta, Respuesta.YaContesto) => 1,
+
         // Revisada y sigue igual: una semana, que es cada cuánto se repasa.
         (_, Respuesta.SigueViva) => 7,
 

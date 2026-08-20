@@ -110,7 +110,14 @@
   .btn.pri:hover { background: var(--magenta-hover); border-color: var(--magenta-hover); }
   .btn.fantasma { border-color: transparent; color: var(--grafito); }
   .btn.fantasma:hover { border-color: var(--trazo); }
-  .btn[disabled] { opacity: .55; cursor: default; }
+  /* Un botón deshabilitado tiene que **parecerlo**. Con solo bajar la opacidad, un botón principal
+     seguía siendo magenta y se leía como «púlsame»: en esta paleta el magenta significa «aquí está la
+     acción», y no puede significar eso cuando la acción no se puede hacer. Así que pierde el relleno. */
+  .btn[disabled] { opacity: .7; cursor: default; }
+  .btn.pri[disabled] {
+    background: var(--trazo-suave); border-color: var(--trazo); color: var(--grafito);
+  }
+  .btn.pri[disabled]:hover { background: var(--trazo-suave); border-color: var(--trazo); }
 
   /* Botón de lo que no se puede deshacer. Va en ámbar, no en rojo: en este sistema no hay rojo, y
      el ámbar ya significa «para y lee» en todos los avisos. Nunca es el botón principal de su panel:
@@ -495,6 +502,19 @@
   .cola-caja .de { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
   .cola-caja .cual { font-size: 13.5px; font-weight: 600; }
   .cola-caja .como { font-size: 12px; color: var(--grafito); }
+
+  /* ---- Correo ---- */
+  .vista-previa {
+    border: 1px solid var(--trazo); border-radius: 11px; background: var(--fondo);
+    padding: 13px; margin: 12px 0; display: flex; flex-direction: column; gap: 6px;
+  }
+  .vista-previa .asunto { font-weight: 600; font-size: 14.5px; }
+  .vista-previa .cuerpo { font-size: 14px; white-space: pre-wrap; color: var(--tinta); line-height: 1.55; }
+  .correo-fila { display: flex; flex-direction: column; gap: 3px; padding: 11px 0; border-bottom: 1px solid var(--trazo-suave); }
+  .correo-fila:last-child { border-bottom: 0; }
+  .correo-fila .que { font-size: 13.5px; font-weight: 600; }
+  .correo-fila .como { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
+  .correo-fila .como.mal { color: var(--ambar); }
 
   /* ---- Webhooks ---- */
   .casillas { display: flex; flex-wrap: wrap; gap: 8px 14px; }
@@ -1108,6 +1128,32 @@
           <div class="acciones"><button class="btn" type="button" id="fi-guardar-nota">Guardar nota</button></div>
         </div>
 
+        <div class="panel" id="panel-correo" style="max-width:820px">
+          <h2>Escribirle</h2>
+          <p class="explica">Se elige una plantilla, se ve exactamente lo que va a salir y se manda. El
+            permiso se comprueba antes de enviar y otra vez justo antes de que salga.</p>
+
+          <div class="campo">
+            <label for="cr-plantilla">Plantilla</label>
+            <select id="cr-plantilla"></select>
+          </div>
+
+          <!-- La vista previa no es un adorno: un correo es irreversible, y el comercial tiene que ver
+               el texto con los huecos ya rellenos antes de pulsar. -->
+          <div class="vista-previa" id="cr-previa" hidden>
+            <span class="rp-porque" id="cr-para">—</span>
+            <div class="asunto" id="cr-asunto">—</div>
+            <div class="cuerpo" id="cr-cuerpo">—</div>
+          </div>
+
+          <div class="aviso" id="cr-aviso" hidden></div>
+          <div class="acciones">
+            <button class="btn pri" type="button" id="cr-enviar" disabled>Enviar</button>
+          </div>
+
+          <div class="filas" id="cr-historial"></div>
+        </div>
+
         <div class="panel" style="max-width:820px">
           <h2>Cronología</h2>
           <p class="explica">Append-only: una conversación es un hecho, no un campo. No se edita ni se borra.</p>
@@ -1358,6 +1404,44 @@
           <button class="btn" type="button" id="av-activar">Activar en este aparato</button>
           <button class="btn fantasma" type="button" id="av-desactivar">Desactivar aquí</button>
         </div>
+      </div>
+
+      <div class="panel" id="panel-plantillas" style="max-width:820px">
+        <h2>Plantillas de correo</h2>
+        <p class="explica">El correo que escribes catorce veces, escrito una. Se manda de uno en uno
+          desde la ficha de cada contacto, nunca a una lista: es lo que permite comprobar el permiso de
+          esa persona concreta antes de cada envío.</p>
+
+        <div class="filas" id="pl-lista"></div>
+        <div class="vacio-linea" id="pl-vacio" hidden>Todavía no hay ninguna.</div>
+
+        <div class="rejilla-form">
+          <div class="campo">
+            <label for="pl-nombre">Cómo la llamas</label>
+            <input id="pl-nombre" type="text" placeholder="Seguimiento tras visita" maxlength="80" />
+          </div>
+          <div class="campo">
+            <label for="pl-paraque">Para qué es</label>
+            <select id="pl-paraque">
+              <option value="1">Atender una solicitud</option>
+              <option value="2">Comercial (exige consentimiento)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="pl-asunto">Asunto</label>
+          <input id="pl-asunto" type="text" placeholder="Sobre lo que hablamos, {{nombre}}" maxlength="200" />
+        </div>
+
+        <div class="campo">
+          <label for="pl-cuerpo">Cuerpo</label>
+          <textarea id="pl-cuerpo" rows="6" placeholder="Hola {{nombre}},&#10;&#10;Te llamo mañana para concretar.&#10;&#10;{{comercial}}"></textarea>
+          <span class="pista" id="pl-campos">—</span>
+        </div>
+
+        <div class="aviso" id="pl-aviso" hidden></div>
+        <div class="acciones"><button class="btn" type="button" id="pl-crear">Añadir plantilla</button></div>
       </div>
 
       <div class="panel" id="panel-webhooks" style="max-width:820px">
@@ -1994,6 +2078,227 @@
       mostrarAviso($('av-aviso'), motivoDe(e, 'No se han podido apagar los avisos. Vuelve a intentarlo.'));
     }
     await pintarAvisos();
+  });
+
+  // ---------- Escribirle un correo ----------
+
+  var plantillasCargadas = null;
+
+  async function pintarCorreo(contactoId) {
+    var panel = $('panel-correo');
+    var seleccion = $('cr-plantilla');
+
+    // Las plantillas se piden una vez por sesión: no cambian mientras se trabaja, y pedirlas en cada
+    // ficha serían dos viajes al servidor por cada contacto que se abre.
+    if (plantillasCargadas === null) {
+      try {
+        plantillasCargadas = await api('/plantillas');
+      } catch (e) {
+        plantillasCargadas = [];
+      }
+    }
+
+    // Sin plantillas el panel no aparece. Un desplegable vacío con un botón gris no explica nada; la
+    // primera plantilla se crea en Ajustes y ahí está dicho.
+    panel.hidden = plantillasCargadas.length === 0;
+    if (panel.hidden) { return; }
+
+    seleccion.textContent = '';
+    plantillasCargadas.forEach(function (p) {
+      var opcion = document.createElement('option');
+      opcion.value = p.id;
+      opcion.textContent = p.nombre + ' · ' + p.paraQue;
+      seleccion.appendChild(opcion);
+    });
+
+    $('cr-previa').hidden = true;
+    $('cr-enviar').disabled = true;
+    mostrarAviso($('cr-aviso'), '');
+
+    await verBorrador();
+    await pintarHistorialCorreo(contactoId);
+  }
+
+  /// Pide el borrador y lo enseña. Es lo que decide si el botón se puede pulsar.
+  async function verBorrador() {
+    if (!contactoAbierto || !$('cr-plantilla').value) { return; }
+
+    $('cr-enviar').disabled = true;
+    mostrarAviso($('cr-aviso'), '');
+
+    var borrador;
+    try {
+      borrador = await api('/correo/borrador?contactoId=' + contactoAbierto + '&plantillaId=' + $('cr-plantilla').value);
+    } catch (e) {
+      // Un hueco que este contacto no puede rellenar («Sobre {{cuenta}}» sin cuenta) llega por aquí, y
+      // el mensaje ya dice qué hacer. Es un caso normal, no un error del sistema.
+      $('cr-previa').hidden = true;
+      mostrarAviso($('cr-aviso'), motivoDe(e, 'No se ha podido preparar el correo.'));
+      return;
+    }
+
+    $('cr-para').textContent = 'Para ' + borrador.para;
+    $('cr-asunto').textContent = borrador.asunto;
+    $('cr-cuerpo').textContent = borrador.cuerpo;
+    $('cr-previa').hidden = false;
+
+    // Se enseña el texto aunque no se pueda enviar, y se dice por qué **y dónde arreglarlo**. El
+    // servicio de cumplimiento da el motivo, que es correcto pero genérico porque lo comparten varias
+    // pantallas; el «dónde» solo lo sabe esta. Un mensaje que no dice qué hacer es medio mensaje.
+    $('cr-enviar').disabled = !borrador.sePuede;
+    if (!borrador.sePuede) {
+      var falta = /base legal/i.test(borrador.porQueNo || '')
+        ? ' Se añade en «Privacidad», más arriba en esta misma ficha.'
+        : '';
+      mostrarAviso($('cr-aviso'), borrador.porQueNo + falta);
+    }
+  }
+
+  async function pintarHistorialCorreo(contactoId) {
+    var caja = $('cr-historial');
+    caja.textContent = '';
+
+    var correos;
+    try {
+      correos = await api('/correo/contacto/' + contactoId);
+    } catch (e) {
+      return;
+    }
+
+    correos.forEach(function (c) {
+      var fila = document.createElement('div');
+      fila.className = 'correo-fila';
+
+      var que = document.createElement('span');
+      que.className = 'que';
+      que.textContent = c.asunto;
+      fila.appendChild(que);
+
+      var como = document.createElement('span');
+      como.className = 'como' + (c.estado === 'fallido' ? ' mal' : '');
+
+      // Lo que hace falta para saber qué pasó, y en este orden: cuándo, cómo acabó, y si lo abrió.
+      //
+      // Las aperturas se dicen como «se ha abierto», nunca como «lo ha leído». Hay clientes de correo
+      // que precargan las imágenes sin que nadie mire nada y otros que no las cargan jamás: llamarlo
+      // «leído» sería inventarse un dato, y este proyecto no enseña un número sin motivo.
+      var partes = [fecha(c.creadoEn), c.estado];
+      if (c.aperturas > 0) {
+        partes.push(c.aperturas === 1 ? 'se ha abierto 1 vez' : 'se ha abierto ' + c.aperturas + ' veces');
+      }
+      if (c.ultimoFallo) { partes.push(c.ultimoFallo); }
+      como.textContent = partes.join('  ·  ');
+      fila.appendChild(como);
+
+      caja.appendChild(fila);
+    });
+  }
+
+  $('cr-plantilla').addEventListener('change', verBorrador);
+
+  $('cr-enviar').addEventListener('click', async function () {
+    this.disabled = true;
+    mostrarAviso($('cr-aviso'), 'Enviando…', true);
+
+    try {
+      await api('/correo/enviar', {
+        metodo: 'POST',
+        cuerpo: { contactoId: contactoAbierto, plantillaId: $('cr-plantilla').value }
+      });
+
+      // Primero se refresca y **después** se escribe el aviso. Al revés, `abrirFicha` volvía a pintar
+      // el panel y lo primero que hace al pintarlo es limpiar el aviso: el mensaje de confirmación se
+      // borraba solo, unas décimas después de aparecer, y el comercial no veía nada.
+      var contacto = contactoAbierto;
+      await abrirFicha(contacto);
+      await pintarHistorialCorreo(contacto);
+
+      // «En cola» y no «enviado», porque todavía no lo está: sale en el minuto siguiente. Decir
+      // «enviado» sería lo cómodo y sería mentira mientras el buzón de salida no se vacíe.
+      mostrarAviso($('cr-aviso'), 'En cola. Sale en un minuto y lo verás aquí.', true);
+    } catch (e) {
+      mostrarAviso($('cr-aviso'), motivoDe(e, 'No se ha podido enviar.'));
+      this.disabled = false;
+    }
+  });
+
+  // ---------- Plantillas ----------
+
+  async function cargarPlantillas() {
+    var caja = $('pl-lista');
+
+    var lista;
+    try {
+      lista = await api('/plantillas');
+    } catch (e) {
+      $('panel-plantillas').hidden = true;
+      return;
+    }
+
+    $('panel-plantillas').hidden = false;
+    plantillasCargadas = lista;
+    caja.textContent = '';
+    $('pl-vacio').hidden = lista.length > 0;
+
+    // Los huecos disponibles, del servidor y no escritos aquí: si algún día se añade uno, la pista se
+    // actualiza sola en vez de quedarse mintiendo.
+    try {
+      var campos = await api('/plantillas/campos');
+      $('pl-campos').textContent = 'Puedes usar: ' + campos.map(function (c) { return c.hueco; }).join(' ') +
+        '. Un hueco que no exista se rechaza al guardar, no al enviar.';
+    } catch (e) { /* la pista es un extra */ }
+
+    lista.forEach(function (p) {
+      var fila = document.createElement('div');
+      fila.className = 'correo-fila';
+
+      var que = document.createElement('span');
+      que.className = 'que';
+      que.textContent = p.nombre;
+      fila.appendChild(que);
+
+      var como = document.createElement('span');
+      como.className = 'como';
+      como.textContent = p.paraQue + '  ·  ' + (p.usos === 1 ? '1 uso' : p.usos + ' usos') + '  ·  ' + p.asunto;
+      fila.appendChild(como);
+
+      var acciones = document.createElement('div');
+      acciones.className = 'acciones';
+      acciones.appendChild(botonWebhook('Quitar', 'fantasma', async function () {
+        if (!window.confirm('Se quita «' + p.nombre + '». Los correos ya enviados no se tocan.')) { return; }
+        await api('/plantillas/' + p.id, { metodo: 'DELETE' });
+        await cargarPlantillas();
+      }));
+      fila.appendChild(acciones);
+
+      caja.appendChild(fila);
+    });
+  }
+
+  $('pl-crear').addEventListener('click', async function () {
+    this.disabled = true;
+    mostrarAviso($('pl-aviso'), '');
+
+    try {
+      await api('/plantillas', {
+        metodo: 'POST',
+        cuerpo: {
+          nombre: $('pl-nombre').value.trim(),
+          asunto: $('pl-asunto').value.trim(),
+          cuerpo: $('pl-cuerpo').value.trim(),
+          paraQue: Number($('pl-paraque').value)
+        }
+      });
+
+      $('pl-nombre').value = '';
+      $('pl-asunto').value = '';
+      $('pl-cuerpo').value = '';
+      await cargarPlantillas();
+    } catch (e) {
+      mostrarAviso($('pl-aviso'), motivoDe(e, 'No se ha podido guardar la plantilla.'));
+    }
+
+    this.disabled = false;
   });
 
   // ---------- Webhooks ----------
@@ -2851,7 +3156,7 @@
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
       if (b.dataset.vista === 'hoy') { cargarHoy(); }
       if (b.dataset.vista === 'repaso') { cargarRepaso(); }
-      if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); pintarAvisos(); cargarWebhooks(); }
+      if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); pintarAvisos(); cargarPlantillas(); cargarWebhooks(); }
       if (b.dataset.vista === 'informes') { cargarInformes(); }
     });
   });
@@ -2869,7 +3174,7 @@
 
   // ---------- Contactos ----------
   var ESTADOS = { 1: ['Lead', 'e-lead'], 2: ['Cliente', 'e-cliente'], 3: ['Perdido', 'e-perdido'], 4: ['Baja', 'e-baja'] };
-  var TIPOS = { 1: 'Nota', 2: 'Llamada', 3: 'Correo', 4: 'Reunión', 5: 'Formulario', 6: 'Visita web', 7: 'Sistema', 8: 'Rebote' };
+  var TIPOS = { 1: 'Nota', 2: 'Llamada', 3: 'Correo', 4: 'Reunión', 5: 'Formulario', 6: 'Visita web', 7: 'Sistema', 8: 'Rebote', 9: 'Apertura' };
   var contactoAbierto = null;
   var temporizadorBusqueda = null;
 
@@ -2983,6 +3288,7 @@
 
     await pintarMatch(id);
     await pintarPrivacidad(id);
+    await pintarCorreo(id);
     subVista('con-ficha');
   }
 

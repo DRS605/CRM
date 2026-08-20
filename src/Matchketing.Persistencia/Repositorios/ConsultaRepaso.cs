@@ -1,4 +1,5 @@
 using Matchketing.Contactos.Dominio;
+using Matchketing.Correo.Dominio;
 using Matchketing.Embudo.Dominio;
 using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Tiempo;
@@ -27,6 +28,13 @@ public sealed class ConsultaRepaso(ContextoMatchketing bd, IContextoEmpresa cont
 
     /// <summary>Días tras una venta antes de sugerir el siguiente paso. Menos sería incómodo.</summary>
     private const int DiasTrasVender = 45;
+
+    /// <summary>
+    /// Cuánto se espera antes de preguntar por un correo sin contestar. Cuatro días laborables: menos
+    /// es agobiar —hay gente que contesta el correo del viernes el lunes por la tarde— y más es dejar
+    /// que la conversación se enfríe hasta que haya que empezar de cero.
+    /// </summary>
+    private const int DiasSinContestar = 4;
 
     public async Task<IReadOnlyList<Hallazgo>> HallazgosAsync(CancellationToken ct = default)
     {
@@ -170,6 +178,50 @@ public sealed class ConsultaRepaso(ContextoMatchketing bd, IContextoEmpresa cont
         hallazgos.AddRange(clientes.Select(c => new Hallazgo(
             TipoPregunta.ClienteSinSiguientePaso, c.Id, c.Id, c.Nombre, c.Telefono,
             null, null, null, null, null, (int)(ahora - c.Gano!.Value).TotalDays, null)));
+
+        // 7. Correos sin contestar. Es la pregunta que no se podía hacer antes del módulo de correo, y
+        //    la que más se queda sin resolver en la vida real: un correo sin respuesta no genera ninguna
+        //    tarea ni ninguna alerta, y nadie apunta «volver a llamar a quien no me contestó».
+        //
+        //    «No ha contestado» significa aquí: **ninguna actividad entrante después de aquel correo**.
+        //    Y una apertura no cuenta, porque tiene su propio tipo de actividad —abrir no es contestar—.
+        //    Esa distinción es justo lo que permite decir «lo abrió tres veces y no ha contestado», que
+        //    es una situación completamente distinta de «no ha contestado».
+        //
+        //    No se lee ningún buzón: si la respuesta llegó por correo y nadie la apuntó aquí, para el
+        //    repaso no existe. Está dicho así en la documentación del módulo.
+        var sinContestar = ahora.AddDays(-DiasSinContestar);
+        var correos = await (
+            from m in bd.Mensajes
+            join c in bd.Contactos on m.ContactoId equals c.Id
+            where m.UsuarioId == mio && m.Estado == EstadoCorreo.Enviado
+            where m.EnviadoEn != null && m.EnviadoEn < sinContestar
+            where c.Activo && c.Estado != EstadoContacto.Baja
+
+            // El último correo enviado a esa persona, no cualquiera: si se le escribió tres veces, la
+            // pregunta es sobre el último, y una sola vez.
+            where !bd.Mensajes.Any(otro =>
+                otro.ContactoId == m.ContactoId && otro.Estado == EstadoCorreo.Enviado &&
+                otro.EnviadoEn != null && otro.EnviadoEn > m.EnviadoEn)
+
+            where !bd.Actividades.Any(a =>
+                a.ContactoId == m.ContactoId && a.Sentido == SentidoActividad.Entrante &&
+                a.Tipo != TipoActividad.AperturaCorreo && a.OcurridaEn > m.EnviadoEn)
+
+            // Si ya hay una tarea pendiente con esa persona, la decisión está tomada. Preguntar otra vez
+            // es el mismo «al ratón y al gato» que se arregló en el módulo del repaso.
+            where !bd.Tareas.Any(t => t.ContactoId == m.ContactoId && t.Estado == EstadoTarea.Pendiente)
+
+            select new { m.ContactoId, c.Nombre, c.Telefono, m.EnviadoEn, m.Aperturas })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        // Las aperturas viajan en el hueco de `Match` del hallazgo. No es bonito, pero el registro es
+        // común a las siete preguntas y añadirle un campo que solo usa una sería peor; la redacción de
+        // esta pregunta es la única que lo lee así, y está dicho en las dos puntas.
+        hallazgos.AddRange(correos.Select(c => new Hallazgo(
+            TipoPregunta.CorreoSinRespuesta, c.ContactoId, c.ContactoId, c.Nombre, c.Telefono,
+            null, null, null, null, c.Aperturas, (int)(ahora - c.EnviadoEn!.Value).TotalDays, null)));
 
         return hallazgos;
     }

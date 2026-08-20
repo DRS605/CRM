@@ -81,13 +81,14 @@ matchketing_app`.
 
 ## 2. Secretos
 
-Cuatro valores que **no** pueden quedarse en los de desarrollo:
+Cinco valores que **no** pueden quedarse en los de desarrollo:
 
 | Ajuste | Para qué | Si se rota… |
 | --- | --- | --- |
 | `Jwt:Clave` | Firma los tokens de sesión. | Todo el mundo tiene que volver a entrar. Inocuo. |
 | `Baja:Secreto` | Firma los enlaces de baja. | **Mata todos los enlaces de baja emitidos.** Ver abajo. |
 | `Avisos:ClavePrivada` | Firma el token VAPID de los avisos push. | **Deja a toda la plantilla sin avisos**, en silencio, hasta el viernes. Ver abajo. |
+| `Smtp:Contrasena` | Manda los correos. | Los correos se quedan como fallidos hasta arreglarlo. |
 | `ConnectionStrings:Matchketing` | Con el rol del punto 1. | — |
 
 `Baja:Secreto` es distinto del JWT precisamente para que las dos rotaciones no estén atadas. Los
@@ -125,7 +126,7 @@ exactamente el estado en el que no hay que mandarle tráfico.
 
 ## 5. Trabajos en segundo plano
 
-Cinco trabajos corren dentro del propio proceso (`Trabajos/`):
+Seis trabajos corren dentro del propio proceso (`Trabajos/`):
 
 | Trabajo | Cada | Qué hace |
 | --- | --- | --- |
@@ -134,6 +135,7 @@ Cinco trabajos corren dentro del propio proceso (`Trabajos/`):
 | Retención de leads | 24 h | Borra los leads que han cumplido su plazo de conservación. |
 | Aviso del repaso | 30 min | Solo actúa los viernes entre las 18:00 y las 18:59 (hora de España): manda el aviso push a quien tenga decisiones pendientes. |
 | Entrega de webhooks | 1 min | Vacía el buzón de salida. Cada minuto porque una integración se espera «ya»; la pasada es una consulta por índice que devuelve cero filas cuando no hay nada. |
+| Envío de correos | 1 min | Vacía el buzón de salida del correo, **volviendo a comprobar el permiso de cada destinatario** justo antes de mandar. Decide también si el correo lleva píxel, según el ajuste de la empresa. |
 
 Van dentro del proceso porque a esta escala montar un planificador aparte añade una pieza que puede
 fallar sola. **Con varias instancias hay que ejecutarlos en una sola**: ninguno corrompe nada al

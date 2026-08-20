@@ -61,6 +61,17 @@ public sealed class Empresa : RaizAgregado<Guid>
     /// <summary>Meses tras los que se borra un lead que sigue siendo lead y nadie ha tocado.</summary>
     public int MesesRetencionLeads { get; private set; }
 
+    /// <summary>
+    /// Si se mide quién abre los correos. **Apagado por defecto, y eso es una decisión.**
+    ///
+    /// Saber si alguien ha abierto tu correo es medir su comportamiento, no gestionar un dato que te dio.
+    /// Que sea una decisión explícita de la empresa —y no algo que ya está puesto cuando se abre la
+    /// cuenta— es la diferencia entre una herramienta que se puede defender delante de un cliente y una
+    /// que hay que explicar. Con esto apagado, los correos salen **solo en texto plano**: sin parte HTML,
+    /// sin imagen y sin nada que cargar.
+    /// </summary>
+    public bool SigueAperturas { get; private set; }
+
     public bool Activa { get; private set; }
 
     public DateTimeOffset CreadoEn { get; private set; }
@@ -138,6 +149,18 @@ public sealed class Empresa : RaizAgregado<Guid>
         MesesRetencionLeads = mesesRetencionLeads;
         ActualizadoEn = reloj.AhoraUtc;
         return Resultado.Ok();
+    }
+
+    /// <summary>
+    /// Enciende o apaga la medición de aperturas. No devuelve `Resultado` porque no hay nada que
+    /// validar: es un sí o un no, y los dos son válidos.
+    /// </summary>
+    public void AjustarSeguimiento(bool sigueAperturas, IReloj reloj)
+    {
+        ArgumentNullException.ThrowIfNull(reloj);
+
+        SigueAperturas = sigueAperturas;
+        ActualizadoEn = reloj.AhoraUtc;
     }
 
     private static Error? ValidarNombre(string? nombre)

@@ -45,6 +45,7 @@ src/
   Matchketing.Repaso          El repaso semanal: seis preguntas derivadas, cero texto libre
   Matchketing.Avisos          Web Push propio: VAPID, cifrado del cuerpo y el empujón del viernes
   Matchketing.Webhooks        Avisar a otro sistema: firma HMAC, buzón de salida y reintentos
+  Matchketing.Correo          Plantillas, envío con permiso comprobado dos veces y aperturas
   Matchketing.Cumplimiento    Consentimiento con prueba, baja de un clic, RGPD y retención
   Matchketing.Auditoria       Quién hizo qué (transversal, como Núcleo)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
@@ -54,7 +55,8 @@ tests/
   Matchketing.Contactos.Tests · Matchketing.Embudo.Tests · Matchketing.Tareas.Tests
   Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
   Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests · Matchketing.Repaso.Tests
-  Matchketing.Avisos.Tests · Matchketing.Webhooks.Tests · Matchketing.IntegrationTests
+  Matchketing.Avisos.Tests · Matchketing.Webhooks.Tests · Matchketing.Correo.Tests
+  Matchketing.IntegrationTests
 ```
 
 `Matchketing.Auditoria` es la **única excepción** a la regla de que ningún módulo referencia a otro:
@@ -76,12 +78,15 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 9. Repaso | ✅ Terminado |
 | 10. Avisos | ✅ Terminado |
 | 11. Webhooks | ✅ Terminado |
+| 12. Correo | ✅ Terminado |
 
 Los ocho módulos del MVP están terminados, más dos que son los que hacen que un comercial vuelva:
 **Repaso**, que reduce cerrar la semana a dos minutos, y **[Avisos](docs/modulos/avisos.md)**, que
 hace que se acuerde —un aviso al móvil, los viernes a las seis, y solo si hay algo que decidir—. El
 undécimo, **[Webhooks](docs/modulos/webhooks.md)**, es el que deja de contarlo dos veces: oportunidad
-ganada aquí, pedido emitido en el ERP. Lo
+ganada aquí, pedido emitido en el ERP. Y el duodécimo, **[Correo](docs/modulos/correo.md)**, es el que
+le da al repaso su séptima pregunta y la más rentable: «le escribiste hace seis días, lo ha abierto tres
+veces y no ha contestado». Lo
 que se añadió después del octavo —auditoría, trabajos en segundo plano, límite de intentos de acceso,
 sonda de salud real y el rol de base de datos sin superusuario— está en
 [`docs/despliegue.md`](docs/despliegue.md).
@@ -92,7 +97,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 599 pruebas: 395 unitarias + 204 de integración
+dotnet test                                  # 691 pruebas: 466 unitarias + 225 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -207,5 +212,11 @@ ignóralos.
 | `POST` | `/webhooks/{id}/secreto` | Secreto nuevo. El anterior deja de valer al momento |
 | `POST` | `/webhooks/{id}/reactivar` | Vuelve a encender uno que se apagó solo |
 | `DELETE` | `/webhooks/{id}` | Lo borra |
+| `GET` | `/plantillas` | Las plantillas de correo, las más usadas primero |
+| `POST` | `/plantillas` | Crea una. Un hueco que no exista se rechaza aquí, no al enviar |
+| `GET` | `/correo/borrador?contactoId=&plantillaId=` | Lo que se va a mandar y si se puede. **Sin enviar nada** |
+| `POST` | `/correo/enviar` | Encola un correo. Devuelve **202**: está en el buzón de salida |
+| `GET` | `/correo/contacto/{id}` | Sus correos, con el texto y las aperturas |
+| `GET` | `/e/{token}.gif` | **El píxel de apertura** (público). Siempre la misma imagen |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

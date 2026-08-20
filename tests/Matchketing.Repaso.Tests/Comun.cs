@@ -77,6 +77,9 @@ public sealed class AccionesDePrueba : IAccionesRepaso
     public Task<bool> CrearTareaAsync(Guid contactoId, string titulo, DateOnly venceEl, CancellationToken ct = default) =>
         Apuntar($"tarea:{contactoId}:{venceEl:yyyy-MM-dd}");
 
+    public Task<bool> RegistrarRespuestaAsync(Guid contactoId, CancellationToken ct = default) =>
+        Apuntar($"respuesta:{contactoId}");
+
     public Task<decimal?> GanarOportunidadAsync(Guid oportunidadId, CancellationToken ct = default)
     {
         Hechas.Add($"ganar:{oportunidadId}");

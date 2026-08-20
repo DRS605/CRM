@@ -68,6 +68,12 @@ public interface IAccionesRepaso
 
     Task<bool> CrearTareaAsync(Guid contactoId, string titulo, DateOnly venceEl, CancellationToken ct = default);
 
+    /// <summary>
+    /// Apunta que la persona ha contestado. Va como actividad **entrante**, que es lo que hace que la
+    /// pregunta no vuelva y lo que deja la respuesta registrada donde tiene que estar: en su cronología.
+    /// </summary>
+    Task<bool> RegistrarRespuestaAsync(Guid contactoId, CancellationToken ct = default);
+
     /// <summary>Devuelve el importe de la oportunidad ganada, para poder decírselo.</summary>
     Task<decimal?> GanarOportunidadAsync(Guid oportunidadId, CancellationToken ct = default);
 

@@ -59,6 +59,11 @@ public sealed class AccionesRepaso(
         return true;
     }
 
+    public async Task<bool> RegistrarRespuestaAsync(Guid contactoId, CancellationToken ct = default) =>
+        (await contactos.RegistrarActividadAsync(
+            contactoId, TipoActividad.Correo, SentidoActividad.Entrante,
+            "Ha contestado al correo.", null, ct).ConfigureAwait(false)).Exito;
+
     public async Task<bool> DescartarContactoAsync(Guid contactoId, CancellationToken ct = default) =>
         (await contactos.CambiarEstadoAsync(contactoId, EstadoContacto.Perdido, ct).ConfigureAwait(false)).Exito;
 

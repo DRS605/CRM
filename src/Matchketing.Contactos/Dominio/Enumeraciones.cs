@@ -34,6 +34,16 @@ public enum TipoActividad
     /// noches: buscarla por el texto de la anotación habría sido cuestión de tiempo que se rompiese.
     /// </summary>
     Rebote = 8,
+
+    /// <summary>
+    /// Ha abierto un correo que le mandamos.
+    ///
+    /// Tiene tipo propio y **no es un <see cref="Correo"/> entrante**, porque abrir no es contestar. Si
+    /// contara como respuesta, el repaso dejaría de preguntar por alguien en cuanto abriera el correo, y
+    /// resulta que «lo abrió tres veces y no ha contestado» es la mejor señal que existe para llamar hoy.
+    /// Distinguirlos es justo lo que permite hacer esa pregunta.
+    /// </summary>
+    AperturaCorreo = 9,
 }
 
 public enum SentidoActividad

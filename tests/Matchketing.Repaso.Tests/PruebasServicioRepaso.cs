@@ -48,16 +48,19 @@ public sealed class PruebasServicioRepaso
     [Fact]
     public async Task Toda_pregunta_lleva_su_motivo_escrito()
     {
-        // La misma regla que en Hoy: una tarjeta sin motivo no se enseña. Aquí se comprueba de los seis
-        // tipos de una vez, porque el día que alguien añada un séptimo se acordará de esto.
-        foreach (var tipo in Enum.GetValues<TipoPregunta>())
+        // La misma regla que en Hoy: una tarjeta sin motivo no se enseña. Se comprueba de **todos** los
+        // tipos de una vez, y el recuento se saca del propio enumerado en vez de escribirlo a mano: así
+        // añadir un tipo nuevo sin darle redacción hace que esto se caiga, que es lo que se quiere.
+        // (Con el número escrito a mano se cayó al añadir el séptimo, y funcionó igual de bien.)
+        var tipos = Enum.GetValues<TipoPregunta>();
+        foreach (var tipo in tipos)
         {
             consulta.Hallazgos.Add(Hallazgo(tipo, importe: 8400m, match: 82));
         }
 
         var pila = await Servicio().PilaAsync();
 
-        pila.Preguntas.Should().HaveCount(6);
+        pila.Preguntas.Should().HaveCount(tipos.Length);
         pila.Preguntas.Should().OnlyContain(p => p.Titular.Length > 0 && p.Detalle.Length > 0);
         pila.Preguntas.Should().OnlyContain(p => p.Opciones.Count >= 3);
     }

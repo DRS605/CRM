@@ -19,6 +19,7 @@ public sealed class ConfiguracionEmpresa : IEntityTypeConfiguration<Empresa>
         b.Property(e => e.PesoEncaje).HasColumnName("peso_encaje").HasPrecision(3, 2);
         b.Property(e => e.HorasRebote).HasColumnName("horas_rebote");
         b.Property(e => e.MesesRetencionLeads).HasColumnName("meses_retencion_leads").HasDefaultValue(Empresa.MesesRetencionPorDefecto);
+        b.Property(e => e.SigueAperturas).HasColumnName("sigue_aperturas").HasDefaultValue(false);
         b.Property(e => e.Activa).HasColumnName("activa");
         b.Property(e => e.CreadoEn).HasColumnName("creado_en");
         b.Property(e => e.ActualizadoEn).HasColumnName("actualizado_en");

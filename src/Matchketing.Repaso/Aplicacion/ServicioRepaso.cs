@@ -127,6 +127,11 @@ public sealed class ServicioRepaso(
                 await SobreOportunidadAsync(pregunta.ReferenciaId, respuesta, motivo, ct).ConfigureAwait(false),
             TipoPregunta.SilencioCaliente => await SobreSilencioAsync(pregunta.ReferenciaId, respuesta, ct).ConfigureAwait(false),
             TipoPregunta.ClienteSinSiguientePaso => await SobreClienteAsync(pregunta.ReferenciaId, respuesta, ct).ConfigureAwait(false),
+
+            // Misma mecánica que el silencio: o se crea la tarea de llamar hoy, o se aparca. No se
+            // reenvía el correo desde aquí: mandar un correo es una decisión con texto, y el repaso es
+            // de un toque.
+            TipoPregunta.CorreoSinRespuesta => await SobreCorreoAsync(pregunta.ReferenciaId, respuesta, ct).ConfigureAwait(false),
             _ => Resultado.Fallo<string>(Error.Validacion("repaso.tipo_desconocido", "Esa pregunta no existe.")),
         };
     }
@@ -228,6 +233,27 @@ public sealed class ServicioRepaso(
             : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
     }
 
+    private async Task<Resultado<string>> SobreCorreoAsync(Guid contactoId, Respuesta respuesta, CancellationToken ct)
+    {
+        if (respuesta == Respuesta.DejarloEstar)
+        {
+            return Resultado.Ok("Vale. No volveremos a sacarlo en dos semanas.");
+        }
+
+        if (respuesta == Respuesta.YaContesto)
+        {
+            // No basta con aparcar la pregunta: hay que apuntar la respuesta. Si solo se aparcara, el
+            // sistema seguiría creyendo que nadie contestó, y eso contamina el Match y el informe.
+            return await acciones.RegistrarRespuestaAsync(contactoId, ct).ConfigureAwait(false)
+                ? Resultado.Ok("Apuntado en su ficha. No volveremos a preguntar.")
+                : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
+        }
+
+        return await acciones.CrearTareaAsync(contactoId, "Llamar: le escribí y no contestó", Hoy(), ct).ConfigureAwait(false)
+            ? Resultado.Ok("Está en tu lista de hoy.")
+            : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
+    }
+
     private async Task<Resultado<string>> SobreClienteAsync(Guid contactoId, Respuesta respuesta, CancellationToken ct)
     {
         if (respuesta == Respuesta.DejarloEstar)
@@ -289,6 +315,15 @@ public sealed class ServicioRepaso(
             TipoPregunta.ClienteSinSiguientePaso => (
                 quien,
                 $"Te compró hace {Dias(h.Dias)} y no hay nada previsto con él."),
+
+            // Se dicen las aperturas cuando las hay, porque cambian por completo la decisión: «no ha
+            // contestado» puede ser que no le llegara; «lo abrió tres veces y no ha contestado» es una
+            // señal de que sí le interesa y de que el teléfono va a funcionar.
+            TipoPregunta.CorreoSinRespuesta => (
+                quien,
+                h.Match is int aperturas && aperturas > 0
+                    ? $"Le escribiste hace {Dias(h.Dias)}. Lo ha abierto {(aperturas == 1 ? "una vez" : aperturas + " veces")} y no ha contestado."
+                    : $"Le escribiste hace {Dias(h.Dias)} y no ha contestado."),
 
             _ => (quien, string.Empty),
         };

@@ -1,6 +1,6 @@
 # Guía para agentes (CLAUDE.md)
 
-**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Once módulos terminados.
+**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Doce módulos terminados.
 
 Lee primero [`README.md`](README.md) (estructura y API) y, según lo que vayas a tocar,
 [`docs/modulos/<modulo>.md`](docs/modulos/): cada uno explica **por qué** está hecho así, incluidas las
@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 599 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 691 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -127,6 +127,14 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **Cuando cambies un endpoint, reinicia la API antes de probar en el navegador.** Los estáticos se
   sirven de disco y se recargan solos; el código compilado no. Media hora perdida buscando un 404 que
   era un proceso viejo.
+- **Un endpoint público que lea una tabla con RLS necesita saber la empresa antes de tocar la base.**
+  `IgnoreQueryFilters()` no basta: salta el filtro de EF pero la política de PostgreSQL sigue devolviendo
+  cero filas sin `app.empresa_actual`. El patrón es meter la empresa en el propio token —enlace de baja,
+  píxel de apertura— y luego `contextoPublico.FijarEmpresa` + `bd.ReaplicarEmpresaAsync`. Así además la
+  consulta va **con** las dos barreras puestas en vez de sin ninguna.
+- **Un botón deshabilitado tiene que parecerlo.** Con solo bajar la opacidad, un `.btn.pri` seguía siendo
+  magenta y se leía como «púlsame». En esta paleta el magenta significa «aquí está la acción», y no puede
+  significar eso cuando la acción no se puede hacer.
 
 ## Eventos de dominio
 
@@ -138,6 +146,18 @@ los convierte en entregas de webhook dentro de `GuardarCambiosAsync`. Dos consec
 - Si emites un evento desde un sitio nuevo, sale por webhook **gratis**. Es lo que hace que ganar una
   oportunidad desde el repaso emita igual que ganarla desde el tablero. Ver
   [`docs/modulos/webhooks.md`](docs/modulos/webhooks.md).
+
+## Consentimiento
+
+**Nada que salga hacia una persona se manda sin pasar por `ServicioCumplimiento.PuedeEnviarAsync`.** Lo
+usan el correo y lo usará cualquier canal futuro (WhatsApp, SMS), siempre por un puerto para no
+referenciar el módulo. Dos cosas que no son obvias:
+
+- Hace falta base legal **hasta para contestar**. Un contacto metido a mano no trae ninguna. No es un
+  descuido: si añadiste el correo de alguien a un CRM, tienes que poder decir por qué puedes escribirle.
+- Se comprueba **dos veces**: al encolar y otra vez justo antes de que salga. Entre lo uno y lo otro
+  alguien puede darse de baja, y un correo comercial a quien acaba de pedir que no le escriban no es un
+  fallo técnico. Ver [`docs/modulos/correo.md`](docs/modulos/correo.md).
 
 ## Interfaz
 

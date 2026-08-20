@@ -1,6 +1,6 @@
 # Guía para agentes (CLAUDE.md)
 
-**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Doce módulos terminados.
+**match.keting** — CRM independiente en **.NET 8 + PostgreSQL**. Trece módulos terminados.
 
 Lee primero [`README.md`](README.md) (estructura y API) y, según lo que vayas a tocar,
 [`docs/modulos/<modulo>.md`](docs/modulos/): cada uno explica **por qué** está hecho así, incluidas las
@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 691 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 754 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -135,6 +135,19 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **Un botón deshabilitado tiene que parecerlo.** Con solo bajar la opacidad, un `.btn.pri` seguía siendo
   magenta y se leía como «púlsame». En esta paleta el magenta significa «aquí está la acción», y no puede
   significar eso cuando la acción no se puede hacer.
+- **`GuardarCambiosAsync` despacha en dos momentos, y no da igual cuál.** Los webhooks van **antes** de
+  guardar, porque sus filas de entrega son escrituras sueltas y así entran en el mismo `SaveChanges`. Las
+  reglas van **después**, porque sus acciones pasan por servicios que **cargan de la base** el contacto
+  sobre el que actúan: antes de guardar, ese contacto todavía no existe y fallan en silencio. Si añades
+  algo que consuma eventos, decide en qué lado va. Ver
+  [`docs/modulos/automatizacion.md`](docs/modulos/automatizacion.md).
+- **Un parámetro de constructor opcional en el `DbContext` no se resuelve: se rellena con su valor por
+  defecto.** `IServiceProvider? servicios = null` llegaba nulo en producción y las automatizaciones no se
+  ejecutaban nunca, sin ningún error. Los parámetros del contexto van obligatorios, y la factoría de
+  diseño pasa lo que haga falta.
+- **Una aserción que se cumple por casualidad es peor que no tenerla.** La prueba de «una regla no puede
+  mandar un correo sin permiso» solo miraba que apareciera «no se pudo», y pasaba porque fallaban también
+  las otras acciones por un motivo distinto. Si compruebas que algo falla, comprueba **qué** falla.
 
 ## Eventos de dominio
 
@@ -158,6 +171,16 @@ referenciar el módulo. Dos cosas que no son obvias:
 - Se comprueba **dos veces**: al encolar y otra vez justo antes de que salga. Entre lo uno y lo otro
   alguien puede darse de baja, y un correo comercial a quien acaba de pedir que no le escriban no es un
   fallo técnico. Ver [`docs/modulos/correo.md`](docs/modulos/correo.md).
+
+## Automatizaciones
+
+Si añades un tipo de acción a las reglas, mira antes
+[`docs/modulos/automatizacion.md`](docs/modulos/automatizacion.md). Dos reglas que lo sujetan:
+
+- **Ninguna acción toca el embudo.** Es lo que hace seguro descartar los eventos que generan las
+  acciones, que es lo que impide que dos reglas se peloteen. Una acción que gane, pierda o mueva una
+  oportunidad rompe las dos cosas a la vez.
+- **Nada que salga hacia una persona se salta el consentimiento.** Una automatización no es una excusa.
 
 ## Interfaz
 

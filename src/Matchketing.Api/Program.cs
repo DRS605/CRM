@@ -9,6 +9,7 @@ using Matchketing.Avisos.Aplicacion;
 using Matchketing.Avisos.Dominio;
 using Matchketing.Webhooks.Aplicacion;
 using Matchketing.Correo.Aplicacion;
+using Matchketing.Automatizacion.Aplicacion;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Cumplimiento.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
@@ -127,6 +128,10 @@ constructor.Services.AddScoped<IPermisoDeEnvio, PermisoDeEnvio>();
 constructor.Services.AddScoped<IApuntaEnCronologia, ApuntaEnCronologia>();
 constructor.Services.AddScoped<IEnviaCorreo, EnviaCorreoSmtp>();
 constructor.Services.AddScoped<ServicioCorreo>();
+constructor.Services.AddScoped<IRepositorioReglas, RepositorioReglas>();
+constructor.Services.AddScoped<IConsultaHechos, ConsultaHechos>();
+constructor.Services.AddScoped<IAccionesAutomatizacion, AccionesAutomatizacion>();
+constructor.Services.AddScoped<ServicioAutomatizacion>();
 
 // El servidor de correo. Si no está configurado, la aplicación arranca igual y los correos se quedan
 // como fallidos con el motivo escrito: caerse al arrancar por no poder mandar un correo sería peor que
@@ -311,6 +316,7 @@ app.MapearRepaso();
 app.MapearAvisos();
 app.MapearWebhooks();
 app.MapearCorreo();
+app.MapearAutomatizacion();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

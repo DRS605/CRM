@@ -113,7 +113,7 @@ producto (un Mailchimp, un gestor de redes, un CMS).
 | Marketing por correo con editor visual | Campaña a segmento | **Adaptar** — plantillas buenas por defecto, sin editor de arrastrar bloques | F2 |
 | Pruebas A/B de correo | Prueba A/B de asunto | **Adaptar** — solo el asunto, que es el 80 % del efecto | F2 |
 | Contenido inteligente / personalización | Variables en plantilla | **Adaptar** — variables sí; contenido condicional no | F2 |
-| Automatización de marketing (*workflows*) | Automatización «si pasa X, haz Y» | **Adaptar** — 3 condiciones y 5 acciones. **Sin lienzo de ramas** | MVP |
+| Automatización de marketing (*workflows*) | Automatización «si pasa X, haz Y» | **Adaptar** — 3 condiciones y 4 acciones. **Sin lienzo de ramas** | F2 |
 | Segmentación por listas | Segmento dinámico | **Copiar** | F2 |
 | Formularios (embebido, emergente, independiente) | Formulario embebible | **Adaptar** — embebido y emergente; el independiente no | MVP |
 | CTAs (botones de llamada a la acción) | — | **Descartar** — resuelto con un enlace normal | — |
@@ -278,7 +278,7 @@ El mapeo anterior es defensivo. Estas cinco son la razón de existir del product
 | **Total inventariado** | **132** |
 
 Es decir: de las 132 capacidades de HubSpot, **81 entran** (61 %) en alguna forma, 10 las cubre el
-ERP y **41 se quedan fuera de forma deliberada**. De las 81 que entran, **44 son del MVP**; el resto
+ERP y **41 se quedan fuera de forma deliberada**. De las 81 que entran, **43 son del MVP**; el resto
 espera a tener clientes de pago.
 
 Ese 31 % descartado es el producto. Sin él, match.keting sería HubSpot con menos presupuesto.
@@ -287,20 +287,28 @@ Ese 31 % descartado es el producto. Sin él, match.keting sería HubSpot con men
 
 ## 12. Hoja de ruta resultante
 
-**match.keting Start (MVP) — 44 funcionalidades**
+> **Corrección (módulo 13).** Esta tabla marcaba la automatización como MVP y **estaba mal**: tanto
+> [`diseno-tecnico-funcional.md`](diseno-tecnico-funcional.md) —que es el documento que manda— como
+> [`modulos/tareas-hoy.md`](../modulos/tareas-hoy.md) dicen que las automatizaciones configurables son
+> F2, y que en el MVP hay **una sola, fija**: lead nuevo → asignar por match → tarea de primera llamada.
+> Dos documentos contra uno, y el que manda entre ellos. Corregido arriba y en las listas de abajo.
+>
+> El orden no cambia: el propio documento de diseño pone las automatizaciones justo **después del correo
+> conectado** en la cola de después del MVP, que es donde se han hecho.
+
+**match.keting Start (MVP) — 43 funcionalidades**
 
 Núcleo + Identidad · Contactos, Cuentas y cronología · Importación y duplicados · Embudo con motivo
 de pérdida y estancamiento · Tareas y **Hoy** · **Match v1** y reparto de leads · Correo conectado,
 plantillas y seguimiento · Registro de llamadas · Formulario y seguimiento web de conocidos ·
-Automatización «si pasa X, haz Y» · Cinco informes · Consentimiento y bajas · Auditoría y permisos ·
-API y webhooks.
+Cinco informes · Consentimiento y bajas · Auditoría y permisos · API y webhooks.
 
 **match.keting Pro (F2)**
 
-Secuencias · Segmentos y campañas · WhatsApp Business · Enlace de reuniones · Extensión de navegador ·
-Fragmentos y documentos · Guiones en Hoy · Objetivos · Prueba A/B de asunto · Atribución de origen ·
-Integración con ALXOR Core · **Match v2** con pesos aprendidos · Borradores y resúmenes asistidos ·
-Campos extra · 2FA.
+**Automatización «si pasa X, haz Y»** · Secuencias · Segmentos y campañas · WhatsApp Business ·
+Enlace de reuniones · Extensión de navegador · Fragmentos y documentos · Guiones en Hoy · Objetivos ·
+Prueba A/B de asunto · Atribución de origen · Integración con ALXOR Core · **Match v2** con pesos
+aprendidos · Borradores y resúmenes asistidos · Campos extra · 2FA.
 
 **F3 — solo bajo petición de clientes reales**
 

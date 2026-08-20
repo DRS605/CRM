@@ -46,6 +46,7 @@ src/
   Matchketing.Avisos          Web Push propio: VAPID, cifrado del cuerpo y el empujón del viernes
   Matchketing.Webhooks        Avisar a otro sistema: firma HMAC, buzón de salida y reintentos
   Matchketing.Correo          Plantillas, envío con permiso comprobado dos veces y aperturas
+  Matchketing.Automatizacion  «Si pasa X, haz Y»: sin ramas, apagadas al nacer y auditables
   Matchketing.Cumplimiento    Consentimiento con prueba, baja de un clic, RGPD y retención
   Matchketing.Auditoria       Quién hizo qué (transversal, como Núcleo)
   Matchketing.Persistencia    EF Core, configuraciones, repositorios, hasher, migraciones
@@ -56,7 +57,7 @@ tests/
   Matchketing.Match.Tests · Matchketing.Captacion.Tests · Matchketing.Informes.Tests
   Matchketing.Cumplimiento.Tests · Matchketing.Auditoria.Tests · Matchketing.Repaso.Tests
   Matchketing.Avisos.Tests · Matchketing.Webhooks.Tests · Matchketing.Correo.Tests
-  Matchketing.IntegrationTests
+  Matchketing.Automatizacion.Tests · Matchketing.IntegrationTests
 ```
 
 `Matchketing.Auditoria` es la **única excepción** a la regla de que ningún módulo referencia a otro:
@@ -79,6 +80,7 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 10. Avisos | ✅ Terminado |
 | 11. Webhooks | ✅ Terminado |
 | 12. Correo | ✅ Terminado |
+| 13. Automatización (F2) | ✅ Terminado |
 
 Los ocho módulos del MVP están terminados, más dos que son los que hacen que un comercial vuelva:
 **Repaso**, que reduce cerrar la semana a dos minutos, y **[Avisos](docs/modulos/avisos.md)**, que
@@ -97,7 +99,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 691 pruebas: 466 unitarias + 225 de integración
+dotnet test                                  # 754 pruebas: 512 unitarias + 242 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 
@@ -218,5 +220,10 @@ ignóralos.
 | `POST` | `/correo/enviar` | Encola un correo. Devuelve **202**: está en el buzón de salida |
 | `GET` | `/correo/contacto/{id}` | Sus correos, con el texto y las aperturas |
 | `GET` | `/e/{token}.gif` | **El píxel de apertura** (público). Siempre la misma imagen |
+| `GET` | `/reglas` | Las reglas automáticas, cada una **leída en castellano** |
+| `POST` | `/reglas` | Crea una regla, **apagada** |
+| `GET` | `/reglas/{id}/ensayo?contactoId=` | Qué haría con ese contacto, **sin hacerlo** |
+| `GET` | `/reglas/{id}/ejecuciones` | Qué ha hecho y sobre quién |
+| `POST` | `/reglas/{id}/encender?encender=` | La enciende o la apaga |
 
 Documentación por módulo en [`docs/modulos/`](docs/modulos/).

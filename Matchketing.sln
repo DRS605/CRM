@@ -67,6 +67,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Correo", "src\M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Correo.Tests", "tests\Matchketing.Correo.Tests\Matchketing.Correo.Tests.csproj", "{5F1C2E50-AA5A-4F67-B25B-4AEAFCC968D6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Automatizacion", "src\Matchketing.Automatizacion\Matchketing.Automatizacion.csproj", "{58EA5646-40EA-4A84-A0B3-00ABBBFFE778}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matchketing.Automatizacion.Tests", "tests\Matchketing.Automatizacion.Tests\Matchketing.Automatizacion.Tests.csproj", "{5BBE9FA0-9A6B-4400-85E5-8D2C55A2DA4D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -196,6 +200,14 @@ Global
 		{5F1C2E50-AA5A-4F67-B25B-4AEAFCC968D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F1C2E50-AA5A-4F67-B25B-4AEAFCC968D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F1C2E50-AA5A-4F67-B25B-4AEAFCC968D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58EA5646-40EA-4A84-A0B3-00ABBBFFE778}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58EA5646-40EA-4A84-A0B3-00ABBBFFE778}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58EA5646-40EA-4A84-A0B3-00ABBBFFE778}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58EA5646-40EA-4A84-A0B3-00ABBBFFE778}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5BBE9FA0-9A6B-4400-85E5-8D2C55A2DA4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BBE9FA0-9A6B-4400-85E5-8D2C55A2DA4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BBE9FA0-9A6B-4400-85E5-8D2C55A2DA4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BBE9FA0-9A6B-4400-85E5-8D2C55A2DA4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E5BC1274-F7E8-4B5B-9BFE-911757022089} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
@@ -228,5 +240,7 @@ Global
 		{BFFEE797-7770-4EE3-A586-355C06E3A512} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
 		{B0AED4C1-016A-4AB6-89BA-4AE32BC1EEE3} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
 		{5F1C2E50-AA5A-4F67-B25B-4AEAFCC968D6} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
+		{58EA5646-40EA-4A84-A0B3-00ABBBFFE778} = {98FCB62B-0FE8-4CDC-BF7F-F63111E5328B}
+		{5BBE9FA0-9A6B-4400-85E5-8D2C55A2DA4D} = {A451AC56-0E4A-416D-B6AE-7F6E3E5928DC}
 	EndGlobalSection
 EndGlobal

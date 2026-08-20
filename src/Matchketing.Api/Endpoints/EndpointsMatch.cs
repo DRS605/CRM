@@ -60,6 +60,25 @@ public static class EndpointsMatch
         })
         .WithSummary("Recalcula toda la empresa. Lo mismo que hace el barrido nocturno.");
 
+        grupo.MapGet("/comerciales", async (
+            IConsultaMatch consulta, IContextoEmpresa contexto, CancellationToken ct) =>
+        {
+            if (!contexto.Tiene(Permisos.ContactoLeer))
+            {
+                return Results.Forbid();
+            }
+
+            // Quiénes hay para asignarles algo. Se reutiliza la consulta del reparto en vez de escribir
+            // otra: es exactamente la misma pregunta —«¿a quién se le puede dar un lead?»— y tener dos
+            // formas de contestarla sería tener dos formas de equivocarse.
+            var comerciales = await consulta.ComercialesAsync(null, ct).ConfigureAwait(false);
+
+            return Results.Ok(comerciales
+                .OrderBy(c => c.Nombre, StringComparer.OrdinalIgnoreCase)
+                .Select(c => new { id = c.UsuarioId, nombre = c.Nombre }));
+        })
+        .WithSummary("Los comerciales de la empresa. Lo usa la pantalla de reglas para «asignárselo a…».");
+
         grupo.MapGet("/contactos/{id:guid}/comercial", async (
             Guid id, ServicioMatch servicio, IContextoEmpresa contexto, CancellationToken ct) =>
         {

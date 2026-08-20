@@ -71,7 +71,7 @@ SQL
 
 # 1. Sin empresa activa, ni una fila. Es el «falla cerrado»: si esto devuelve datos, cualquier
 #    petición sin token o con un token roto vería la base entera.
-for tabla in contactos.contacto embudo.oportunidad tareas.tarea auditoria.registro cumplimiento.consentimiento avisos.suscripcion webhooks.suscripcion webhooks.entrega correo.plantilla correo.mensaje; do
+for tabla in contactos.contacto embudo.oportunidad tareas.tarea auditoria.registro cumplimiento.consentimiento avisos.suscripcion webhooks.suscripcion webhooks.entrega correo.plantilla correo.mensaje automatizacion.regla automatizacion.ejecucion; do
   visibles=$(app -c "SET app.empresa_actual = ''; SELECT count(*) FROM $tabla")
   [ "$visibles" = "0" ] || fallo "sin empresa activa se ven $visibles filas de $tabla (deberían ser 0)"
 done

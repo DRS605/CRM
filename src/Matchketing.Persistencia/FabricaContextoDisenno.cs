@@ -17,7 +17,16 @@ public sealed class FabricaContextoDisenno : IDesignTimeDbContextFactory<Context
             ?? "Host=localhost;Port=5432;Database=matchketing;Username=postgres;Password=postgres";
 
         var opciones = new DbContextOptionsBuilder<ContextoMatchketing>().UseNpgsql(cadena).Options;
-        return new ContextoMatchketing(opciones, new ContextoEmpresaVacio(), new RelojSistema());
+        // Un proveedor que no tiene nada: las herramientas de EF no ejecutan reglas ni webhooks, solo
+        // leen el modelo. Antes esto era un parámetro opcional con valor por defecto, y ahí estaba el
+        // fallo: EF rellenaba el valor por defecto en vez de resolver el servicio, así que en producción
+        // el proveedor llegaba **nulo** y las automatizaciones no se ejecutaban nunca. Sin ningún error.
+        return new ContextoMatchketing(opciones, new ContextoEmpresaVacio(), new RelojSistema(), new SinServicios());
+    }
+
+    private sealed class SinServicios : IServiceProvider
+    {
+        public object? GetService(Type servicioTipo) => null;
     }
 
     private sealed class ContextoEmpresaVacio : IContextoEmpresa

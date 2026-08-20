@@ -503,6 +503,24 @@
   .cola-caja .cual { font-size: 13.5px; font-weight: 600; }
   .cola-caja .como { font-size: 12px; color: var(--grafito); }
 
+  /* ---- Reglas ---- */
+  .rg-fila {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px 0; border-bottom: 1px solid var(--trazo-suave);
+  }
+  .rg-fila:last-child { border-bottom: 0; }
+  .rg-fila .acciones { margin: 0; }
+  .rg-fila .leida { font-size: 14px; line-height: 1.5; }
+  .rg-fila .veces { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
+  .rg-linea { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .rg-linea select, .rg-linea input { min-width: 0; }
+  .rg-linea .quitar {
+    border: 1px solid var(--trazo); background: var(--superficie); color: var(--grafito);
+    border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; font-size: 15px;
+  }
+  .rg-hechas { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  .rg-hechas span { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
+
   /* ---- Correo ---- */
   .vista-previa {
     border: 1px solid var(--trazo); border-radius: 11px; background: var(--fondo);
@@ -1406,6 +1424,46 @@
         </div>
       </div>
 
+      <div class="panel" id="panel-reglas" style="max-width:820px">
+        <h2>Reglas automáticas</h2>
+        <p class="explica">«Si pasa esto, haz esto otro.» Sin ramas ni diagramas: una regla se lee de un
+          tirón y en castellano. Nacen <strong>apagadas</strong>, se pueden probar con un contacto de
+          verdad sin que hagan nada, y todo lo que hacen queda apuntado.</p>
+
+        <div class="filas" id="rg-lista"></div>
+        <div class="vacio-linea" id="rg-vacio" hidden>Todavía no hay ninguna.</div>
+
+        <div class="rejilla-form">
+          <div class="campo">
+            <label for="rg-nombre">Cómo la llamas</label>
+            <input id="rg-nombre" type="text" placeholder="Leads de Valencia" maxlength="100" />
+          </div>
+          <div class="campo">
+            <label for="rg-disparador">Si pasa…</label>
+            <select id="rg-disparador"></select>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label>…y se cumple (todas, nunca «o»)</label>
+          <div id="rg-condiciones"></div>
+          <div class="acciones">
+            <button class="btn fantasma" type="button" id="rg-mas-condicion">Añadir condición</button>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label>…entonces</label>
+          <div id="rg-acciones"></div>
+          <div class="acciones">
+            <button class="btn fantasma" type="button" id="rg-mas-accion">Añadir acción</button>
+          </div>
+        </div>
+
+        <div class="aviso" id="rg-aviso" hidden></div>
+        <div class="acciones"><button class="btn" type="button" id="rg-crear">Crear regla (apagada)</button></div>
+      </div>
+
       <div class="panel" id="panel-plantillas" style="max-width:820px">
         <h2>Plantillas de correo</h2>
         <p class="explica">El correo que escribes catorce veces, escrito una. Se manda de uno en uno
@@ -2220,6 +2278,340 @@
       mostrarAviso($('cr-aviso'), motivoDe(e, 'No se ha podido enviar.'));
       this.disabled = false;
     }
+  });
+
+  // ---------- Reglas automáticas ----------
+
+  var catalogo = null;
+
+  async function cargarReglas() {
+    var caja = $('rg-lista');
+
+    if (catalogo === null) {
+      try {
+        catalogo = await api('/reglas/catalogo');
+      } catch (e) {
+        $('panel-reglas').hidden = true;
+        return;
+      }
+
+      // El desplegable de disparadores se pinta desde el servidor: así añadir uno nuevo no obliga a
+      // tocar la interfaz, y no puede quedarse aquí una lista desactualizada.
+      var dis = $('rg-disparador');
+      dis.textContent = '';
+      catalogo.disparadores.forEach(function (d) {
+        var o = document.createElement('option');
+        o.value = d.nombre;
+        o.textContent = d.nombre;
+        dis.appendChild(o);
+      });
+    }
+
+    $('panel-reglas').hidden = false;
+
+    var lista;
+    try {
+      lista = await api('/reglas');
+    } catch (e) {
+      $('panel-reglas').hidden = true;
+      return;
+    }
+
+    caja.textContent = '';
+    $('rg-vacio').hidden = lista.length > 0;
+
+    lista.forEach(function (r) {
+      var fila = document.createElement('div');
+      fila.className = 'rg-fila';
+
+      var arriba = document.createElement('div');
+      arriba.className = 'wh-fila';
+
+      var de = document.createElement('div');
+      de.className = 'de';
+
+      var cual = document.createElement('span');
+      cual.className = 'cual';
+      cual.textContent = r.nombre;
+      de.appendChild(cual);
+
+      // **Lo importante de esta pantalla.** La regla entera, en una frase y en castellano. Si esto no se
+      // entendiera de un tirón, nadie debería encenderla.
+      var leida = document.createElement('span');
+      leida.className = 'leida';
+      leida.textContent = r.leida;
+      de.appendChild(leida);
+
+      var veces = document.createElement('span');
+      veces.className = 'veces';
+      veces.textContent = r.veces === 0
+        ? 'todavía no ha actuado'
+        : (r.veces === 1 ? 'ha actuado 1 vez' : 'ha actuado ' + r.veces + ' veces') +
+          (r.ultimaVezEn ? ' · la última el ' + fecha(r.ultimaVezEn) : '');
+      de.appendChild(veces);
+
+      arriba.appendChild(de);
+
+      var chip = document.createElement('span');
+      chip.className = 'chip ' + (r.activa ? 'e-cliente' : 'e-perdido');
+      var pt = document.createElement('span');
+      pt.className = 'pt';
+      chip.appendChild(pt);
+      chip.appendChild(document.createTextNode(r.activa ? 'Encendida' : 'Apagada'));
+      arriba.appendChild(chip);
+
+      var acciones = document.createElement('div');
+      acciones.className = 'acciones';
+
+      acciones.appendChild(botonWebhook(r.activa ? 'Apagar' : 'Encender', r.activa ? 'fantasma' : '', async function () {
+        await api('/reglas/' + r.id + '/encender?encender=' + (!r.activa), { metodo: 'POST' });
+        await cargarReglas();
+      }));
+
+      acciones.appendChild(botonWebhook('Probar', 'fantasma', function () { probarRegla(r, fila); }));
+      acciones.appendChild(botonWebhook('Qué ha hecho', 'fantasma', function () { verHechas(r.id, fila); }));
+
+      acciones.appendChild(botonWebhook('Quitar', 'fantasma', async function () {
+        if (!window.confirm('Se quita «' + r.nombre + '». Lo que ya hizo no se deshace.')) { return; }
+        await api('/reglas/' + r.id, { metodo: 'DELETE' });
+        await cargarReglas();
+      }));
+
+      fila.appendChild(arriba);
+      fila.appendChild(acciones);
+      caja.appendChild(fila);
+    });
+  }
+
+  /// Prueba en seco: se elige un contacto y se dice qué haría, sin hacerlo.
+  async function probarRegla(regla, fila) {
+    var vieja = fila.querySelector('.rg-hechas');
+    if (vieja) { vieja.remove(); }
+
+    var contactos = await api('/contactos');
+    if (contactos.length === 0) {
+      mostrarAviso($('rg-aviso'), 'Hace falta al menos un contacto para poder probarla.');
+      return;
+    }
+
+    // Se prueba con el primero de la lista. Elegir a mano sería mejor, pero esto ya responde la pregunta
+    // que importa —«¿esta regla haría algo?»— sin encenderla, que es de lo que se trata.
+    var r = await api('/reglas/' + regla.id + '/ensayo?contactoId=' + contactos[0].id);
+
+    var caja = document.createElement('div');
+    caja.className = 'rg-hechas';
+
+    var titular = document.createElement('span');
+    titular.textContent = 'Con «' + contactos[0].nombre + '»: ' +
+      (r.aplicaria ? 'sí actuaría.' : 'no actuaría. ' + (r.porQueNo || ''));
+    if (!r.aplicaria) { titular.style.color = 'var(--ambar)'; }
+    caja.appendChild(titular);
+
+    r.haria.forEach(function (h) {
+      var linea = document.createElement('span');
+      linea.textContent = '· ' + h;
+      caja.appendChild(linea);
+    });
+
+    fila.appendChild(caja);
+  }
+
+  async function verHechas(id, fila) {
+    var vieja = fila.querySelector('.rg-hechas');
+    if (vieja) { vieja.remove(); return; }
+
+    var lista = await api('/reglas/' + id + '/ejecuciones');
+    var caja = document.createElement('div');
+    caja.className = 'rg-hechas';
+
+    if (lista.length === 0) {
+      var nada = document.createElement('span');
+      nada.textContent = 'Todavía no ha hecho nada.';
+      caja.appendChild(nada);
+    }
+
+    lista.forEach(function (e) {
+      var linea = document.createElement('span');
+      linea.textContent = fecha(e.cuandoEn) + '  ·  ' + e.queHizo;
+      if (e.queHizo.indexOf('no se pudo') >= 0) { linea.style.color = 'var(--ambar)'; }
+      caja.appendChild(linea);
+    });
+
+    fila.appendChild(caja);
+  }
+
+  // --- El formulario ---
+
+  function lineaCondicion() {
+    var linea = document.createElement('div');
+    linea.className = 'rg-linea';
+
+    var campo = desplegable(catalogo.campos, 'campo');
+    var operador = desplegable(catalogo.operadores, 'operador');
+    var valor = document.createElement('input');
+    valor.type = 'text';
+    valor.placeholder = 'Valencia';
+    valor.className = 'valor';
+
+    linea.appendChild(campo);
+    linea.appendChild(operador);
+    linea.appendChild(valor);
+    linea.appendChild(quitar(linea));
+    return linea;
+  }
+
+  function lineaAccion() {
+    var linea = document.createElement('div');
+    linea.className = 'rg-linea';
+
+    var tipo = desplegable(catalogo.acciones, 'tipo');
+    var texto = document.createElement('input');
+    texto.type = 'text';
+    texto.placeholder = 'Llamar al lead nuevo';
+    texto.className = 'texto';
+
+    var numero = document.createElement('input');
+    numero.type = 'number';
+    numero.min = '0';
+    numero.value = '0';
+    numero.placeholder = 'días';
+    numero.className = 'numero';
+    numero.style.maxWidth = '90px';
+
+    var referencia = document.createElement('select');
+    referencia.className = 'referencia';
+    referencia.hidden = true;
+
+    // Los campos que hacen falta cambian según la acción: una tarea pide título y días, un correo pide
+    // plantilla, una nota solo texto. Enseñar los cinco a la vez sería pedir datos que no se usan.
+    function ajustar() {
+      var elegido = Number(tipo.value);
+      texto.hidden = elegido !== 1 && elegido !== 4;
+      numero.hidden = elegido !== 1;
+      referencia.hidden = elegido !== 2 && elegido !== 3;
+
+      if (!referencia.hidden) {
+        referencia.textContent = '';
+        var origen = elegido === 3 ? (plantillasCargadas || []) : (comercialesCargados || []);
+        origen.forEach(function (o) {
+          var op = document.createElement('option');
+          op.value = o.id;
+          op.textContent = o.nombre;
+          referencia.appendChild(op);
+        });
+        if (origen.length === 0) {
+          var vacio = document.createElement('option');
+          vacio.value = '';
+          vacio.textContent = elegido === 3 ? '(no hay plantillas)' : '(no hay comerciales)';
+          referencia.appendChild(vacio);
+        }
+      }
+    }
+
+    tipo.addEventListener('change', ajustar);
+
+    linea.appendChild(tipo);
+    linea.appendChild(texto);
+    linea.appendChild(numero);
+    linea.appendChild(referencia);
+    linea.appendChild(quitar(linea));
+    ajustar();
+    return linea;
+  }
+
+  function desplegable(opciones, clase) {
+    var sel = document.createElement('select');
+    sel.className = clase;
+    opciones.forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o.valor;
+      op.textContent = o.nombre;
+      sel.appendChild(op);
+    });
+    return sel;
+  }
+
+  function quitar(linea) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'quitar';
+    b.textContent = '×';
+    b.title = 'Quitar';
+    b.addEventListener('click', function () { linea.remove(); });
+    return b;
+  }
+
+  var comercialesCargados = null;
+
+  $('rg-mas-condicion').addEventListener('click', function () {
+    if ($('rg-condiciones').childElementCount >= catalogo.maximoCondiciones) {
+      mostrarAviso($('rg-aviso'), 'Como mucho ' + catalogo.maximoCondiciones +
+        ' condiciones. Si necesitas más, probablemente necesitas dos reglas.');
+      return;
+    }
+    $('rg-condiciones').appendChild(lineaCondicion());
+  });
+
+  $('rg-mas-accion').addEventListener('click', async function () {
+    if ($('rg-acciones').childElementCount >= catalogo.maximoAcciones) {
+      mostrarAviso($('rg-aviso'), 'Como mucho ' + catalogo.maximoAcciones + ' acciones.');
+      return;
+    }
+
+    if (comercialesCargados === null) {
+      try { comercialesCargados = await api('/match/comerciales'); } catch (e) { comercialesCargados = []; }
+    }
+
+    $('rg-acciones').appendChild(lineaAccion());
+  });
+
+  $('rg-crear').addEventListener('click', async function () {
+    this.disabled = true;
+    mostrarAviso($('rg-aviso'), '');
+
+    var condiciones = Array.prototype.map.call($('rg-condiciones').children, function (l) {
+      return {
+        campo: Number(l.querySelector('.campo').value),
+        operador: Number(l.querySelector('.operador').value),
+        valor: l.querySelector('.valor').value.trim()
+      };
+    });
+
+    var acciones = Array.prototype.map.call($('rg-acciones').children, function (l) {
+      var tipo = Number(l.querySelector('.tipo').value);
+      var referencia = l.querySelector('.referencia').value;
+      return {
+        tipo: tipo,
+        texto: l.querySelector('.texto').value.trim() || null,
+        referencia: referencia || null,
+        numero: tipo === 1 ? Number(l.querySelector('.numero').value) : null
+      };
+    });
+
+    try {
+      var r = await api('/reglas', {
+        metodo: 'POST',
+        cuerpo: {
+          nombre: $('rg-nombre').value.trim(),
+          disparador: $('rg-disparador').value,
+          condiciones: condiciones,
+          acciones: acciones
+        }
+      });
+
+      $('rg-nombre').value = '';
+      $('rg-condiciones').textContent = '';
+      $('rg-acciones').textContent = '';
+
+      // Se enseña cómo ha quedado leída y que está apagada: es la última oportunidad de darse cuenta de
+      // que la regla no dice lo que se creía.
+      mostrarAviso($('rg-aviso'), r.leida + '  ' + r.aviso, true);
+      await cargarReglas();
+    } catch (e) {
+      mostrarAviso($('rg-aviso'), motivoDe(e, 'No se ha podido crear la regla.'));
+    }
+
+    this.disabled = false;
   });
 
   // ---------- Plantillas ----------
@@ -3156,7 +3548,10 @@
       if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
       if (b.dataset.vista === 'hoy') { cargarHoy(); }
       if (b.dataset.vista === 'repaso') { cargarRepaso(); }
-      if (b.dataset.vista === 'ajustes') { cargarFormularios(); cargarAuditoria(); pintarAvisos(); cargarPlantillas(); cargarWebhooks(); }
+      if (b.dataset.vista === 'ajustes') {
+        cargarFormularios(); cargarAuditoria(); pintarAvisos();
+        cargarPlantillas(); cargarReglas(); cargarWebhooks();
+      }
       if (b.dataset.vista === 'informes') { cargarInformes(); }
     });
   });

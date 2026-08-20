@@ -59,7 +59,8 @@ Una llamada que acaba en **«volver a llamar»** crea sola la tarea de seguimien
 la duplica**: si ya hay un seguimiento pendiente para ese contacto, no se crea otro. Hoy debe ser una
 lista corta, no un montón de recordatorios repetidos.
 
-Es la única automatización fija del MVP. Las configurables («si pasa X, haz Y») son de F2.
+Es la única automatización fija del MVP. Las configurables («si pasa X, haz Y») son de F2, y están
+hechas: ver [`automatizacion.md`](automatizacion.md).
 
 ## API
 

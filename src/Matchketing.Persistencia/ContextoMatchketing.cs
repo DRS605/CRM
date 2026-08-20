@@ -13,7 +13,8 @@ namespace Matchketing.Persistencia;
 /// de PostgreSQL, de forma que las fronteras entre módulos también se ven en la base de datos.
 /// </summary>
 public sealed class ContextoMatchketing(
-    DbContextOptions<ContextoMatchketing> opciones, IContextoEmpresa contexto, IReloj reloj)
+    DbContextOptions<ContextoMatchketing> opciones, IContextoEmpresa contexto, IReloj reloj,
+    IServiceProvider servicios)
     : DbContext(opciones), IUnidadDeTrabajo
 {
     public DbSet<Usuario> Usuarios => Set<Usuario>();
@@ -62,22 +63,70 @@ public sealed class ContextoMatchketing(
 
     public DbSet<Correo.Dominio.Correo> Mensajes => Set<Correo.Dominio.Correo>();
 
+    public DbSet<Automatizacion.Dominio.Regla> Reglas => Set<Automatizacion.Dominio.Regla>();
+
+    public DbSet<Automatizacion.Dominio.Ejecucion> Ejecuciones => Set<Automatizacion.Dominio.Ejecucion>();
+
     /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
     public Guid? EmpresaActual => contexto.EmpresaId;
 
     /// <summary>
-    /// El único guardado de la aplicación, y por eso el sitio donde se despachan los eventos de
-    /// dominio: pasa por aquí lo que hace un endpoint y lo que hace el repaso, sin excepción.
+    /// El único guardado de la aplicación, y por eso el sitio donde se despachan los eventos de dominio:
+    /// pasa por aquí lo que hace un endpoint y lo que hace el repaso, sin excepción.
     ///
-    /// Va antes de `SaveChangesAsync` **a propósito**, no en un interceptor: así las filas de entrega
-    /// que se añadan entran en el mismo `SaveChanges` que el cambio que las provocó, y no hay ninguna
-    /// duda sobre si EF las ve o no. Un interceptor de guardado corre cuando los cambios ya se han
-    /// recogido, y ahí el orden depende de detalles internos que no conviene apostar.
+    /// Hay **dos momentos** distintos y la diferencia importa:
+    ///
+    /// · Los **webhooks** se resuelven antes de guardar. Sus filas de entrega son escrituras sueltas y así
+    ///   entran en el mismo `SaveChanges` que el cambio que las provocó: el buzón de salida y el hecho no
+    ///   se pueden separar.
+    /// · Las **reglas** se ejecutan después. Sus acciones pasan por los servicios de contactos, correo y
+    ///   tareas, y esos servicios cargan de la base el contacto sobre el que actúan. Con el contacto
+    ///   todavía sin guardar, tres de las cuatro acciones fallaban en silencio.
+    ///
+    /// Cuando hay reglas que ejecutar, los dos guardados van dentro de una transacción, así que el cambio
+    /// de negocio y lo que provoca entran o no entran juntos. Cuando no hay ninguna —el caso de casi todo
+    /// el mundo— se guarda una sola vez y no se abre nada.
     /// </summary>
     public async Task<int> GuardarCambiosAsync(CancellationToken ct = default)
     {
-        await DespachadorEventos.DespacharAsync(this, reloj, ct).ConfigureAwait(false);
-        return await SaveChangesAsync(ct).ConfigureAwait(false);
+        var ocurrencias = await DespachadorEventos.DespacharAsync(this, reloj, ct).ConfigureAwait(false);
+
+        // El proveedor resuelve `ServicioAutomatizacion` **aquí y no en el constructor**: ese servicio
+        // depende de un repositorio que depende de este mismo contexto, así que pedirlo al construir sería
+        // un ciclo. Dentro de un método no lo es, porque la instancia ya existe.
+        if (ocurrencias.Count == 0
+            || servicios.GetService(typeof(Automatizacion.Aplicacion.ServicioAutomatizacion))
+                is not Automatizacion.Aplicacion.ServicioAutomatizacion automatizacion
+            || !await automatizacion.HayReglasParaAsync(ocurrencias, ct).ConfigureAwait(false))
+        {
+            return await SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+
+        // Si quien llama ya abrió una transacción —el trabajo de retención lo hace— se usa la suya.
+        var propia = Database.CurrentTransaction is null
+            ? await Database.BeginTransactionAsync(ct).ConfigureAwait(false)
+            : null;
+
+        try
+        {
+            var filas = await SaveChangesAsync(ct).ConfigureAwait(false);
+            await DespachadorEventos.AutomatizarAsync(this, servicios, ocurrencias, ct).ConfigureAwait(false);
+            filas += await SaveChangesAsync(ct).ConfigureAwait(false);
+
+            if (propia is not null)
+            {
+                await propia.CommitAsync(ct).ConfigureAwait(false);
+            }
+
+            return filas;
+        }
+        finally
+        {
+            if (propia is not null)
+            {
+                await propia.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     /// <summary>
@@ -128,6 +177,8 @@ public sealed class ContextoMatchketing(
         modelo.Entity<Webhooks.Dominio.Entrega>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
         modelo.Entity<Correo.Dominio.Plantilla>().HasQueryFilter(p => p.EmpresaId == EmpresaActual);
         modelo.Entity<Correo.Dominio.Correo>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
+        modelo.Entity<Automatizacion.Dominio.Regla>().HasQueryFilter(r => r.EmpresaId == EmpresaActual);
+        modelo.Entity<Automatizacion.Dominio.Ejecucion>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
 
         // Los identificadores los genera **el dominio**, nunca la base: todos los agregados hacen
         // `Guid.NewGuid()` al crearse. Hay que decírselo a EF, porque si cree que los genera la base

@@ -92,10 +92,76 @@ public static class EndpointsOrganizacion
                     pesoEncaje = empresa.Valor.PesoEncaje,
                     horasRebote = empresa.Valor.HorasRebote,
                     mesesRetencionLeads = empresa.Valor.MesesRetencionLeads,
+                    sigueAperturas = empresa.Valor.SigueAperturas,
                 })
                 : ResultadosHttp.Problema(empresa.Error!);
         })
         .WithSummary("Datos y ajustes de la empresa activa.");
+
+        grupo.MapPut("/activa", async (
+            PeticionEmpresa p,
+            ServicioEmpresas empresas,
+            IRegistradorAuditoria auditoria,
+            Matchketing.Nucleo.Comun.IContextoEmpresa contexto,
+            IUnidadDeTrabajo unidad,
+            CancellationToken ct) =>
+        {
+            if (!contexto.Tiene(Permisos.EmpresaAjustes))
+            {
+                return Results.Forbid();
+            }
+
+            if (contexto.EmpresaId is not { } id)
+            {
+                return Results.BadRequest(new { codigo = "empresa.sin_seleccionar", mensaje = "No hay empresa activa." });
+            }
+
+            var r = await empresas.ActualizarDatosAsync(id, p.Nombre, p.Nif, p.Provincia, ct).ConfigureAwait(false);
+            if (r.Fallido)
+            {
+                return ResultadosHttp.Problema(r.Error!);
+            }
+
+            // Se apunta **qué** se ha cambiado, nunca el valor. El NIF de un autónomo es su DNI: un
+            // dato personal, y el registro de auditoría no guarda datos personales (ver
+            // `docs/modulos/auditoria.md`).
+            auditoria.Registrar("empresa", id, Acciones.AjustesCambiados, new { campos = "nombre, nif, provincia" });
+            await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+            return Results.NoContent();
+        })
+        .WithSummary("Corrige los datos de la ficha de la empresa: nombre, NIF y provincia.");
+
+        grupo.MapPut("/activa/ajustes-correo", async (
+            PeticionAjustesCorreo p,
+            ServicioEmpresas empresas,
+            IRegistradorAuditoria auditoria,
+            Matchketing.Nucleo.Comun.IContextoEmpresa contexto,
+            IUnidadDeTrabajo unidad,
+            CancellationToken ct) =>
+        {
+            if (!contexto.Tiene(Permisos.EmpresaAjustes))
+            {
+                return Results.Forbid();
+            }
+
+            if (contexto.EmpresaId is not { } id)
+            {
+                return Results.BadRequest(new { codigo = "empresa.sin_seleccionar", mensaje = "No hay empresa activa." });
+            }
+
+            var r = await empresas.AjustarSeguimientoAsync(id, p.SigueAperturas, ct).ConfigureAwait(false);
+            if (r.Fallido)
+            {
+                return ResultadosHttp.Problema(r.Error!);
+            }
+
+            // Este sí se audita con su valor: es la prueba de cuándo se decidió medir aperturas y de
+            // cuándo se dejó de medir. Es lo que se le enseña a un cliente que lo pregunte.
+            auditoria.Registrar("empresa", id, Acciones.AjustesCambiados, new { p.SigueAperturas });
+            await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+            return Results.NoContent();
+        })
+        .WithSummary("Enciende o apaga la medición de aperturas de correo. Nace apagada.");
 
         grupo.MapPut("/activa/ajustes-match", async (
             PeticionAjustesMatch p,

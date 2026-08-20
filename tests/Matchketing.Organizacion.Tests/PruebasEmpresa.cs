@@ -109,4 +109,60 @@ public sealed class PruebasEmpresa
         r.Valor.Nif.Should().BeNull();
         r.Valor.Provincia.Should().BeNull();
     }
+
+    [Fact]
+    public void Los_datos_de_la_ficha_se_pueden_corregir()
+    {
+        // `Actualizar` existía desde el primer módulo **sin un solo llamante**: no había endpoint ni
+        // pantalla, así que el NIF se enseñaba en Ajustes y no se podía rellenar nunca, y una errata
+        // en el nombre era para siempre. Estas pruebas llegan con el endpoint que lo usa.
+        var empresa = Empresa.Crear("Bar Nou, S.L.", null, null, Reloj).Valor;
+        var despues = new RelojFijo(new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero));
+
+        var r = empresa.Actualizar("  Bar Nou de Vinaròs, S.L.  ", " B98765432 ", " Castellón ", despues);
+
+        r.Exito.Should().BeTrue();
+        empresa.Nombre.Should().Be("Bar Nou de Vinaròs, S.L.", "el nombre se recorta");
+        empresa.Nif.Should().Be("B98765432");
+        empresa.Provincia.Should().Be("Castellón");
+        empresa.ActualizadoEn.Should().Be(despues.AhoraUtc);
+    }
+
+    [Fact]
+    public void Corregir_los_datos_puede_dejar_en_blanco_lo_opcional()
+    {
+        var empresa = Empresa.Crear("Ribera", "B12345678", "Valencia", Reloj).Valor;
+
+        empresa.Actualizar("Ribera", "  ", null, Reloj).Exito.Should().BeTrue();
+
+        empresa.Nif.Should().BeNull("borrar un NIF equivocado tiene que poder hacerse");
+        empresa.Provincia.Should().BeNull();
+    }
+
+    [Fact]
+    public void Corregir_los_datos_no_puede_dejar_la_empresa_sin_nombre()
+    {
+        var empresa = Empresa.Crear("Ribera", null, null, Reloj).Valor;
+
+        empresa.Actualizar("   ", null, null, Reloj).Error!.Codigo.Should().Be("empresa.nombre_vacio");
+        empresa.Nombre.Should().Be("Ribera", "un cambio inválido no deja la empresa a medias");
+    }
+
+    [Fact]
+    public void La_medicion_de_aperturas_nace_apagada_y_se_enciende_a_mano()
+    {
+        // Es la parte que hacía falta para que la frase de la documentación fuera verdad: «que sea una
+        // decisión explícita». Sin interruptor no hay decisión, solo un valor que nadie puede cambiar.
+        var empresa = Empresa.Crear("Ribera", null, null, Reloj).Valor;
+        empresa.SigueAperturas.Should().BeFalse();
+
+        var despues = new RelojFijo(new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero));
+        empresa.AjustarSeguimiento(true, despues);
+
+        empresa.SigueAperturas.Should().BeTrue();
+        empresa.ActualizadoEn.Should().Be(despues.AhoraUtc);
+
+        empresa.AjustarSeguimiento(false, despues);
+        empresa.SigueAperturas.Should().BeFalse("y se tiene que poder apagar igual de fácil");
+    }
 }

@@ -234,6 +234,112 @@ public sealed class PruebasMovil(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task El_pie_dice_cuantos_modulos_hay_de_verdad()
+    {
+        // El pie de Ajustes decía «Los ocho módulos terminados» con trece terminados. Estuvo mal cinco
+        // módulos seguidos, y es un número que el usuario lee como una promesa sobre el producto.
+        //
+        // La única defensa contra un número escrito a mano es atarlo a otro sitio donde sí se
+        // actualiza: la tabla de estado del README, que es lo que se revisa al cerrar cada módulo.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        var filas = System.Text.RegularExpressions.Regex.Matches(
+            LeerDelRepositorio("README.md"), @"^\| (\d+)\. ", System.Text.RegularExpressions.RegexOptions.Multiline);
+        filas.Should().NotBeEmpty("la tabla de estado del README es la fuente del número");
+        var cuantos = filas.Count;
+
+        var pie = System.Text.RegularExpressions.Regex.Match(html, @"<footer class=""nota"">.*?</footer>");
+        pie.Success.Should().BeTrue();
+        pie.Value.Should().Contain(
+            $"{cuantos} módulos terminados",
+            $"el README declara {cuantos} módulos y el pie tiene que decir lo mismo");
+    }
+
+    [Fact]
+    public async Task Ningun_nombre_tecnico_ni_direccion_se_ensena_en_versalitas()
+    {
+        // `.campo label` pone en versalitas todas las etiquetas de campo, y está bien. El problema es
+        // lo que hereda sin querer: las casillas de eventos del webhook viven dentro de un `.campo`,
+        // así que `lead.creado` se leía **LEAD.CREADO**, y ese es el texto que hay que teclear tal cual
+        // en el ERP del otro lado. Lo mismo con la dirección de la vista previa del correo, que salía
+        // en mayúsculas: una dirección en mayúsculas es otra dirección para quien la lee.
+        //
+        // Las dos son la misma clase de fallo —un estilo de etiqueta encima de un dato— y las dos
+        // pasan cualquier revisión de código, porque el HTML es correcto y la hoja de estilos también.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        var casillas = Regla(html, ".casillas label");
+        casillas.Should().Contain("text-transform: none");
+        casillas.Should().Contain("letter-spacing: 0");
+
+        // Y la dirección va en su propio hueco, con el estilo de etiqueta solo en la palabra «Para».
+        html.Should().Contain(@"<span class=""direccion"" id=""cr-para"">");
+        html.Should().NotContain(
+            @"<span class=""rp-porque"" id=""cr-para"">",
+            "`.rp-porque` es versalitas: ahí no cabe una dirección de correo");
+        html.Should().Contain("$('cr-para').textContent = borrador.para;");
+    }
+
+    [Fact]
+    public async Task La_pantalla_deja_rellenar_y_corregir_los_datos_de_la_empresa()
+    {
+        // El NIF se **enseñaba** en Ajustes y no había ni un sitio donde escribirlo: ni en el alta ni
+        // después. Un campo que solo se puede mirar no es un campo, es una promesa incumplida.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("id=\"emp-nif\"", "el alta de la empresa pregunta el NIF");
+        html.Should().Contain("<input id=\"aj-nif\"", "y en Ajustes se corrige, no solo se lee");
+        html.Should().Contain("<input id=\"aj-nombre\"");
+        html.Should().Contain("/empresas/activa', {");
+
+        // Y quien no administra la empresa no ve un formulario que le va a contestar 403.
+        html.Should().Contain("var soloLectura = !puede('empresa.ajustes');");
+    }
+
+    [Fact]
+    public async Task La_medicion_de_aperturas_tiene_interruptor_y_explica_lo_que_hace()
+    {
+        // Todo el seguimiento de aperturas —el píxel, el recuento, la séptima pregunta del repaso—
+        // dependía de `Empresa.SigueAperturas`, que nacía apagado y **no tenía interruptor**: ni
+        // endpoint ni pantalla. La documentación decía «una decisión explícita de la empresa» y no
+        // había forma de tomarla, así que era código inalcanzable con una frase encima.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("id=\"aj-aperturas\"");
+        html.Should().Contain("/empresas/activa/ajustes-correo");
+
+        // Y lo dice en castellano y por delante: encenderlo es medir a una persona.
+        html.Should().Contain("medir el comportamiento");
+        html.Should().Contain("solo en texto plano");
+    }
+
+    /// <summary>El cuerpo de una regla CSS de la hoja incrustada, para poder afirmar sobre ella.</summary>
+    private static string Regla(string html, string selector)
+    {
+        var desde = html.IndexOf(selector + " {", StringComparison.Ordinal);
+        desde.Should().BeGreaterThan(-1, $"la regla «{selector}» tiene que existir");
+        var hasta = html.IndexOf('}', desde);
+        return html[desde..hasta];
+    }
+
+    /// <summary>
+    /// Un fichero del repositorio, buscando la raíz hacia arriba desde donde corre la prueba. Hace
+    /// falta para las pruebas que atan la interfaz a la documentación; si no se encuentra la raíz la
+    /// prueba falla, que es mejor que darse por buena sin haber comprobado nada.
+    /// </summary>
+    private static string LeerDelRepositorio(string relativo)
+    {
+        var carpeta = new DirectoryInfo(AppContext.BaseDirectory);
+        while (carpeta is not null && !File.Exists(Path.Combine(carpeta.FullName, "Matchketing.sln")))
+        {
+            carpeta = carpeta.Parent;
+        }
+
+        carpeta.Should().NotBeNull("no se ha encontrado la raíz del repositorio desde " + AppContext.BaseDirectory);
+        return File.ReadAllText(Path.Combine(carpeta!.FullName, relativo));
+    }
+
+    [Fact]
     public async Task La_pagina_declara_lo_que_un_movil_necesita()
     {
         var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));

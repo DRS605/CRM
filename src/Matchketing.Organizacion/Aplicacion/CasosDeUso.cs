@@ -29,6 +29,20 @@ public sealed class ServicioEmpresas(IRepositorioEmpresas empresas, IReloj reloj
     public Task<IReadOnlyList<Empresa>> DeIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
         empresas.DeIdsAsync(ids, ct);
 
+    /// <summary>
+    /// Cambia los datos de la ficha: nombre, NIF y provincia. Existían en el dominio desde el primer
+    /// módulo y no había forma de tocarlos: el NIF se **enseñaba** en Ajustes y no se podía rellenar
+    /// nunca, y una errata en el nombre era para siempre.
+    /// </summary>
+    public async Task<Resultado> ActualizarDatosAsync(
+        Guid id, string? nombre, string? nif, string? provincia, CancellationToken ct = default)
+    {
+        var empresa = await empresas.BuscarPorIdAsync(id, ct).ConfigureAwait(false);
+        return empresa is null
+            ? Resultado.Fallo(Error.NoEncontrado("empresa.no_encontrada", "La empresa no existe."))
+            : empresa.Actualizar(nombre, nif, provincia, reloj);
+    }
+
     public async Task<Resultado> AjustarMatchAsync(Guid id, decimal pesoEncaje, int horasRebote, CancellationToken ct = default)
     {
         var empresa = await empresas.BuscarPorIdAsync(id, ct).ConfigureAwait(false);

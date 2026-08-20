@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 754 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 768 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -148,6 +148,20 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **Una aserción que se cumple por casualidad es peor que no tenerla.** La prueba de «una regla no puede
   mandar un correo sin permiso» solo miraba que apareciera «no se pudo», y pasaba porque fallaban también
   las otras acciones por un motivo distinto. Si compruebas que algo falla, comprueba **qué** falla.
+- **Un método público sin llamantes no da ningún error.** Compila, pasa los analizadores y aparenta que la
+  funcionalidad existe. `Empresa.Actualizar` y `AjustarSeguimiento` llevaban trece y dos módulos sin
+  endpoint ni pantalla: el NIF se enseñaba en Ajustes sin poder rellenarse nunca, y el seguimiento de
+  aperturas —píxel, recuento y la séptima pregunta del repaso— era código inalcanzable con un párrafo de
+  documentación encima que decía «es una decisión explícita de la empresa». Al terminar un módulo,
+  comprueba que **todo lo que el dominio permite tenga por dónde entrar**.
+- **La pantalla de una empresa recién creada es la que nadie prueba**, porque para probar cualquier otra
+  cosa hay que meter datos antes. Ahí es donde se ven los campos que no se pueden rellenar y los estados
+  vacíos que no dicen nada. Un barrido con un inquilino vacío encuentra lo que ninguno con datos.
+- **Un estilo de etiqueta encima de un dato lo cambia.** `.campo label` pone versalitas, y las casillas de
+  eventos del webhook viven dentro de un `.campo`: `lead.creado` se leía **LEAD.CREADO**, que es justo el
+  texto que hay que teclear tal cual en el otro sistema. Lo mismo con la dirección de la vista previa del
+  correo. Misma especificidad, la regla de después gana **solo en las propiedades que redeclara**: lo que
+  no repites lo sigues heredando. Y pasa cualquier revisión, porque el HTML es correcto y el CSS también.
 
 ## Eventos de dominio
 
@@ -197,6 +211,14 @@ Y **míralo también a 390 px**, midiendo `scrollWidth` contra `innerWidth`. Dos
 desbordamiento vivían ahí desde el módulo 2. Lo adaptable va **al final del estilo**: un `@media`
 colocado antes de la regla que quiere anular no hace nada, y eso ya pasó una vez. Ver
 [`docs/movil.md`](docs/movil.md).
+
+Al medir desbordes, **descarta lo que está dentro de un contenedor que se desliza a propósito**
+(el tablero del embudo, las tablas anchas): ahí salirse del ancho de la ventana no es un defecto, y
+contarlo tapa los que sí lo son. Lo que se mide es la ventana, no cada caja.
+
+Dos cosas que un barrido con datos no ve, y hay que buscarlas a mano: **la empresa recién creada**
+—estados vacíos y campos que no se pueden rellenar— y **el texto que un estilo cambia** (versalitas
+encima de un nombre técnico o de una dirección de correo).
 
 ## Antes de producción
 

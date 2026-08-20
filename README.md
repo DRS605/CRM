@@ -82,15 +82,21 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 12. Correo | ✅ Terminado |
 | 13. Automatización (F2) | ✅ Terminado |
 
-Los ocho módulos del MVP están terminados, más dos que son los que hacen que un comercial vuelva:
-**Repaso**, que reduce cerrar la semana a dos minutos, y **[Avisos](docs/modulos/avisos.md)**, que
-hace que se acuerde —un aviso al móvil, los viernes a las seis, y solo si hay algo que decidir—. El
-undécimo, **[Webhooks](docs/modulos/webhooks.md)**, es el que deja de contarlo dos veces: oportunidad
-ganada aquí, pedido emitido en el ERP. Y el duodécimo, **[Correo](docs/modulos/correo.md)**, es el que
-le da al repaso su séptima pregunta y la más rentable: «le escribiste hace seis días, lo ha abierto tres
-veces y no ha contestado». Lo
-que se añadió después del octavo —auditoría, trabajos en segundo plano, límite de intentos de acceso,
-sonda de salud real y el rol de base de datos sin superusuario— está en
+Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los cinco siguientes son los que hacen
+que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto:
+
+- **[Repaso](docs/modulos/repaso.md)** reduce cerrar la semana a dos minutos.
+- **[Avisos](docs/modulos/avisos.md)** hace que se acuerde: un aviso al móvil los viernes a las seis,
+  y solo si hay algo que decidir.
+- **[Webhooks](docs/modulos/webhooks.md)** deja de contarlo dos veces: oportunidad ganada aquí,
+  pedido emitido en el ERP.
+- **[Correo](docs/modulos/correo.md)** le da al repaso su séptima pregunta y la más rentable: «le
+  escribiste hace seis días, lo ha abierto tres veces y no ha contestado».
+- **[Automatización](docs/modulos/automatizacion.md)** quita el trabajo que se repite: «si entra un
+  lead de feria, llámalo hoy». Sin lienzo de ramas, y las reglas nacen apagadas.
+
+Lo que se añadió después del octavo y no es un módulo —auditoría, trabajos en segundo plano, límite de
+intentos de acceso, sonda de salud real y el rol de base de datos sin superusuario— está en
 [`docs/despliegue.md`](docs/despliegue.md).
 
 ## Puesta en marcha
@@ -99,7 +105,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 754 pruebas: 512 unitarias + 242 de integración
+dotnet test                                  # 768 pruebas: 516 unitarias + 252 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

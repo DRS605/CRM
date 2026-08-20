@@ -101,6 +101,24 @@ defender delante de un cliente y una que hay que explicar.
 Con el seguimiento apagado, el correo sale **solo en texto plano**: sin parte HTML, sin imagen y sin nada
 que cargar.
 
+### Y se enciende en Ajustes
+
+`PUT /empresas/activa/ajustes-correo` (permiso `empresa.ajustes`), con su interruptor en
+**Ajustes › Medir si abren los correos**, que explica lo que hace antes de que se toque.
+
+Esto faltaba, y faltaba de la peor manera: el párrafo de arriba decía «una decisión explícita de la
+empresa» y **no había forma de tomarla**. El valor nacía apagado, `AjustarSeguimiento` no tenía
+llamantes y no existía ni endpoint ni pantalla, así que el píxel, el recuento de aperturas y la séptima
+pregunta del repaso eran, en producción, código inalcanzable. Nada fallaba: no hay error posible en una
+función que nadie llama.
+
+Va en su **propia petición** y no colgado de los datos de la empresa a propósito: encenderlo es decidir
+que se mide el comportamiento de una persona, y una decisión así no se toma de rebote al corregir una
+errata en el nombre. Se audita con su valor —es la prueba de cuándo se empezó a medir y cuándo se dejó—,
+al contrario que los datos de la ficha, donde solo se apunta qué campos se tocaron.
+
+Al apagarlo, lo ya apuntado se queda: la cronología no se edita ni se borra.
+
 ### Cómo funciona el píxel
 
 `GET /e/{token}.gif` → siempre el mismo GIF de 1×1, exista el token o no.
@@ -157,6 +175,7 @@ exacto que se mandó**, que en un correo comercial es la mitad del valor.
 | POST | `/correo/enviar` | `contacto.gestionar` | Encola. Devuelve **202**, no 200. |
 | GET | `/correo/contacto/{id}` | `contacto.leer` | Sus correos, con el texto y las aperturas. |
 | GET | `/e/{token}.gif` | — (público) | El píxel. |
+| PUT | `/empresas/activa/ajustes-correo` | `empresa.ajustes` | Enciende o apaga la medición de aperturas. |
 
 Escribir una plantilla pide `empresa.ajustes` porque el texto sale en nombre de la empresa; mandar un
 correo pide `contacto.gestionar`, que es lo que ya tiene un comercial.

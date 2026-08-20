@@ -71,11 +71,27 @@ PostgreSQL**, de forma que las fronteras entre módulos también se ven en la ba
 
 Nombres en español y `snake_case`. Claves `uuid`, marcas de tiempo `timestamptz`.
 
+## La ficha de la empresa se corrige
+
+`PUT /empresas/activa` (permiso `empresa.ajustes`) cambia nombre, NIF y provincia. Llegó tarde, y el
+motivo de que llegara tarde merece quedar escrito: `Empresa.Actualizar` estaba en el dominio **desde
+este módulo, sin un solo llamante**. No había endpoint ni pantalla, así que el NIF se *enseñaba* en
+Ajustes y no había ningún sitio donde escribirlo —tampoco en el alta—, y una errata en el nombre de la
+empresa, que es el que sale en los correos y en la copia de los datos, era para siempre.
+
+Un método público sin llamantes no da ningún error: compila, pasa los analizadores y aparenta que la
+funcionalidad existe. Lo que lo encontró fue mirar la pantalla de una empresa recién creada, que es la
+única que nadie prueba porque para probar cualquier otra cosa hay que meter datos antes.
+
+En el registro de auditoría se apunta **qué campos se tocaron, nunca el valor**: el NIF de un autónomo
+es su DNI, y el registro no guarda datos personales (ver [`auditoria.md`](auditoria.md)).
+
 ## Interfaz
 
-Acceso (entrar / crear cuenta), elección o creación de empresa, y la aplicación con su menú de
-cinco opciones. **Ajustes es funcional**: muestra los datos de la empresa y permite mover la
-balanza Encaje/Momento y las horas de rebote. Hoy, Contactos, Embudo e Informes muestran su estado
+Acceso (entrar / crear cuenta), elección o creación de empresa —con NIF—, y la aplicación con su menú
+de seis opciones. **Ajustes es funcional**: los datos de la empresa se editan y se guardan, y desde
+ahí se mueve la balanza Encaje/Momento y las horas de rebote. Quien no tiene `empresa.ajustes` ve los
+campos **bloqueados y con el motivo escrito**, en vez de un formulario que contestaría 403 al guardar. Hoy, Contactos, Embudo e Informes muestran su estado
 real —vacío o pendiente— con el número de módulo en el que llegan. Paleta magenta e identidad según
 `matchketing.md`.
 
@@ -84,7 +100,10 @@ real —vacío o pendiente— con el número de módulo en el que llegan. Paleta
 - **Unitarios (33)**: normalización de correo, validación de contraseña y nombre, eventos de alta,
   permisos por rol, membresía desactivada, hasher (sal distinta, formato inválido no revienta),
   validación de los ajustes del Match.
-- **Integración (11)**, contra PostgreSQL real: registro y sesión, correo repetido, entrar con el
+- **Integración (18)**, contra PostgreSQL real: registro y sesión, correo repetido, entrar con el
   correo en mayúsculas, **respuesta idéntica ante contraseña mala y correo inexistente**, creación
   de empresa con los 11 permisos, **un usuario no puede entrar en la empresa de otro**, sin token no
-  se ve nada, y persistencia de los ajustes del Match.
+  se ve nada, persistencia de los ajustes del Match, corrección de los datos de la ficha —con el
+  nombre en blanco rechazado y sin tocar nada—, **el NIF no entra en el registro de auditoría**, el
+  interruptor de aperturas se enciende y se apaga y queda auditado, y los datos de una empresa no se
+  tocan desde otra.

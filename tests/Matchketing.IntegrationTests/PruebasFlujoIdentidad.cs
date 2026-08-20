@@ -152,6 +152,115 @@ public sealed class PruebasFlujoIdentidad(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task Los_datos_de_la_empresa_se_corrigen_y_se_releen()
+    {
+        // No se podía. `Empresa.Actualizar` estaba en el dominio desde el módulo 1 sin un solo
+        // llamante: el NIF se **enseñaba** en Ajustes y no había manera de rellenarlo, y una errata en
+        // el nombre —el que sale en los correos y en la copia de los datos— era para siempre.
+        var (cliente, _, _) = await ConEmpresaAsync("Bar Nou, S.L.");
+
+        var guardar = await cliente.PutAsJsonAsync(
+            "/empresas/activa", new { nombre = "Bar Nou de Vinaròs, S.L.", nif = "B98765432", provincia = "Castellón" });
+        guardar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var leido = await LeerAsync(await cliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative)));
+        leido.GetProperty("nombre").GetString().Should().Be("Bar Nou de Vinaròs, S.L.");
+        leido.GetProperty("nif").GetString().Should().Be("B98765432");
+        leido.GetProperty("provincia").GetString().Should().Be("Castellón");
+    }
+
+    [Fact]
+    public async Task Corregir_los_datos_no_puede_dejar_la_empresa_sin_nombre()
+    {
+        var (cliente, _, _) = await ConEmpresaAsync("Bar Nou, S.L.");
+
+        var r = await cliente.PutAsJsonAsync("/empresas/activa", new { nombre = "   ", nif = "B98765432" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await LeerAsync(r)).GetProperty("codigo").GetString().Should().Be("empresa.nombre_vacio");
+
+        var leido = await LeerAsync(await cliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative)));
+        leido.GetProperty("nombre").GetString().Should().Be("Bar Nou, S.L.", "un cambio inválido no toca nada");
+    }
+
+    [Fact]
+    public async Task El_registro_de_auditoria_no_guarda_el_NIF()
+    {
+        // El NIF de un autónomo es su DNI. El registro de auditoría apunta **qué** se cambió, nunca el
+        // valor: es la regla de `docs/modulos/auditoria.md` y aquí es fácil de romper sin darse cuenta.
+        var (cliente, _, _) = await ConEmpresaAsync("Bar Nou, S.L.");
+
+        await cliente.PutAsJsonAsync("/empresas/activa", new { nombre = "Bar Nou, S.L.", nif = "B98765432" });
+
+        var registro = await (await cliente.GetAsync(new Uri("/auditoria", UriKind.Relative))).Content.ReadAsStringAsync();
+        registro.Should().Contain("ajustes.cambiados");
+        registro.Should().NotContain("B98765432", "el valor no entra en el registro, solo qué campos se tocaron");
+    }
+
+    [Fact]
+    public async Task La_medicion_de_aperturas_se_puede_encender_y_apagar()
+    {
+        // La documentación decía «que sea una decisión explícita de la empresa». No lo era: el valor
+        // nacía en `false` y **no había endpoint ni pantalla para cambiarlo**, así que el píxel, la
+        // séptima pregunta del repaso y todo el seguimiento de aperturas eran código inalcanzable.
+        var (cliente, _, _) = await ConEmpresaAsync("Ribera");
+
+        var recien = await LeerAsync(await cliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative)));
+        recien.GetProperty("sigueAperturas").GetBoolean().Should().BeFalse("nace apagado, y eso es la decisión por defecto");
+
+        (await cliente.PutAsJsonAsync("/empresas/activa/ajustes-correo", new { sigueAperturas = true }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await LeerAsync(await cliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative))))
+            .GetProperty("sigueAperturas").GetBoolean().Should().BeTrue();
+
+        (await cliente.PutAsJsonAsync("/empresas/activa/ajustes-correo", new { sigueAperturas = false }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await LeerAsync(await cliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative))))
+            .GetProperty("sigueAperturas").GetBoolean().Should().BeFalse("apagarlo tiene que ser igual de fácil que encenderlo");
+    }
+
+    [Fact]
+    public async Task Encender_y_apagar_la_medicion_de_aperturas_queda_auditado()
+    {
+        // Es la prueba de cuándo se decidió medir el comportamiento de la gente y cuándo se dejó de
+        // medir. Sin ese rastro no se puede contestar a un cliente que lo pregunte.
+        var (cliente, _, _) = await ConEmpresaAsync("Ribera");
+
+        await cliente.PutAsJsonAsync("/empresas/activa/ajustes-correo", new { sigueAperturas = true });
+
+        var registro = await (await cliente.GetAsync(new Uri("/auditoria", UriKind.Relative))).Content.ReadAsStringAsync();
+        registro.Should().Contain("ajustes.cambiados");
+        registro.Should().Contain("SigueAperturas", "hace falta saber si se encendió o se apagó");
+    }
+
+    [Fact]
+    public async Task Los_datos_de_una_empresa_no_se_tocan_desde_otra()
+    {
+        // El aislamiento, en el endpoint nuevo: la empresa que se corrige es la del token, y no hay
+        // manera de nombrar otra en la petición.
+        var (unoCliente, _, _) = await ConEmpresaAsync("Ribera Uno");
+        var (dosCliente, _, _) = await ConEmpresaAsync("Ribera Dos");
+
+        await unoCliente.PutAsJsonAsync("/empresas/activa", new { nombre = "Ribera Uno Corregida", nif = "B11111111" });
+
+        var dos = await LeerAsync(await dosCliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative)));
+        dos.GetProperty("nombre").GetString().Should().Be("Ribera Dos");
+        dos.TryGetProperty("nif", out var nif).Should().BeTrue();
+        (nif.ValueKind == JsonValueKind.Null).Should().BeTrue("el NIF de la otra empresa sigue vacío");
+    }
+
+    /// <summary>Un cliente registrado y con empresa activa, que es lo que piden casi todas las pruebas.</summary>
+    private async Task<(HttpClient Cliente, string Token, string Email)> ConEmpresaAsync(string nombre)
+    {
+        var (cliente, _, email) = await RegistradoAsync();
+        var creada = await cliente.PostAsJsonAsync("/empresas", new { nombre });
+        creada.StatusCode.Should().Be(HttpStatusCode.Created);
+        var token = (await LeerAsync(creada)).GetProperty("token").GetString()!;
+        cliente.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return (cliente, token, email);
+    }
+
+    [Fact]
     public async Task El_perfil_lista_las_empresas_del_usuario()
     {
         var (cliente, _, _) = await RegistradoAsync();

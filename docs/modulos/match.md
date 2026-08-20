@@ -64,12 +64,16 @@ Donde HubSpot reparte por turnos, aquí se reparte por afinidad real:
 
 | Factor | Puntos |
 |---|---:|
-| Lleva esa provincia (`Membresia.Zonas`) | 30 |
+| Lleva esa provincia (`Membresia.Zonas`, se rellena en [Equipo](equipo.md)) | 30 |
 | Su tasa de cierre en ese sector, normalizada | 0–30 |
 | Carga: oportunidades abiertas frente al máximo del equipo, invertida | 0–20 |
 | Velocidad: tiempo medio de primera respuesta, invertida | 0–20 |
 
 Empate → gana **quien menos carga tiene**. Repartir trabajo también es repartir atención.
+
+> **Nota**: el factor de la provincia no valió nada hasta el módulo 14. `Membresia.Zonas` existía desde
+> el módulo 1 y **no había forma de rellenarlo**, así que el reparto por zona repartía sin que nadie
+> tuviera zona, y los otros tres factores decidían siempre. Se rellena en Ajustes › Equipo.
 
 **M4 — A quien acaba de entrar no se le penaliza por no tener histórico**: arranca con la media del
 equipo. Si se le castigara por no tener datos, nunca recibiría un lead y nunca los tendría.

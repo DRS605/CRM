@@ -83,7 +83,10 @@ constructor.Services.AddScoped<IUnidadDeTrabajo>(sp => sp.GetRequiredService<Con
 constructor.Services.AddScoped<IRepositorioUsuarios, RepositorioUsuarios>();
 constructor.Services.AddScoped<IRepositorioMembresias, RepositorioMembresias>();
 constructor.Services.AddScoped<IRepositorioEmpresas, RepositorioEmpresas>();
+constructor.Services.AddScoped<IRepositorioInvitaciones, RepositorioInvitaciones>();
+constructor.Services.AddScoped<IConsultaPersonas, ConsultaPersonas>();
 constructor.Services.AddScoped<ServicioIdentidad>();
+constructor.Services.AddScoped<ServicioEquipo>();
 constructor.Services.AddScoped<ServicioEmpresas>();
 constructor.Services.AddScoped<IRepositorioContactos, RepositorioContactos>();
 constructor.Services.AddScoped<IRepositorioCuentas, RepositorioCuentas>();
@@ -304,6 +307,7 @@ app.MapGet("/salud", async (ContextoMatchketing bd, CancellationToken ct) =>
 
 app.MapearIdentidad();
 app.MapearOrganizacion();
+app.MapearEquipo();
 app.MapearContactos();
 app.MapearEmbudo();
 app.MapearTareas();

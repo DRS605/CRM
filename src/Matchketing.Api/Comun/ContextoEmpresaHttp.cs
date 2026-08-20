@@ -20,9 +20,14 @@ public sealed class ContextoEmpresaHttp(IHttpContextAccessor acceso) : IContexto
 {
     private Guid? empresaPublica;
 
-    public Guid? EmpresaId => Leer(Claims.EmpresaId) ?? empresaPublica;
+    /// <summary>
+    /// La empresa fijada a mano gana al token. Ver el porqué en <see cref="IContextoEmpresaPublico"/>:
+    /// en las rutas públicas el inquilino lo dice la clave del formulario o el token del enlace, y que
+    /// una sesión abierta de otra empresa pudiera desviar el dato es la clase de fallo que no avisa.
+    /// </summary>
+    public Guid? EmpresaId => empresaPublica ?? Leer(Claims.EmpresaId);
 
-    /// <summary>Solo para la entrada pública de leads. Ver <see cref="IContextoEmpresaPublico"/>.</summary>
+    /// <summary>Solo para las rutas públicas. Ver <see cref="IContextoEmpresaPublico"/>.</summary>
     public void FijarEmpresa(Guid empresaId) => empresaPublica = empresaId;
 
     public Guid? UsuarioId => Leer(Claims.UsuarioId);

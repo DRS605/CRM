@@ -313,6 +313,46 @@ public sealed class PruebasMovil(ApiDePrueba api)
         html.Should().Contain("solo en texto plano");
     }
 
+    [Fact]
+    public async Task Ajustes_no_le_ensena_a_un_comercial_paneles_que_le_van_a_dar_403()
+    {
+        // Mientras una empresa solo pudo tener a su propietaria, esto no hacía falta. Con el primer
+        // comercial dentro, abrir Ajustes lanzaba cinco peticiones que el servidor contestaba con 403 y
+        // una de ellas ni se recogía: la pantalla se quedaba a medias.
+        //
+        // Esconderlos no es la seguridad —esa la hace el servidor, permiso a permiso— sino no enseñar
+        // cinco paneles que solo pueden dar error.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("var PANELES_AJUSTES = [");
+        html.Should().Contain("function abrirAjustes()");
+        html.Should().Contain("if (puede('formulario.gestionar')) { cargarFormularios(); }");
+
+        // Y ninguna carga de las que piden permiso se lanza a ciegas al abrir la pestaña.
+        var conmutador = html[html.IndexOf("b.dataset.vista === 'ajustes'", StringComparison.Ordinal)..];
+        conmutador = conmutador[..conmutador.IndexOf('}', StringComparison.Ordinal)];
+        conmutador.Should().Contain("abrirAjustes()");
+        conmutador.Should().NotContain("cargarWebhooks()");
+    }
+
+    [Fact]
+    public async Task La_pantalla_de_invitacion_dice_a_donde_te_invitan_antes_de_pedirte_nada()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("id=\"pantalla-invitacion\"");
+        html.Should().Contain("id=\"inv-empresa\"");
+        html.Should().Contain("id=\"inv-rol\"");
+
+        // La contraseña la elige quien entra, y se dice por delante: es lo que sostiene que la auditoría
+        // pueda afirmar quién hizo qué.
+        html.Should().Contain("quien te ha invitado no la ve");
+
+        // Y el enlace de la invitación se ve una sola vez, como el secreto de un webhook.
+        html.Should().Contain("id=\"eq-enlace-caja\"");
+        html.Should().Contain("No se puede volver a ver");
+    }
+
     /// <summary>El cuerpo de una regla CSS de la hoja incrustada, para poder afirmar sobre ella.</summary>
     private static string Regla(string html, string selector)
     {

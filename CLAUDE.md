@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 768 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 817 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -157,6 +157,17 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **La pantalla de una empresa recién creada es la que nadie prueba**, porque para probar cualquier otra
   cosa hay que meter datos antes. Ahí es donde se ven los campos que no se pueden rellenar y los estados
   vacíos que no dicen nada. Un barrido con un inquilino vacío encuentra lo que ninguno con datos.
+- **La empresa que se fija a mano gana al token, y hay que saberlo.** `IContextoEmpresaPublico.FijarEmpresa`
+  la usan cuatro endpoints —formulario público, enlace de baja, píxel de apertura, invitación— y en
+  ellos el inquilino sale de algo firmado o de una fila. Antes ganaba el token: una petición a
+  `/f/{clave}` con la sesión de otra empresa abierta habría guardado el lead en la empresa **de la
+  sesión**. No pasaba porque el navegador no adjunta el token a esas rutas, pero eso es una casualidad
+  del transporte. Si añades una ruta pública que derive la empresa de un token, fíjala y llama a
+  `bd.ReaplicarEmpresaAsync` **antes** de la primera consulta.
+- **Una pantalla escrita cuando solo había un rol se rompe al llegar el segundo.** Ajustes pedía sus
+  ocho paneles sin mirar permisos, porque la única persona posible en una empresa era su propietaria.
+  Con el primer comercial dentro eran **cinco 403 y una promesa sin recoger**. Al añadir un panel a
+  Ajustes, mételo en `PANELES_AJUSTES` con el permiso que necesita.
 - **Un estilo de etiqueta encima de un dato lo cambia.** `.campo label` pone versalitas, y las casillas de
   eventos del webhook viven dentro de un `.campo`: `lead.creado` se leía **LEAD.CREADO**, que es justo el
   texto que hay que teclear tal cual en el otro sistema. Lo mismo con la dirección de la vista previa del

@@ -81,6 +81,7 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 11. Webhooks | ✅ Terminado |
 | 12. Correo | ✅ Terminado |
 | 13. Automatización (F2) | ✅ Terminado |
+| 14. Equipo | ✅ Terminado |
 
 Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los cinco siguientes son los que hacen
 que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto:
@@ -94,6 +95,9 @@ que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto
   escribiste hace seis días, lo ha abierto tres veces y no ha contestado».
 - **[Automatización](docs/modulos/automatizacion.md)** quita el trabajo que se repite: «si entra un
   lead de feria, llámalo hoy». Sin lienzo de ramas, y las reglas nacen apagadas.
+- **[Equipo](docs/modulos/equipo.md)** cierra un renglón del MVP que estaba a medias: una empresa ya
+  puede tener dos personas. Los tres papeles y las zonas del reparto de leads existían desde el
+  módulo 1 **sin ninguna forma de llegar a ellos**.
 
 Lo que se añadió después del octavo y no es un módulo —auditoría, trabajos en segundo plano, límite de
 intentos de acceso, sonda de salud real y el rol de base de datos sin superusuario— está en
@@ -105,7 +109,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 768 pruebas: 516 unitarias + 252 de integración
+dotnet test                                  # 817 pruebas: 548 unitarias + 269 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

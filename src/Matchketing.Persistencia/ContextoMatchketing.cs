@@ -21,6 +21,8 @@ public sealed class ContextoMatchketing(
 
     public DbSet<Membresia> Membresias => Set<Membresia>();
 
+    public DbSet<Invitacion> Invitaciones => Set<Invitacion>();
+
     public DbSet<Empresa> Empresas => Set<Empresa>();
 
     public DbSet<Cuenta> Cuentas => Set<Cuenta>();
@@ -179,6 +181,11 @@ public sealed class ContextoMatchketing(
         modelo.Entity<Correo.Dominio.Correo>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
         modelo.Entity<Automatizacion.Dominio.Regla>().HasQueryFilter(r => r.EmpresaId == EmpresaActual);
         modelo.Entity<Automatizacion.Dominio.Ejecucion>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
+
+        // La invitación **sí** lleva filtro, al contrario que la membresía: es un dato de una empresa
+        // concreta. El endpoint público que la lee fija la empresa antes de consultar, sacándola del
+        // propio token, así que la consulta va con las dos barreras puestas.
+        modelo.Entity<Invitacion>().HasQueryFilter(i => i.EmpresaId == EmpresaActual);
 
         // Los identificadores los genera **el dominio**, nunca la base: todos los agregados hacen
         // `Guid.NewGuid()` al crearse. Hay que decírselo a EF, porque si cree que los genera la base

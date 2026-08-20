@@ -20,12 +20,19 @@ public static class Acciones
     public const string EmpresaExportada = "empresa.exportada";
     public const string EmpresaBorrada = "empresa.borrada";
 
+    // Quién entra en la empresa y con qué permisos. Se audita entero: dar acceso a los datos de los
+    // clientes es la operación más delicada que hay aquí, y quitarlo también.
+    public const string EquipoInvitado = "equipo.invitado";
+    public const string EquipoRolCambiado = "equipo.rol_cambiado";
+    public const string EquipoAccesoRetirado = "equipo.acceso_retirado";
+
     public static readonly IReadOnlyList<string> Todas =
     [
         ContactoFusionado, ContactoAsignado, ContactoBaja, ContactoBorrado, ContactoExportado,
         OportunidadGanada, OportunidadPerdida,
         ConsentimientoOtorgado, ConsentimientoRetirado,
         AjustesCambiados, RetencionAplicada, EmpresaExportada, EmpresaBorrada,
+        EquipoInvitado, EquipoRolCambiado, EquipoAccesoRetirado,
     ];
 }
 

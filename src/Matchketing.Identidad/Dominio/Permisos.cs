@@ -58,3 +58,15 @@ public static class PermisosDeRol
         _ => [],
     };
 }
+
+/// <summary>Nombres en castellano de los roles. La interfaz va en castellano.</summary>
+public static class TextosRol
+{
+    public static string De(Rol rol) => rol switch
+    {
+        Rol.Propietario => "propietario",
+        Rol.Comercial => "comercial",
+        Rol.SoloLectura => "solo lectura",
+        _ => "sin rol",
+    };
+}

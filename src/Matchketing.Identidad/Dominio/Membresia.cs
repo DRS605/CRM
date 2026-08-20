@@ -74,4 +74,15 @@ public sealed class Membresia : RaizAgregadoEmpresa<Guid>
     }
 
     public void Desactivar() => Activa = false;
+
+    /// <summary>
+    /// Devuelve el acceso a quien lo tuvo, con el rol de la invitación nueva. Se reactiva la membresía
+    /// que ya había en vez de crear otra: el índice único de usuario+empresa no deja dos, y conservar
+    /// la fecha de alta original no cuesta nada.
+    /// </summary>
+    public void Reactivar(Rol rol)
+    {
+        Activa = true;
+        Rol = rol;
+    }
 }

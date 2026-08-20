@@ -71,6 +71,12 @@ PostgreSQL**, de forma que las fronteras entre módulos también se ven en la ba
 
 Nombres en español y `snake_case`. Claves `uuid`, marcas de tiempo `timestamptz`.
 
+## El equipo va aparte
+
+Los tres roles y los once permisos de este módulo no tuvieron por dónde entrar hasta el módulo 14:
+la única membresía que se creaba era la del propietario al crear la empresa. Invitaciones, papeles y
+zonas están en [`equipo.md`](equipo.md).
+
 ## La ficha de la empresa se corrige
 
 `PUT /empresas/activa` (permiso `empresa.ajustes`) cambia nombre, NIF y provincia. Llegó tarde, y el

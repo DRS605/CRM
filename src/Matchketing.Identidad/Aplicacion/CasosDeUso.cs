@@ -35,6 +35,11 @@ public sealed class ServicioIdentidad(
             return Resultado.Fallo<RespuestaSesion>(creado.Error!);
         }
 
+        // Registrarse **es** entrar: este método devuelve la sesión ya iniciada. Sin esta línea, la
+        // lista del equipo enseñaba «no ha entrado nunca» junto al nombre de quien estaba mirando la
+        // pantalla en ese momento, porque el último acceso solo se apuntaba al pasar por el login.
+        creado.Valor.RegistrarAcceso(reloj);
+
         usuarios.Anadir(creado.Valor);
         await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
 

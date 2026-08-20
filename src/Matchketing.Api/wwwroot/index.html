@@ -401,12 +401,18 @@
   .tablero-scroll { overflow-x: auto; padding-bottom: 8px; }
   .tablero { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(196px, 1fr); gap: 10px; min-width: 1000px; }
   .columna { display: flex; flex-direction: column; gap: 10px; }
-  .columna-cab { display: flex; flex-direction: column; gap: 2px; padding: 0 2px 8px; border-bottom: 2px solid var(--trazo); }
+  .columna-cab { display: flex; flex-direction: column; gap: 2px; padding: 0 2px 6px; }
   .columna-cab .n { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
   .columna-cab .s {
     font-family: var(--mono); font-size: 11.5px; color: var(--grafito); font-variant-numeric: tabular-nums;
   }
-  .columna:last-child .columna-cab { border-bottom-color: var(--magenta); }
+
+  /* La línea bajo cada columna dice **cuánto dinero hay ahí**, no en qué posición está la columna.
+     Antes era `:last-child` en magenta, así que «Cierre» vacía se llevaba la mirada y «Nuevo» con
+     71.800 € quedaba apagada: color sin motivo, que en esta paleta es lo mismo que un número sin
+     motivo. Mismo patrón que las barras de Informes, para que las dos vistas cuenten lo mismo. */
+  .columna-pista { height: 2px; border-radius: 999px; background: var(--trazo); overflow: hidden; }
+  .columna-pista i { display: block; height: 100%; background: var(--magenta); border-radius: 999px; }
   .soltar { min-height: 60px; display: flex; flex-direction: column; gap: 9px; border-radius: 10px; padding: 2px; }
   .soltar.encima { background: var(--magenta-velo); outline: 1px dashed var(--magenta-borde); }
 
@@ -477,6 +483,18 @@
   }
   .hecho-caja .grande { font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
   .hecho-caja p { margin: 0; color: var(--grafito); max-width: 46ch; font-size: 14.5px; }
+  .bolita.ambar { background: var(--ambar); }
+
+  /* La cola de respuestas sin enviar. En ámbar, como todo lo que en otras herramientas sería rojo:
+     no es un error, es un «esto todavía no ha llegado». */
+  .cola-caja {
+    display: flex; align-items: center; gap: 12px; max-width: 640px; margin-bottom: 14px;
+    border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
+    border-radius: 11px; padding: 11px 13px;
+  }
+  .cola-caja .de { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+  .cola-caja .cual { font-size: 13.5px; font-weight: 600; }
+  .cola-caja .como { font-size: 12px; color: var(--grafito); }
 
 
   /* ---- Match ---- */
@@ -632,6 +650,30 @@
 
     /* Lo ancho de verdad se desliza en su caja, nunca empuja la página. */
     .tabla-caja, .tablero-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* La tabla de contactos es el elemento equivocado en un teléfono. Con seis columnas dentro de una
+       caja que se desliza, lo único que se usa aquí —el teléfono— queda fuera de pantalla, y nada
+       indica que haya que arrastrar de lado para verlo. Así que a partir de aquí deja de ser una
+       tabla y pasa a ser una lista.
+
+       El correo se cae: a un contacto se le llama desde el móvil, no se le escribe, y era además lo
+       que se salía por el borde. Sigue estando en la ficha. */
+    #con-tabla-caja { overflow-x: visible; }
+    #con-tabla-caja thead { display: none; }
+    #con-tabla-caja table { display: block; min-width: 0; }
+    #con-tabla-caja tbody { display: block; }
+    #con-tabla-caja tbody tr {
+      display: grid; grid-template-columns: 1fr auto; align-items: center;
+      gap: 3px 10px; padding: 12px 14px;
+    }
+    #con-tabla-caja td { display: block; padding: 0; }
+    #con-tabla-caja .c-nombre { grid-column: 1; grid-row: 1; font-size: 15px; }
+    #con-tabla-caja .c-estado { grid-column: 2; grid-row: 1; justify-self: end; }
+    #con-tabla-caja .c-tel { grid-column: 1; grid-row: 2; font-size: 13.5px; }
+    #con-tabla-caja .c-cuenta { grid-column: 1; grid-row: 3; font-size: 13px; color: var(--grafito); }
+    #con-tabla-caja .c-visto { grid-column: 2; grid-row: 3; justify-self: end; font-size: 11.5px; }
+    #con-tabla-caja .c-cuenta.sin-dato { display: none; }
+    #con-tabla-caja .c-email { display: none; }
   }
 
   /* Sin ratón no hay `hover` que valga, y en táctil un `:hover` pegajoso deja botones «encendidos»
@@ -763,6 +805,41 @@
           pierde, el único que de verdad cambia cómo vendes.</p>
         <div class="rp-opciones" id="rp-motivos"></div>
         <div class="acciones"><button class="btn fantasma" type="button" id="rp-motivo-volver">Volver</button></div>
+      </div>
+
+      <!-- Respuestas contestadas sin cobertura y todavía sin enviar. Va **arriba** y siempre visible
+           mientras haya alguna: una cola escondida es una cola en la que nadie confía. -->
+      <div class="cola-caja" id="rp-cola" hidden>
+        <span class="bolita ambar"></span>
+        <div class="de">
+          <span class="cual" id="rp-cola-cuantas">—</span>
+          <span class="como" id="rp-cola-explica">—</span>
+        </div>
+        <button class="btn fantasma" type="button" id="rp-cola-enviar">Enviar ya</button>
+      </div>
+
+      <!-- Respuestas que salieron de la cola y el servidor rechazó. Va **fuera de las subvistas** a
+           propósito: el aviso normal del repaso vive dentro de la tarjeta, así que un rechazo que
+           llega mientras se está en «sin cobertura» o en el resumen se escribiría en un panel oculto
+           y nadie lo vería. Y una respuesta que se creía dada y no se aplicó es justo lo que no se
+           puede perder. -->
+      <div class="cola-caja rechazo" id="rp-rechazadas" hidden>
+        <span class="bolita ambar"></span>
+        <div class="de">
+          <span class="cual">No se pudo aplicar</span>
+          <span class="como" id="rp-rechazadas-texto">—</span>
+        </div>
+        <button class="btn fantasma" type="button" id="rp-rechazadas-vale">Entendido</button>
+      </div>
+
+      <!-- Sin cobertura. Es un estado distinto de «al día» y tiene que decirlo: antes se enseñaba
+           «no hay nada que decidir», que es exactamente lo contrario de la verdad. -->
+      <div class="hecho-caja" id="rp-sinred" hidden>
+        <span class="bolita ambar"></span>
+        <div class="grande" id="rp-sinred-titulo">Sin cobertura</div>
+        <p id="rp-sinred-texto">No se ha podido pedir la pila, así que no sabemos qué hay pendiente.
+          Lo que contestes mientras no haya red se guarda aquí y se envía en cuanto vuelva.</p>
+        <button class="btn" type="button" id="rp-reintentar">Volver a intentarlo</button>
       </div>
 
       <!-- Al día -->
@@ -1307,11 +1384,23 @@
     opciones = opciones || {};
     var cabeceras = { 'Content-Type': 'application/json' };
     if (sesion && sesion.token) { cabeceras.Authorization = 'Bearer ' + sesion.token; }
-    var r = await fetch(ruta, {
-      method: opciones.metodo || 'GET',
-      headers: cabeceras,
-      body: opciones.cuerpo ? JSON.stringify(opciones.cuerpo) : undefined
-    });
+    // La diferencia entre «no hay red» y «el servidor dice que no» es la que decide si una respuesta
+    // se guarda para luego o se descarta. `fetch` solo rechaza en el primer caso; un 400 llega como
+    // respuesta normal. Sin distinguirlos, la cola acabaría reintentando para siempre respuestas que
+    // el servidor ya rechazó.
+    var r;
+    try {
+      r = await fetch(ruta, {
+        method: opciones.metodo || 'GET',
+        headers: cabeceras,
+        body: opciones.cuerpo ? JSON.stringify(opciones.cuerpo) : undefined
+      });
+    } catch (e) {
+      var caido = new Error('Sin cobertura. No se ha podido hablar con el servidor.');
+      caido.name = 'SinRed';
+      throw caido;
+    }
+
     var texto = await r.text();
     var datos = texto ? JSON.parse(texto) : null;
     if (!r.ok) { throw new Error((datos && datos.mensaje) || 'No se ha podido completar la operación.'); }
@@ -1484,6 +1573,68 @@
 
   var repaso = { pila: [], indice: 0, total: 0, pendiente: null };
 
+  /* ---------- La cola de respuestas sin cobertura ----------
+   *
+   * Un comercial usa el repaso entre visitas: en un portal, en un polígono, en un aparcamiento
+   * subterráneo. Hasta ahora la aplicación abría sin red pero no dejaba hacer nada, que es honesto y
+   * es poco: once decisiones que hay que volver a tomar más tarde son once decisiones que no se toman.
+   *
+   * La objeción de siempre a encolar es buena: si se contesta «Ganada» y se envía mañana, durante un
+   * día el embudo miente. Se resuelve con dos reglas, no ignorándola:
+   *
+   *   1. **Nada se recalcula aquí.** El embudo, Hoy y los informes siguen contando lo que dice el
+   *      servidor. La cola no finge que ya se aplicó: se enseña como lo que es, «esto no ha salido».
+   *   2. **La cola se ve siempre**, con su número, mientras quede algo dentro. Una cola escondida es
+   *      una cola en la que nadie confía, y con razón.
+   *
+   * Y lo que la hace segura de verdad no está aquí sino en el servidor: `ServicioRepaso` ya rechaza
+   * una respuesta cuya tarea dejó de estar pendiente o cuya oportunidad ya se cerró. Así que una
+   * respuesta que llega seis horas tarde no puede pisar la decisión de un compañero: como mucho se
+   * rechaza, y entonces se dice quién y por qué.
+   *
+   * Se guarda en `localStorage` **por usuario**: el mismo navegador lo pueden usar dos personas, y
+   * mandar las respuestas de una con la sesión de la otra sería mucho peor que perderlas.
+   */
+  var Cola = (function () {
+    /// La cola es de una persona **en una empresa**: el mismo usuario en dos empresas tiene dos pilas
+    /// distintas, y una respuesta de una no vale en la otra.
+    function quien() {
+      return sesion && sesion.usuario && sesion.usuario.id && sesion.empresaId
+        ? sesion.usuario.id + ':' + sesion.empresaId
+        : null;
+    }
+
+    function llave() { return 'mk-cola-repaso:' + quien(); }
+
+    function leer() {
+      // Sin sesión no hay cola: no se sabría de quién es.
+      if (!quien()) { return []; }
+      try {
+        var crudo = window.localStorage.getItem(llave());
+        var lista = crudo ? JSON.parse(crudo) : [];
+        return Array.isArray(lista) ? lista : [];
+      } catch (e) {
+        // Almacenamiento lleno, en modo privado, o con basura dentro. Se trata como cola vacía: no
+        // poder guardar es malo, pero caerse al arrancar por eso es peor.
+        return [];
+      }
+    }
+
+    function escribir(lista) {
+      if (!quien()) { return; }
+      try { window.localStorage.setItem(llave(), JSON.stringify(lista)); } catch (e) { /* sin sitio */ }
+    }
+
+    return {
+      cuantas: function () { return leer().length; },
+      todas: leer,
+      encolar: function (item) { var c = leer(); c.push(item); escribir(c); return c.length; },
+      quitar: function (item) {
+        escribir(leer().filter(function (o) { return o.clave !== item.clave; }));
+      },
+    };
+  })();
+
   var MOTIVOS_LISTA = [
     { valor: 1, etiqueta: 'Por precio' },
     { valor: 2, etiqueta: 'Por plazo' },
@@ -1649,6 +1800,46 @@
 
   $('rp-no-avisos').addEventListener('click', function () { $('rp-oferta').hidden = true; });
 
+  // ---------- Cuándo se intenta vaciar la cola ----------
+  //
+  // Tres momentos, y los tres hacen falta:
+  //
+  //   · `online`, que es el aviso del navegador de que ha vuelto la red. Es el que resuelve el caso
+  //     de verdad: se contesta en el aparcamiento y sale al salir a la calle.
+  //   · Al volver a la pestaña. `online` no siempre llega —un cambio de wifi a datos no siempre lo
+  //     dispara— y volver a la aplicación es el momento en el que se está mirando.
+  //   · Al entrar en el repaso, que ya lo hace `cargarRepaso`.
+  //
+  // Lo que **no** hay es un temporizador dando vueltas: con la red caída solo gastaría batería, que
+  // en un móvil de trabajo a media tarde es un motivo real para desinstalar algo.
+  window.addEventListener('online', function () { pintarCola(); vaciarColaYContarlo(); });
+  window.addEventListener('offline', pintarCola);
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && navigator.onLine) { vaciarColaYContarlo(); }
+  });
+
+  $('rp-cola-enviar').addEventListener('click', async function () {
+    this.disabled = true;
+    this.textContent = 'Enviando…';
+    await vaciarColaYContarlo();
+    this.disabled = false;
+    this.textContent = 'Enviar ya';
+
+    // Si la cola se vació del todo, la pila ha cambiado y hay que volver a pedirla.
+    if (Cola.cuantas() === 0) { await cargarRepaso(); }
+  });
+
+  // Se descarta a mano, no solo. Un aviso de «esto no se aplicó» que desaparece por su cuenta a los
+  // tres segundos es un aviso que se pierde justo cuando se está mirando otra cosa.
+  $('rp-rechazadas-vale').addEventListener('click', function () { $('rp-rechazadas').hidden = true; });
+
+  $('rp-reintentar').addEventListener('click', async function () {
+    this.disabled = true;
+    await cargarRepaso();
+    this.disabled = false;
+  });
+
   async function pintarAvisos() {
     var estado = $('av-estado');
     var caja = $('av-aparatos');
@@ -1752,6 +1943,16 @@
   //
   // Un cero **borra** el distintivo en lugar de pintarlo: un cero permanente en un icono es una
   // regañina, y de las regañinas se huye desinstalando.
+  /// Una decisión menos en el menú y en el icono, sin volver a preguntar al servidor. Se usa cuando
+  /// se contesta sin cobertura: no hay a quién preguntar y el número tiene que seguir siendo verdad.
+  function bajarCuenta() {
+    var chapa = $('menu-repaso');
+    var quedan = Math.max(0, (Number(chapa.textContent) || 0) - 1);
+    chapa.textContent = String(quedan);
+    chapa.hidden = quedan === 0;
+    distintivo(quedan);
+  }
+
   function distintivo(cuantas) {
     if (!navigator.setAppBadge) { return; }
 
@@ -1775,18 +1976,104 @@
   }
 
   function subVistaRepaso(cual) {
-    ['rp-tarjeta', 'rp-motivo', 'rp-aldia', 'rp-resumen'].forEach(function (v) {
+    ['rp-tarjeta', 'rp-motivo', 'rp-aldia', 'rp-sinred', 'rp-resumen'].forEach(function (v) {
       $(v).hidden = v !== cual;
     });
     mostrarAviso($('rp-aviso'), '');
   }
 
+  /// La línea de la cola. Se llama después de cualquier cosa que la pueda cambiar.
+  function pintarCola() {
+    var cuantas = Cola.cuantas();
+    $('rp-cola').hidden = cuantas === 0;
+    if (cuantas === 0) { return; }
+
+    $('rp-cola-cuantas').textContent = cuantas === 1
+      ? '1 respuesta sin enviar'
+      : cuantas + ' respuestas sin enviar';
+    $('rp-cola-explica').textContent = navigator.onLine
+      ? 'Se están enviando.'
+      : 'Se envían solas en cuanto vuelva la cobertura.';
+  }
+
+  /// Intenta enviar la cola entera, en orden. Devuelve los rechazos, que hay que contar.
+  ///
+  /// El orden importa: dos respuestas sobre la misma oportunidad tienen que aplicarse como se
+  /// contestaron. Y en el primer fallo de red se para y se deja el resto dentro; seguir intentando
+  /// con la red caída solo gasta batería.
+  var vaciando = false;
+
+  async function vaciarCola() {
+    if (vaciando || Cola.cuantas() === 0) { return []; }
+    vaciando = true;
+    var rechazadas = [];
+
+    try {
+      var pendientes = Cola.todas();
+      for (var i = 0; i < pendientes.length; i++) {
+        var item = pendientes[i];
+        try {
+          await api('/repaso/responder', {
+            metodo: 'POST',
+            cuerpo: { clave: item.clave, respuesta: item.respuesta, motivo: item.motivo }
+          });
+          Cola.quitar(item);
+        } catch (e) {
+          if (e.name === 'SinRed') { break; }
+
+          // El servidor la ha rechazado. Se quita de la cola —reintentarla daría el mismo «no» para
+          // siempre— pero **no se descarta en silencio**: quien la contestó tiene que saber que no se
+          // aplicó, porque cree que sí.
+          Cola.quitar(item);
+          rechazadas.push({ que: item.que, porque: e.message });
+        }
+      }
+    } finally {
+      vaciando = false;
+      pintarCola();
+    }
+
+    return rechazadas;
+  }
+
+  /// Vacía la cola y, si algo se rechazó, lo dice. Es la que se engancha a los disparadores.
+  async function vaciarColaYContarlo() {
+    var rechazadas = await vaciarCola();
+    if (rechazadas.length === 0) { return; }
+
+    // Sin comillas añadidas: el titular de la pregunta ya viene con las suyas cuando le corresponden.
+    $('rp-rechazadas-texto').textContent = rechazadas.length === 1
+      ? rechazadas[0].que + ' — ' + rechazadas[0].porque
+      : rechazadas.length + ' respuestas se quedaron sin aplicar porque las cosas ya habían cambiado: ' +
+        rechazadas.map(function (x) { return x.que; }).join('; ') + '.';
+    $('rp-rechazadas').hidden = false;
+  }
+
   async function cargarRepaso() {
+    // Lo primero, sacar lo que quedó dentro: si se contestaron seis tarjetas en un polígono, al
+    // abrir con cobertura tienen que salir antes de pedir la pila, o la pila las traerá otra vez.
+    await vaciarColaYContarlo();
+    pintarCola();
+
     var pila;
     try {
       pila = await api('/repaso');
     } catch (e) {
-      subVistaRepaso('rp-aldia');
+      // **Sin red no es «al día».** Antes se enseñaba «no hay nada que decidir», que es lo contrario
+      // de la verdad: no es que no haya nada, es que no se ha podido preguntar. Decir que estás al
+      // día cuando no se sabe es la clase de mentira que hace que no se vuelva a abrir esto.
+      // Los dos textos se escriben **siempre**, en las dos ramas. Si una sola de ellas los tocara, el
+      // mensaje de un fallo de ayer se quedaría pegado en la pantalla de sin-cobertura de hoy.
+      var sinRed = e.name === 'SinRed';
+      $('sub-repaso').textContent = sinRed ? 'sin cobertura' : '—';
+      $('rp-sinred-titulo').textContent = sinRed ? 'Sin cobertura' : 'No se ha podido cargar';
+      $('rp-sinred-texto').textContent = sinRed
+        ? 'No se ha podido pedir la pila, así que no sabemos qué hay pendiente. Lo que contestes ' +
+          'mientras no haya red se guarda aquí y se envía en cuanto vuelva.'
+        : e.message;
+
+      subVistaRepaso('rp-sinred');
+      pintarCola();
       return;
     }
 
@@ -1903,6 +2190,32 @@
       pintarTarjeta();
       mostrarAviso($('rp-aviso'), r.efecto, true);
     } catch (e) {
+      if (e.name === 'SinRed') {
+        // Sin cobertura la decisión **se guarda y se avanza**. Obligar a volver a tomarla más tarde
+        // es obligar a no tomarla. Lo que no se hace es fingir que ya se aplicó: se dice que está
+        // guardada, y la línea de arriba lo recuerda mientras siga sin salir.
+        Cola.encolar({
+          clave: pregunta.clave,
+          respuesta: respuesta,
+          motivo: motivo,
+          // Para poder nombrarla si el servidor la rechaza cuando por fin salga.
+          que: pregunta.titular
+        });
+
+        repaso.pendiente = null;
+        repaso.indice++;
+
+        // El número baja aunque la respuesta no haya salido: cuenta **decisiones pendientes**, y esta
+        // ya está tomada. Dejarlo en 11 después de contestar tres es la clase de detalle que hace
+        // dudar de si se guardó algo.
+        bajarCuenta();
+
+        pintarCola();
+        pintarTarjeta();
+        mostrarAviso($('rp-aviso'), 'Guardada en el móvil. Sale en cuanto haya cobertura.', true);
+        return;
+      }
+
       // Si el servidor dice que no, la tarjeta se queda: nunca desaparece de la pantalla algo que no
       // se llegó a hacer.
       subVistaRepaso('rp-tarjeta');
@@ -1912,7 +2225,21 @@
   }
 
   async function terminarRonda() {
-    var pila = await api('/repaso');
+    var pila;
+    try {
+      pila = await api('/repaso');
+    } catch (e) {
+      // Se acabó el lote sin cobertura. Lo contestado está en la cola; lo que no se puede es decir
+      // «al día», porque no se sabe. Antes esto se propagaba sin capturar y no pintaba nada.
+      if (e.name === 'SinRed') {
+        $('sub-repaso').textContent = 'sin cobertura';
+        subVistaRepaso('rp-sinred');
+        pintarCola();
+        return;
+      }
+      throw e;
+    }
+
     var chapa = $('menu-repaso');
     chapa.textContent = String(pila.total);
     chapa.hidden = pila.total === 0;
@@ -2293,14 +2620,20 @@
         tr.appendChild(td);
         return td;
       }
-      celda(c.nombre, 'principal');
-      celda(c.nombreCuenta || (c.cargo || '—'));
-      celda(c.email, 'apagada');
-      celda(c.telefono, 'apagada');
+      // Las clases son para el móvil: ahí la tabla deja de ser una tabla y el estilo necesita saber
+      // qué celda es cuál para recolocarlas. Ver el bloque adaptable al final del estilo.
+      celda(c.nombre, 'principal c-nombre');
+      // En la tabla un hueco necesita su raya; en la lista del móvil una raya suelta en una línea
+      // propia es solo ruido, así que se marca para poder esconderla allí.
+      var tdCuenta = celda(c.nombreCuenta || (c.cargo || '—'), 'c-cuenta');
+      if (!c.nombreCuenta && !c.cargo) { tdCuenta.classList.add('sin-dato'); }
+      celda(c.email, 'apagada c-email');
+      celda(c.telefono, 'apagada c-tel');
       var tdEstado = document.createElement('td');
+      tdEstado.className = 'c-estado';
       tdEstado.appendChild(chipEstado(c.estado));
       tr.appendChild(tdEstado);
-      celda(c.ultimaActividadEn ? fecha(c.ultimaActividadEn) : 'Sin actividad', 'apagada');
+      celda(c.ultimaActividadEn ? fecha(c.ultimaActividadEn) : 'Sin actividad', 'apagada c-visto');
 
       tr.addEventListener('click', function () { abrirFicha(c.id); });
       tr.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { abrirFicha(c.id); } });
@@ -3063,7 +3396,12 @@
       var pista = document.createElement('div');
       pista.className = 'pista-e';
       var relleno = document.createElement('i');
-      relleno.style.width = Math.max(2, Math.round(e.importeAbierto / maximo * 100)) + '%';
+      // El suelo del 2 % existe para que un importe pequeño se siga viendo, pero **solo si hay algo**.
+      // Una etapa a cero tiene que dejar la pista vacía: un tope de color donde no hay nada es un
+      // número sin motivo, dibujado en vez de escrito.
+      relleno.style.width = e.importeAbierto === 0
+        ? '0'
+        : Math.max(2, Math.round(e.importeAbierto / maximo * 100)) + '%';
       pista.appendChild(relleno);
 
       var cif = document.createElement('span');
@@ -3215,6 +3553,10 @@
     var tab = $('emb-tablero');
     tab.textContent = '';
 
+    // El techo de las líneas es la etapa con más dinero. El `1` evita dividir por cero con el embudo
+    // entero vacío, que es justo el estado en el que se abre esto por primera vez.
+    var mayor = Math.max.apply(null, t.columnas.map(function (c) { return c.importe; }).concat([1]));
+
     t.columnas.forEach(function (col) {
       var c = document.createElement('div');
       c.className = 'columna';
@@ -3230,6 +3572,15 @@
       cab.appendChild(n);
       cab.appendChild(sub);
       c.appendChild(cab);
+
+      // Igual que en Informes: suelo del 2 % para que un importe pequeño se vea, y **nada** cuando la
+      // etapa está a cero.
+      var pista = document.createElement('div');
+      pista.className = 'columna-pista';
+      var relleno = document.createElement('i');
+      relleno.style.width = col.importe === 0 ? '0' : Math.max(2, Math.round(col.importe / mayor * 100)) + '%';
+      pista.appendChild(relleno);
+      c.appendChild(pista);
 
       var zona = document.createElement('div');
       zona.className = 'soltar';

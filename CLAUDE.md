@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 490 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 495 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -105,6 +105,16 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **El trabajador de servicio sirve el armazón desde la caché**, así que un cambio en `index.html` no
   se ve en la primera recarga. Al probar en un navegador automatizado, usa un perfil limpio; si no,
   estarás mirando la versión anterior y buscando un fallo que ya arreglaste. Pasó.
+- **`fetch` solo rechaza cuando no hay red.** Un 400 llega como respuesta normal. La cola del repaso
+  depende de distinguirlos (`e.name === 'SinRed'`): sin eso reintentaría para siempre respuestas que el
+  servidor ya rechazó. Ver [`docs/movil.md`](docs/movil.md).
+- **`JwtBearer` reescribe las reclamaciones al validarlas.** Trae `MapInboundClaims` activado, así que
+  la reclamación `email` que se firma llega como el URI largo de WS-Federation. Buscar por el nombre
+  corto devuelve `null` y no falla: `/auth/yo` devolvió el correo vacío durante ocho módulos porque la
+  interfaz no lo usaba. Si añades una reclamación estándar, busca por las dos formas.
+- **Un color tampoco puede ir sin motivo.** El magenta significa «aquí está la acción». Usarlo para
+  decir «esta es la última columna» (`:last-child`) hacía que la etapa vacía se llevara la mirada y la
+  que tenía 71.800 € quedara apagada. Si algo se pinta, tiene que estar diciendo un dato.
 
 ## Interfaz
 

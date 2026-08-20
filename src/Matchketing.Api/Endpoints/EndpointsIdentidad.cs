@@ -59,7 +59,12 @@ public static class EndpointsIdentidad
             {
                 id = usuarioId,
                 nombre = quien.FindFirstValue(ClaimTypes.Name),
-                email = quien.FindFirstValue("email"),
+                // Las dos formas del mismo dato, y hacen falta las dos. El token se firma con la
+                // reclamación corta `email` (RFC 7519), pero `JwtBearer` viene con `MapInboundClaims`
+                // activado y la reescribe al URI largo de WS-Federation al validarla. Buscando solo
+                // por `"email"` esto devolvía **null siempre**. Se prueban las dos para que siga
+                // funcionando si algún día se apaga ese mapeo.
+                email = quien.FindFirstValue(ClaimTypes.Email) ?? quien.FindFirstValue("email"),
                 empresas = mias,
             });
         })

@@ -162,4 +162,20 @@ public sealed class PruebasFlujoIdentidad(ApiDePrueba api)
 
         yo.GetProperty("empresas").GetArrayLength().Should().Be(2);
     }
+
+    [Fact]
+    public async Task El_perfil_devuelve_el_correo_y_el_nombre_de_quien_pregunta()
+    {
+        var (cliente, _, email) = await RegistradoAsync();
+
+        var yo = await LeerAsync(await cliente.GetAsync(new Uri("/auth/yo", UriKind.Relative)));
+
+        yo.GetProperty("nombre").GetString().Should().Be("Marta Ruiz");
+
+        // Esto devolvía `null` desde el primer módulo. El token se firma con la reclamación corta
+        // `email`, pero `JwtBearer` trae `MapInboundClaims` activado y la reescribe al URI largo de
+        // WS-Federation, así que buscarla por `"email"` no la encontraba nunca. No se veía en pantalla
+        // porque la interfaz no lo usa, que es justo por lo que había durado tanto.
+        yo.GetProperty("email").GetString().Should().Be(email);
+    }
 }

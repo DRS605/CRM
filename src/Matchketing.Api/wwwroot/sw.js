@@ -10,8 +10,9 @@
  *
  * - No guarda respuestas de la API. Una pila de repaso de hace tres días es peor que ninguna: harías
  *   decisiones sobre cosas que ya cambiaron. Los datos siempre son de ahora o no son.
- * - No encola respuestas para enviarlas luego. Contestar «Ganada» y que se envíe mañana significa que
- *   durante un día el embudo miente. Si no hay red, la aplicación lo dice y no finge.
+ * - No encola respuestas. La cola del repaso existe, pero vive **en la página**, no aquí: hace falta la
+ *   sesión para enviarlas y no se manda nada con la aplicación cerrada. Ver `docs/movil.md`. Lo que
+ *   sigue en pie es la regla: nada se recalcula en el móvil, así que el embudo nunca finge.
  *
  * Así que la regla es simple: **el armazón, de la caché; los datos, de la red.**
  */
@@ -19,7 +20,7 @@
 
 // Al cambiar de versión se descarta la caché anterior entera. Es más barato que invalidar por fichero
 // y no deja nunca una mezcla de dos versiones, que es de lo más difícil de depurar que hay.
-const CACHE = 'matchketing-v3';
+const CACHE = 'matchketing-v4';
 
 const ARMAZON = [
   '/',

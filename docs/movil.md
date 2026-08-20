@@ -102,11 +102,50 @@ ajena y el trabajador de servicio recibiendo un push de verdad. El detalle de qu
 no está en [`modulos/avisos.md`](modulos/avisos.md); no diremos que funciona el tramo que no hemos
 visto funcionar.
 
-## Lo que falta
+## Trabajar sin cobertura
 
-**Trabajar sin cobertura.** Hoy la aplicación abre sin red pero no puede hacer nada: es honesto y es
-poco. Encolar respuestas exigiría resolver qué pasa cuando dos comerciales contestan lo mismo desde dos
-sitios, y eso es un módulo, no un detalle.
+Un comercial usa el repaso entre visitas: en un portal, en un polígono, en un aparcamiento. Antes la
+aplicación abría sin red pero no dejaba hacer nada —honesto y poco: once decisiones que hay que volver
+a tomar más tarde son once decisiones que no se toman—. Ahora se contestan, se guardan y salen solas.
+
+La objeción de siempre a encolar respuestas es buena y sigue en pie: si se contesta «Ganada» y se
+envía mañana, durante un día el embudo miente. Se resuelve con dos reglas, no ignorándola:
+
+1. **Nada se recalcula en el móvil.** El embudo, Hoy y los informes siguen contando lo que dice el
+   servidor. La cola no finge que la respuesta ya se aplicó.
+2. **La cola se ve siempre**, con su número, mientras quede algo dentro. Una cola escondida es una
+   cola en la que nadie confía, y con razón.
+
+Lo que la hace segura de verdad no está en el móvil sino en el servidor, y ya estaba: `ServicioRepaso`
+rechaza una respuesta cuya tarea dejó de estar pendiente o cuya oportunidad ya se cerró. Así que una
+respuesta que llega seis horas tarde **no puede pisar la decisión de un compañero**: como mucho se
+rechaza. Por eso esto era un detalle y no un módulo, al contrario de lo que decía aquí antes.
+
+Y cuando se rechaza, se dice. El aviso vive **fuera** de las subvistas del repaso a propósito: el
+aviso normal está dentro de la tarjeta, así que un rechazo que llega estando en «sin cobertura» o en
+el resumen se escribiría en un panel oculto. Una respuesta que se creía dada y no se aplicó es justo
+la que no se puede perder.
+
+Detalles que importan:
+
+* **La cola es de una persona en una empresa.** La clave de `localStorage` lleva las dos cosas dentro:
+  el mismo navegador lo pueden usar dos personas, y mandar las respuestas de una con la sesión de la
+  otra sería mucho peor que perderlas.
+* **El número baja al contestar sin red.** Cuenta decisiones pendientes, y una decisión tomada ya no
+  está pendiente aunque no haya salido. Dejarlo en 11 después de contestar tres hace dudar de si se
+  guardó algo.
+* **No hay temporizador reintentando.** Se vacía al volver la red (`online`), al volver a la pestaña y
+  al entrar en el repaso. Un bucle con la red caída solo gasta batería, que en un móvil de trabajo a
+  media tarde es un motivo real para desinstalar algo.
+* **Sin red no es «al día».** Antes, cualquier fallo al pedir la pila enseñaba «No hay nada que
+  decidir», que es lo contrario de la verdad. Ahora hay un estado propio que dice que no se ha podido
+  preguntar.
+
+Lo que sigue sin cubrir: si la aplicación no se vuelve a abrir, la cola no sale. Mandarla con la
+aplicación cerrada necesitaría *Background Sync*, que solo está en Chromium; el camino en primer plano
+haría falta igualmente, así que está hecho primero.
+
+## Lo que falta
 
 **Probar en aparatos de verdad.** Todo esto está medido en un Chromium con la ventana a 390 px, que
 comprueba el CSS pero no un Safari de iPhone ni un Android viejo. La barra inferior usa

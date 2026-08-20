@@ -105,6 +105,74 @@ public sealed class PruebasMovil(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task Sin_cobertura_la_pagina_no_dice_que_estas_al_dia()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // Antes, cualquier fallo al pedir la pila enseñaba «Al día. No hay nada que decidir», que es
+        // lo contrario de la verdad: no es que no haya nada, es que no se ha podido preguntar. Decirle
+        // a alguien que está al día cuando no se sabe es la clase de mentira por la que no se vuelve a
+        // abrir una herramienta.
+        html.Should().Contain("rp-sinred", "sin red hace falta un estado propio, no el de «al día»");
+        html.Should().Contain("Sin cobertura");
+
+        // Y para poder distinguirlo hay que saber si el fallo fue de red o del servidor.
+        html.Should().Contain("'SinRed'");
+    }
+
+    [Fact]
+    public async Task La_cola_de_respuestas_es_de_una_persona_en_una_empresa()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // El mismo navegador lo pueden usar dos personas, y el mismo usuario puede estar en dos
+        // empresas. Mandar las respuestas de una con la sesión de la otra sería mucho peor que
+        // perderlas, así que la clave lleva las dos cosas dentro.
+        html.Should().Contain("'mk-cola-repaso:'");
+        html.Should().Contain("sesion.usuario.id + ':' + sesion.empresaId");
+    }
+
+    [Fact]
+    public async Task El_aviso_de_una_respuesta_rechazada_no_vive_dentro_de_la_tarjeta()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("rp-rechazadas");
+
+        // Es el detalle que lo hace funcionar: el aviso normal del repaso (`rp-aviso`) vive **dentro**
+        // de la tarjeta, así que un rechazo que llega estando en «sin cobertura» o en el resumen se
+        // escribiría en un panel oculto y no se vería nunca. Y una respuesta que se creía dada y no se
+        // aplicó es justo la que no se puede perder.
+        var subVistas = html[html.IndexOf("function subVistaRepaso", StringComparison.Ordinal)..];
+        subVistas = subVistas[..subVistas.IndexOf(']', StringComparison.Ordinal)];
+        subVistas.Should().NotContain(
+            "rp-rechazadas",
+            "si entra en las subvistas, se esconde al cambiar de pantalla y el aviso se pierde");
+    }
+
+    [Fact]
+    public async Task La_cola_no_recalcula_nada_por_su_cuenta()
+    {
+        var cliente = api.CreateClient();
+        var js = await cliente.GetStringAsync(new Uri("/sw.js", UriKind.Relative));
+
+        // La objeción de siempre a encolar respuestas es buena: si se contesta «Ganada» y se envía
+        // mañana, durante un día el embudo miente. Se resuelve no recalculando nada aquí —el embudo,
+        // Hoy y los informes siguen contando lo que dice el servidor— y enseñando la cola como lo que
+        // es. Lo que sujeta la primera mitad es que el trabajador de servicio siga sin guardar datos.
+        js.Should().Contain("esDato");
+        js.Should().Contain("No guarda respuestas de la API");
+        js.Should().Contain("nada se recalcula en el móvil");
+
+        var html = await cliente.GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // Y la cola se ve siempre que tenga algo dentro. Una cola escondida es una cola en la que
+        // nadie confía, con razón.
+        html.Should().Contain("rp-cola-cuantas");
+        html.Should().Contain("respuestas sin enviar");
+    }
+
+    [Fact]
     public async Task La_pagina_pone_plazo_al_alta_de_avisos()
     {
         var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));

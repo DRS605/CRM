@@ -281,6 +281,47 @@ public sealed class PruebasFlujoEquipo(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task Adivinar_la_contrasena_de_una_invitacion_se_corta_sin_estorbar_a_las_demas()
+    {
+        // Aceptar comprueba una contraseña cuando la cuenta ya existe, así que necesita techo. Lo que
+        // hace este caso distinto del de entrar es **de quién es el cubo**: aquí solo se puede adivinar
+        // la contraseña de una cuenta, la del correo de esa invitación, así que el cubo es la
+        // invitación. Con uno por IP, una oficina entera dándose de alta se habría estorbado a sí
+        // misma; compartiéndolo con el de entrar, habría dejado sin acceso a todos los demás.
+        var duena = await EnEmpresaAsync();
+
+        var email = CorreoNuevo();
+        var cuenta = api.CreateClient();
+        await cuenta.PostAsJsonAsync("/auth/registro", new { email, contrasena = "Levante2026", nombre = "Vicent Llopis" });
+        var token = await InvitarAsync(duena, email);
+
+        var otroToken = await InvitarAsync(duena, CorreoNuevo());
+
+        HttpResponseMessage? cortado = null;
+        for (var i = 0; i < 8 && cortado is null; i++)
+        {
+            var r = await api.CreateClient().PostAsJsonAsync(
+                new Uri($"/invitaciones/{token}", UriKind.Relative), new { contrasena = "MeLoInvento1" });
+
+            if (r.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                cortado = r;
+            }
+            else
+            {
+                r.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "mientras quedan intentos, la respuesta es la de siempre");
+            }
+        }
+
+        cortado.Should().NotBeNull("ocho intentos seguidos sobre la misma invitación tienen que agotar el límite");
+
+        // Y la otra invitación sigue funcionando: cubos distintos.
+        (await api.CreateClient().PostAsJsonAsync(
+            new Uri($"/invitaciones/{otroToken}", UriKind.Relative), new { nombre = "Amparo Gil", contrasena = "Vinaros2026" }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Un_token_inventado_contesta_lo_mismo_que_uno_caducado()
     {
         var cliente = api.CreateClient();
@@ -332,6 +373,78 @@ public sealed class PruebasFlujoEquipo(ApiDePrueba api)
 
         (await cliente.GetAsync(new Uri("/equipo", UriKind.Relative)))
             .StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    /// <summary>Un cliente ya dentro de la empresa con el papel que se pida.</summary>
+    private async Task<HttpClient> ComoAsync(HttpClient duena, int rol)
+    {
+        var token = await InvitarAsync(duena, CorreoNuevo(), rol);
+        var cliente = api.CreateClient();
+        var sesion = await LeerAsync(await cliente.PostAsJsonAsync(
+            new Uri($"/invitaciones/{token}", UriKind.Relative),
+            new { nombre = "Vicent Llopis", contrasena = "Vinaros2026" }));
+        cliente.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", sesion.GetProperty("token").GetString());
+        return cliente;
+    }
+
+    [Fact]
+    public async Task Solo_lectura_no_escribe_nada()
+    {
+        // El papel Solo lectura era inalcanzable hasta el módulo 14, así que su mitad del reparto de
+        // permisos —`PermisosDeRol`— se probaba en unitarios y no se ejercía nunca de verdad. Esto es
+        // lo que sostiene que esconder botones en la pantalla sea solo cortesía: el servidor dice no.
+        var duena = await EnEmpresaAsync();
+        var lectura = await ComoAsync(duena, rol: 3);
+
+        var contacto = (await LeerAsync(await duena.PostAsJsonAsync(
+            "/contactos", new { nombre = "Rocío Ferrán", email = "rocio@ribera.example" }))).GetProperty("id").GetGuid();
+
+        (await lectura.PostAsJsonAsync("/contactos", new { nombre = "Otro", email = "otro@ribera.example" }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await lectura.PostAsJsonAsync($"/contactos/{contacto}/notas", new { cuerpo = "Una nota." }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await lectura.PostAsJsonAsync($"/contactos/{contacto}/llamada", new { resultado = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await lectura.PostAsJsonAsync("/oportunidades", new { contactoId = contacto, titulo = "Nave 3", importe = 1000m }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await lectura.PostAsJsonAsync("/tareas", new { titulo = "Llamar", contactoId = contacto }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await lectura.PostAsJsonAsync($"/cumplimiento/contactos/{contacto}/consentimientos",
+            new { finalidad = 1, @base = 2, canal = "feria", textoAceptado = "Acepto." }))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        // Y sí lee, que es para lo que está: la lista de contactos y los informes.
+        (await lectura.GetAsync(new Uri("/contactos", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await lectura.GetAsync(new Uri("/informes/embudo", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Exportar sí: es el papel de la gestoría que se lleva los datos y no toca nada.
+        (await lectura.GetAsync(new Uri("/informes/embudo.csv", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Un_comercial_vende_pero_no_se_lleva_los_datos()
+    {
+        // `datos.exportar` no está en el papel de comercial, y es deliberado: quien se va de la empresa
+        // no se lleva la base de clientes en un CSV. Los dos botones de «Descargar CSV» y el de
+        // «Descargar sus datos» de la ficha están marcados con ese permiso en la interfaz.
+        var duena = await EnEmpresaAsync();
+        var comercial = await ComoAsync(duena, rol: 2);
+
+        var contacto = (await LeerAsync(await comercial.PostAsJsonAsync(
+            "/contactos", new { nombre = "Amparo Sanchis", email = "amparo@ribera.example" }))).GetProperty("id").GetGuid();
+
+        (await comercial.GetAsync(new Uri("/informes/embudo.csv", UriKind.Relative)))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await comercial.GetAsync(new Uri("/informes/motivos-perdida.csv", UriKind.Relative)))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await comercial.GetAsync(new Uri($"/cumplimiento/contactos/{contacto}/exportar", UriKind.Relative)))
+            .StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        // Vender sí, que es su papel.
+        (await comercial.PostAsJsonAsync("/oportunidades", new { contactoId = contacto, titulo = "Nave 3", importe = 1000m }))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await comercial.GetAsync(new Uri("/informes/embudo", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]

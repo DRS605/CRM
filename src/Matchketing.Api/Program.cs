@@ -226,6 +226,30 @@ constructor.Services.AddRateLimiter(o =>
             QueueLimit = 0,
         }));
 
+    // Aceptar una invitación también comprueba una contraseña cuando la cuenta ya existe, así que
+    // también necesita techo. Y va **por invitación, no por IP**, que es lo que hace este caso
+    // distinto del de entrar:
+    //
+    // * Lo que se puede adivinar aquí es la contraseña de **una** cuenta, la del correo que lleva esa
+    //   invitación dentro. El cubo tiene que ser esa invitación, no el edificio desde el que se
+    //   teclea.
+    // * Con un cubo por IP, una tarde de altas —cinco personas de la misma oficina entrando en la
+    //   empresa— se habría comido los intentos de las demás. Y compartirlo con el de entrar habría
+    //   dejado sin acceso a todo el mundo durante cinco minutos, que es peor que el ataque que evita.
+    //
+    // Cinco intentos cada cinco minutos, mucho más estrecho que los veinte del acceso, y aun así de
+    // sobra: la invitación la abre una persona que sabe su contraseña.
+    o.AddPolicy("invitacion", contexto => RateLimitPartition.GetFixedWindowLimiter(
+        contexto.Request.RouteValues.TryGetValue("token", out var cual) && cual is string llave
+            ? "invitacion:" + llave
+            : contexto.Connection.RemoteIpAddress?.ToString() ?? "sin-ip",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0,
+        }));
+
     o.OnRejected = async (contexto, ct) =>
     {
         var segundos = contexto.Lease.TryGetMetadata(MetadataName.RetryAfter, out var espera)

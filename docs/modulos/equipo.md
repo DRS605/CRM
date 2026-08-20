@@ -103,8 +103,19 @@ fía del enlace para decir quién es nadie**:
   que sea esa persona: sin esta comprobación, reenviar el mensaje a un tercero le daría acceso a la
   empresa **con la cuenta de otro**.
 
-Porque comprueba una contraseña, el endpoint lleva el **mismo límite de intentos que el de entrar**
-(20 cada cinco minutos por IP): serviría igual de bien para adivinarla.
+Porque comprueba una contraseña, el endpoint lleva techo de intentos. Y **el cubo es la invitación, no
+la IP**, que es lo que hace este caso distinto del de entrar:
+
+* Lo único que se puede adivinar aquí es la contraseña de **una** cuenta, la del correo que lleva esa
+  invitación dentro. El cubo tiene que ser esa invitación, no el edificio desde el que se teclea.
+* Con un cubo por IP, una tarde de altas —cinco personas de la misma oficina entrando en la empresa—
+  se habría comido los intentos de las demás. Y compartirlo con el de entrar habría dejado sin acceso
+  a todo el mundo durante cinco minutos: peor que el ataque que evita.
+
+Cinco intentos cada cinco minutos por invitación, mucho más estrecho que los veinte del acceso, y aun
+así de sobra para quien sabe su contraseña. Lo prueba
+`Adivinar_la_contrasena_de_una_invitacion_se_corta_sin_estorbar_a_las_demas`, que además comprueba que
+la invitación de al lado sigue funcionando.
 
 Se marca como usada **al final**, cuando ya no puede fallar nada. Marcarla antes la gastaría en cuanto
 la contraseña no valiera —equivocarse tecleando dejaría a la persona fuera y sin enlace— y dejaría la
@@ -205,16 +216,57 @@ webhook: **pásaselo ahora**, porque no se puede volver a ver.
 Quien abre el enlace ve una pantalla propia con **la empresa y el papel antes de que se le pida nada**,
 y la pista de que la contraseña la elige él.
 
-### Ajustes deja de enseñar lo que no se puede usar
+### La interfaz según el papel
 
-Con el primer comercial dentro salió un defecto que hasta entonces no podía existir: abrir Ajustes
-lanzaba **cinco peticiones que el servidor contestaba con 403**, y una de ellas ni se recogía, así que
-la pantalla se quedaba a medias con «No se ha podido completar la operación» en la consola. Mientras la
-única persona posible en una empresa era su propietaria —con los once permisos— eso no se podía ver.
+Toda la interfaz se escribió cuando la única persona posible en una empresa era su propietaria, con los
+once permisos. Con tres papeles de verdad salieron los defectos que hasta entonces **no podían existir**:
 
-Ahora cada panel de Ajustes se enseña según el permiso que necesita, y solo se pide lo que se va a
-poder pintar. Esconderlos **no es la seguridad** —esa la hace el servidor, permiso a permiso, en cada
-endpoint— sino no enseñarle a alguien cinco paneles que solo le van a dar error.
+* Abrir Ajustes como comercial lanzaba **cinco peticiones que el servidor contestaba con 403**, y una
+  de ellas ni se recogía: la pantalla se quedaba a medias y en la consola aparecía «No se ha podido
+  completar la operación».
+* La ficha de un contacto le ofrecía a alguien de solo lectura registrar una llamada, apuntar una nota,
+  apuntar un permiso, retirarlo y borrar todos sus datos. Cinco botones, cinco 403 al pulsar.
+* A un comercial le ofrecía «Descargar sus datos» y los dos «Descargar CSV» de Informes, y `datos.exportar`
+  **no está en su papel** a propósito: quien se va de la empresa no se lleva la base de clientes.
+
+Esconder no es la seguridad. La seguridad la hace el servidor, permiso a permiso, en cada endpoint, y
+eso lo prueban `Solo_lectura_no_escribe_nada` y `Un_comercial_vende_pero_no_se_lleva_los_datos`. Lo que
+se arregla en la pantalla es otra cosa: **un botón que contesta 403 al pulsarlo promete algo que no va a
+pasar**.
+
+El mecanismo es un atributo y **un solo sitio** que lo aplica:
+
+```html
+<button id="pv-exportar" data-permiso="datos.exportar">Descargar sus datos</button>
+```
+
+```javascript
+function aplicarPermisos(raiz) {
+  var nodos = (raiz || document).querySelectorAll('[data-permiso]');
+  Array.prototype.forEach.call(nodos, function (n) {
+    if (!puede(n.dataset.permiso)) { n.classList.add('sin-permiso'); }
+  });
+}
+```
+
+Un `if` por botón se olvida en el siguiente botón; un atributo se ve al leer el HTML. Y como casi todas
+las listas se pintan con `createElement` cuando llegan los datos —los botones de una tarjeta del embudo
+nacen media hora después de entrar—, un `MutationObserver` aplica lo mismo a lo que aparezca luego.
+Marcar un elemento basta y sobra, esté donde esté y cuando sea.
+
+**Con una clase, no con `hidden`.** El primer intento ponía `hidden = true` y duró hasta la primera
+ficha de contacto: `pintarPrivacidad` hace `$('pv-alta').hidden = deBaja`, o sea **false** para un
+contacto normal, y volvía a enseñar el formulario que se acababa de esconder. Dos mecanismos para lo
+mismo se pisan; con una clase propia y un `!important` conviven y este gana siempre.
+
+Y solo esconde, nunca enseña: los permisos van firmados en el token y no cambian mientras dure la sesión.
+
+Casos particulares que valen la pena:
+
+* **El repaso no sale en el menú** sin `tarea.gestionar`. Es una cola de decisiones: quien no puede
+  contestarlas no tiene nada que hacer ahí.
+* **Hoy sí sale**, sin los botones. Saber qué hay pendiente sirve aunque no se pueda tocar.
+* **Ver el equipo** no pide permiso; cambiarlo sí.
 
 ## Tests
 
@@ -226,14 +278,16 @@ endpoint— sino no enseñarle a alguien cinco paneles que solo le van a dar err
   la anterior, reactivar a quien se le quitó el acceso, el último propietario, nada sobre uno mismo,
   nada de otra empresa, las zonas, quien ya no entra sigue en la lista, y **una contraseña floja no
   gasta la invitación**.
-* **Integración (15)**, contra PostgreSQL real: una empresa con dos personas y los siete permisos de
+* **Integración (18)**, contra PostgreSQL real: una empresa con dos personas y los siete permisos de
   un comercial; el enlace se abre sin sesión gracias a la empresa que lleva dentro; **un enlace de
   otra empresa no sirve para entrar en la tuya**; cada empresa ve solo su equipo y sus invitaciones;
   un comercial ve el equipo y no lo cambia; ascender cambia los permisos del siguiente token;
   quitar el acceso deja a la persona fuera pero con su cuenta; las zonas llegan al reparto; retirar
   una invitación mata el enlace; una contraseña floja no gasta la invitación; un token inventado
   contesta lo mismo que uno caducado; la auditoría sin el correo de nadie; sin empresa activa no hay
-  equipo; sin token no se ve nada; y **darse de alta cuenta como haber entrado**.
+  equipo; sin token no se ve nada; **darse de alta cuenta como haber entrado**; **solo lectura no
+  escribe nada** y sí lee y exporta; **un comercial vende pero no se lleva los datos**; y adivinar la
+  contraseña de una invitación se corta sin estorbar a las demás.
 
 Esa última salió de una captura: la lista decía «no ha entrado nunca» junto al nombre de quien estaba
 mirando la pantalla, porque el último acceso solo se apuntaba al pasar por el login y registrarse

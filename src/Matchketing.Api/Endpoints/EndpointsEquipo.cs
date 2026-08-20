@@ -286,9 +286,11 @@ public static class EndpointsEquipo
         })
         .AllowAnonymous()
 
-        // El mismo límite que entrar: este endpoint comprueba una contraseña cuando la cuenta ya
-        // existe, así que serviría igual de bien para adivinarla.
-        .RequireRateLimiting("acceso")
+        // Con techo, porque este endpoint comprueba una contraseña cuando la cuenta ya existe y
+        // serviría igual de bien para adivinarla. El cubo es **la invitación**, no la IP: lo que se
+        // puede adivinar aquí es la contraseña de una sola cuenta, y así una oficina entera dándose de
+        // alta no se estorba a sí misma. Ver el porqué completo en `Program.cs`.
+        .RequireRateLimiting("invitacion")
         .WithSummary("Acepta la invitación y devuelve la sesión con la empresa ya activa.");
     }
 

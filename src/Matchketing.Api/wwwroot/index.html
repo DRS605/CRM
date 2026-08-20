@@ -313,6 +313,15 @@
   .barra-doble .mom { background: var(--turquesa); }
   input[type="range"] { width: 100%; accent-color: var(--magenta); }
 
+  /* `hidden` es un atributo del navegador y se implementa con `display: none` en su hoja de estilos,
+     así que **cualquier `display` propio le gana**: `#pv-alta` lleva `display:flex` en línea y seguía
+     viéndose con el atributo puesto. Esto hace que esconder algo sea esconderlo. */
+  [hidden] { display: none !important; }
+
+  /* Lo que esta persona no puede usar. Va con clase propia y no con `hidden` porque media aplicación
+     usa `hidden` para sus propias vistas y se pisarían: ver `aplicarPermisos`. */
+  .sin-permiso { display: none !important; }
+
   /* Las casillas nativas salen azules —el azul del sistema— en una aplicación magenta. El color no
      es adorno: aquí el magenta significa «esto lo has tocado tú». */
   input[type="checkbox"], input[type="radio"] { accent-color: var(--magenta); }
@@ -909,7 +918,9 @@
     <div class="marca">match<span class="punto">.</span>keting</div>
     <nav id="menu">
       <button class="item on" type="button" data-vista="hoy"><span class="marcador"></span>Hoy</button>
-      <button class="item" type="button" data-vista="repaso"><span class="marcador"></span>Repaso<span class="cuantas" id="menu-repaso" hidden></span></button>
+      <!-- El repaso es una cola de **decisiones**. Quien no puede contestarlas no tiene nada que hacer
+           aquí, así que ni sale en el menú. -->
+      <button class="item" type="button" data-vista="repaso" data-permiso="tarea.gestionar"><span class="marcador"></span>Repaso<span class="cuantas" id="menu-repaso" hidden></span></button>
       <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos</button>
       <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo</button>
       <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes</button>
@@ -1048,9 +1059,9 @@
       <div id="con-lista">
         <div class="herramientas">
           <input class="buscador" id="con-busca" type="search" placeholder="Buscar por nombre, correo, teléfono o cargo…" />
-          <button class="btn pri" type="button" id="con-nuevo">Nuevo contacto</button>
-          <button class="btn" type="button" id="con-importar">Importar CSV</button>
-          <button class="btn" type="button" id="con-duplicados">Duplicados</button>
+          <button class="btn pri" type="button" id="con-nuevo" data-permiso="contacto.gestionar">Nuevo contacto</button>
+          <button class="btn" type="button" id="con-importar" data-permiso="contacto.gestionar">Importar CSV</button>
+          <button class="btn" type="button" id="con-duplicados" data-permiso="contacto.gestionar">Duplicados</button>
         </div>
         <div class="tabla-caja" id="con-tabla-caja">
           <table>
@@ -1122,13 +1133,13 @@
               <span id="fi-estado"></span>
             </div>
             <div class="derecha">
-              <select id="fi-resultado" aria-label="Resultado de la llamada">
+              <select id="fi-resultado" aria-label="Resultado de la llamada" data-permiso="contacto.gestionar">
                 <option value="1">Contactado</option>
                 <option value="2">No contesta</option>
                 <option value="3">No le interesa</option>
                 <option value="4">Volver a llamar</option>
               </select>
-              <button class="btn pri" type="button" id="fi-llamar">Registrar llamada</button>
+              <button class="btn pri" type="button" id="fi-llamar" data-permiso="contacto.gestionar">Registrar llamada</button>
               <button class="btn fantasma" type="button" data-volver>Volver</button>
             </div>
           </div>
@@ -1169,7 +1180,7 @@
           <p class="explica" id="pv-sin-alta" hidden>De la baja solo vuelve quien la pidió: no se le
             puede apuntar un permiso nuevo desde aquí.</p>
 
-          <div id="pv-alta" style="display:flex;flex-direction:column;gap:14px">
+          <div id="pv-alta" data-permiso="contacto.gestionar" style="display:flex;flex-direction:column;gap:14px">
           <div class="rejilla-form" style="margin-top:4px">
             <div class="campo">
               <label for="pv-finalidad">Apuntar un permiso para</label>
@@ -1198,7 +1209,7 @@
           </div>
 
           <div class="acciones">
-            <button class="btn" type="button" id="pv-otorgar">Apuntar permiso</button>
+            <button class="btn" type="button" id="pv-otorgar" data-permiso="contacto.gestionar">Apuntar permiso</button>
           </div>
           </div>
 
@@ -1212,20 +1223,21 @@
             <p class="explica">Si pide una copia de sus datos o pide que los borres, se resuelve aquí.
               Borrar es borrar: desaparece de todas las tablas y no hay vuelta.</p>
             <div class="acciones">
-              <button class="btn fantasma" type="button" id="pv-exportar">Descargar sus datos</button>
-              <button class="btn peligro" type="button" id="pv-borrar">Borrar todos sus datos</button>
+              <button class="btn fantasma" type="button" id="pv-exportar" data-permiso="datos.exportar">Descargar sus datos</button>
+              <button class="btn peligro" type="button" id="pv-borrar" data-permiso="empresa.ajustes">Borrar todos sus datos</button>
             </div>
           </div>
         </div>
 
-        <div class="panel" style="max-width:820px">
+        <div class="panel" data-permiso="contacto.gestionar" style="max-width:820px">
           <h2>Añadir nota</h2>
           <textarea id="fi-nota" rows="3" placeholder="Lo que ha pasado, en una línea."></textarea>
           <div class="aviso" id="con-aviso-ficha" hidden></div>
-          <div class="acciones"><button class="btn" type="button" id="fi-guardar-nota">Guardar nota</button></div>
+          <div class="acciones"><button class="btn" type="button" id="fi-guardar-nota" data-permiso="contacto.gestionar">Guardar nota</button></div>
         </div>
 
-        <div class="panel" id="panel-correo" style="max-width:820px">
+        <!-- Mandar un correo es gestionar el contacto: sin ese permiso el panel entero sobra. -->
+        <div class="panel" id="panel-correo" data-permiso="contacto.gestionar" style="max-width:820px">
           <h2>Escribirle</h2>
           <p class="explica">Se elige una plantilla, se ve exactamente lo que va a salir y se manda. El
             permiso se comprueba antes de enviar y otra vez justo antes de que salga.</p>
@@ -1272,7 +1284,7 @@
         <div class="resumen-embudo" id="emb-resumen"></div>
 
         <div class="herramientas" style="margin-top:4px">
-          <button class="btn pri" type="button" id="emb-nueva">Nueva oportunidad</button>
+          <button class="btn pri" type="button" id="emb-nueva" data-permiso="oportunidad.gestionar">Nueva oportunidad</button>
           <span class="contador" id="emb-como-mover">Arrastra una tarjeta, o usa «Mover», para cambiarla de etapa.</span>
         </div>
 
@@ -1346,7 +1358,7 @@
         <div class="kpis" id="inf-kpis"></div>
         <div class="escalones" id="inf-escalones" style="margin-top:8px"></div>
         <div class="acciones">
-          <button class="btn" type="button" id="inf-csv-embudo">Descargar CSV</button>
+          <button class="btn" type="button" id="inf-csv-embudo" data-permiso="datos.exportar">Descargar CSV</button>
         </div>
       </div>
 
@@ -1365,7 +1377,7 @@
           y existe porque el motivo es obligatorio al cerrar.</p>
         <div class="motivos-lista" id="inf-motivos"></div>
         <div class="acciones">
-          <button class="btn" type="button" id="inf-csv-motivos">Descargar CSV</button>
+          <button class="btn" type="button" id="inf-csv-motivos" data-permiso="datos.exportar">Descargar CSV</button>
         </div>
       </div>
     </section>
@@ -1897,6 +1909,7 @@
     $('quien-empresa').textContent = sesion.nombreEmpresa || '—';
     $('avatar').textContent = iniciales(sesion.usuario.nombre);
     pantalla('app');
+    aplicarPermisos();
     await cargarAjustes();
 
     // Los formularios de captación los gestiona quien tiene `formulario.gestionar`. Pedirlos siempre
@@ -1909,6 +1922,55 @@
 
   function puede(permiso) {
     return !!(sesion && sesion.permisos && sesion.permisos.indexOf(permiso) >= 0);
+  }
+
+  /// Esconde lo que esta persona no va a poder usar.
+  ///
+  /// Toda la interfaz se escribió cuando la única persona posible en una empresa era su propietaria,
+  /// con los once permisos. Desde el módulo de Equipo hay tres papeles de verdad, y un botón que
+  /// contesta 403 al pulsarlo es peor que no estar: promete algo que no va a pasar.
+  ///
+  /// **Esto no es la seguridad.** La seguridad la hace el servidor, permiso a permiso, en cada
+  /// endpoint. Esto es no enseñar puertas que están cerradas.
+  ///
+  /// Se marca con `data-permiso` y se decide aquí. Un `if` por botón se olvida en el siguiente botón;
+  /// un atributo se ve al leer el HTML y lo aplica el observador de más abajo aunque el elemento nazca
+  /// dentro de una lista que se pinta tres pantallas más allá.
+  /// **Se esconde con una clase propia, no con `hidden`.** Y eso no es un detalle: media aplicación
+  /// enciende y apaga cosas con `hidden`, así que el primer intento —poner `hidden = true` aquí— duró
+  /// hasta la primera ficha de contacto: `pintarPrivacidad` hace `$('pv-alta').hidden = deBaja`, o sea
+  /// **false** para un contacto normal, y volvía a enseñar el formulario que esto acababa de esconder.
+  /// Con una clase y un `!important`, los dos mecanismos conviven sin pisarse y este gana siempre.
+  ///
+  /// Solo esconde, nunca enseña: los permisos van firmados en el token y no cambian mientras dure la
+  /// sesión, así que una pasada en un sentido basta.
+  function aplicarPermisos(raiz) {
+    var nodos = (raiz || document).querySelectorAll('[data-permiso]');
+    Array.prototype.forEach.call(nodos, function (n) {
+      if (!puede(n.dataset.permiso)) { n.classList.add('sin-permiso'); }
+    });
+  }
+
+  /// Y lo mismo para lo que aparezca después.
+  ///
+  /// Casi todas las listas de esta aplicación se pintan a mano con `createElement` cuando llegan los
+  /// datos, así que una pasada única al entrar no bastaría: los botones de una tarjeta del embudo
+  /// nacen media hora después. Con el observador, marcar un elemento con `data-permiso` basta y sobra,
+  /// esté donde esté y cuando sea.
+  ///
+  /// Poner `hidden` cambia un atributo, no la lista de hijos, así que esto no se llama a sí mismo.
+  function vigilarPermisos() {
+    if (!window.MutationObserver) { return; }
+
+    new MutationObserver(function (cambios) {
+      cambios.forEach(function (c) {
+        Array.prototype.forEach.call(c.addedNodes, function (n) {
+          if (n.nodeType !== 1) { return; }
+          if (n.dataset && n.dataset.permiso && !puede(n.dataset.permiso)) { n.classList.add('sin-permiso'); }
+          aplicarPermisos(n);
+        });
+      });
+    }).observe($('pantalla-app'), { childList: true, subtree: true });
   }
 
   async function cargarAjustes() {
@@ -4249,6 +4311,7 @@
         var quitar = document.createElement('button');
         quitar.className = 'btn fantasma';
         quitar.type = 'button';
+        quitar.dataset.permiso = 'contacto.gestionar';
         quitar.textContent = 'Retirar';
         quitar.addEventListener('click', async function () {
           quitar.disabled = true;
@@ -4789,6 +4852,11 @@
       var acc = document.createElement('div');
       acc.className = 'barra-acc';
 
+      // Hoy es una pantalla de **hacer**: completar, aplazar, descartar, crear una tarea. Quien solo
+      // tiene lectura sigue viendo la lista —saber qué hay pendiente le sirve— pero no los botones,
+      // que le contestarían 403 uno por uno.
+      acc.dataset.permiso = 'tarea.gestionar';
+
       // Llamar: despliega los cuatro resultados en la propia tarjeta. Un clic para abrir, otro
       // para registrar; sin diálogos ni pantallas nuevas.
       //
@@ -5150,6 +5218,7 @@
 
         var acc = document.createElement('div');
         acc.className = 'acciones-op';
+        acc.dataset.permiso = 'oportunidad.gestionar';
         var bGanar = document.createElement('button');
         bGanar.className = 'mini ganar';
         bGanar.type = 'button';
@@ -5317,6 +5386,8 @@
     pintarAvisos();
     cargarEquipo();
   }
+
+  vigilarPermisos();
 
   // Arranque. La pantalla de acceso es la de por defecto —está visible en el HTML—, así que aquí solo
   // hay que mirar si el enlace trae una invitación.

@@ -353,6 +353,40 @@ public sealed class PruebasMovil(ApiDePrueba api)
         html.Should().Contain("No se puede volver a ver");
     }
 
+    [Fact]
+    public async Task La_pantalla_no_ofrece_lo_que_el_permiso_no_deja_hacer()
+    {
+        // Toda la interfaz se escribió cuando la única persona posible en una empresa era su
+        // propietaria, con los once permisos. Con tres papeles de verdad, un botón que contesta 403 al
+        // pulsarlo es peor que no estar: promete algo que no va a pasar.
+        //
+        // El mecanismo es un atributo y **un solo sitio** que lo aplica. Un `if` por botón se olvida en
+        // el siguiente botón.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("function aplicarPermisos(");
+        html.Should().Contain("function vigilarPermisos(");
+        html.Should().Contain("new MutationObserver(", "las listas se pintan cuando llegan los datos, no al entrar");
+
+        // Solo esconde, nunca enseña: los permisos van firmados en el token y no cambian en la sesión.
+        html.Should().Contain("if (!puede(n.dataset.permiso)) { n.classList.add('sin-permiso'); }");
+
+        // Y esconde con **clase propia**, no con `hidden`. El primer intento usaba `hidden` y duró
+        // hasta la primera ficha: `pintarPrivacidad` hace `$('pv-alta').hidden = deBaja` —false para un
+        // contacto normal— y volvía a enseñar el formulario que se acababa de esconder. Dos mecanismos
+        // para lo mismo se pisan; con una clase y un `!important` conviven.
+        html.Should().Contain(".sin-permiso { display: none !important; }");
+        html.Should().NotContain("if (!puede(n.dataset.permiso)) { n.hidden = true; }");
+
+        // Los tres que más importan, cada uno con su permiso de verdad.
+        html.Should().Contain("id=\"pv-exportar\" data-permiso=\"datos.exportar\"");
+        html.Should().Contain("id=\"pv-borrar\" data-permiso=\"empresa.ajustes\"");
+        html.Should().Contain("id=\"inf-csv-embudo\" data-permiso=\"datos.exportar\"");
+
+        // El repaso es una cola de decisiones: quien no puede contestarlas no lo ve ni en el menú.
+        html.Should().Contain("data-vista=\"repaso\" data-permiso=\"tarea.gestionar\"");
+    }
+
     /// <summary>El cuerpo de una regla CSS de la hoja incrustada, para poder afirmar sobre ella.</summary>
     private static string Regla(string html, string selector)
     {

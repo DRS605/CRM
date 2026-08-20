@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 817 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 821 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -168,6 +168,20 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   ocho paneles sin mirar permisos, porque la única persona posible en una empresa era su propietaria.
   Con el primer comercial dentro eran **cinco 403 y una promesa sin recoger**. Al añadir un panel a
   Ajustes, mételo en `PANELES_AJUSTES` con el permiso que necesita.
+- **Un botón que no se puede pulsar no se pone.** Todo lo que dispare un endpoint con permiso va marcado
+  con `data-permiso="…"`; lo esconde `aplicarPermisos` y, para lo que se pinta después, un
+  `MutationObserver`. Esconder **no es la seguridad** —esa la hace el servidor, endpoint a endpoint—;
+  es no prometer algo que va a contestar 403. Si añades una acción, márcala: un `if` por botón se olvida
+  en el siguiente botón.
+- **Dos formas de esconder lo mismo se pisan.** El primer intento de lo anterior usaba `hidden`, y duró
+  hasta la primera ficha de contacto: `pintarPrivacidad` hace `$('pv-alta').hidden = deBaja` —o sea
+  **false** para un contacto normal— y volvía a enseñar lo que se acababa de esconder. Los permisos van
+  con clase propia (`.sin-permiso`) y un `!important`; `hidden` se queda para las vistas.
+- **Un cubo de límite de intentos es del recurso, no de la IP.** Aceptar una invitación comprueba una
+  contraseña, así que necesita techo; pero si el cubo fuera la IP, una oficina entera dándose de alta se
+  estorbaría a sí misma, y compartirlo con el de entrar dejaría sin acceso a todo el mundo cinco
+  minutos. Lo que se puede adivinar ahí es la contraseña de **una** cuenta, así que el cubo es la
+  invitación: cinco intentos, y la de al lado sigue funcionando.
 - **Un estilo de etiqueta encima de un dato lo cambia.** `.campo label` pone versalitas, y las casillas de
   eventos del webhook viven dentro de un `.campo`: `lead.creado` se leía **LEAD.CREADO**, que es justo el
   texto que hay que teclear tal cual en el otro sistema. Lo mismo con la dirección de la vista previa del

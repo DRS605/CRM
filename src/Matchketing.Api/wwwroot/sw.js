@@ -20,7 +20,7 @@
 
 // Al cambiar de versión se descarta la caché anterior entera. Es más barato que invalidar por fichero
 // y no deja nunca una mezcla de dos versiones, que es de lo más difícil de depurar que hay.
-const CACHE = 'matchketing-v22';
+const CACHE = 'matchketing-v23';
 
 const ARMAZON = [
   '/',

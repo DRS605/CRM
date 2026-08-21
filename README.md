@@ -83,8 +83,9 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 13. Automatización (F2) | ✅ Terminado |
 | 14. Equipo | ✅ Terminado |
 | 15. Campañas | ✅ Terminado |
+| 16. Objetivos | ✅ Terminado |
 
-Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los siete siguientes son los que hacen
+Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los ocho siguientes son los que hacen
 que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto:
 
 - **[Repaso](docs/modulos/repaso.md)** reduce cerrar la semana a dos minutos.
@@ -104,6 +105,10 @@ que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto
   no listas que envejecen, el permiso se comprueba **persona a persona** al encolar cada correo, y la
   ficha de la campaña dice a cuántos **no** llegó y por qué. Ese último número es el que una plataforma
   de envío masivo no te enseña.
+- **[Objetivos](docs/modulos/objetivos.md)** cabe en una frase y cambia tres pantallas: Informes y el
+  resumen del repaso dicen *qué pasó*, y sin un objetivo no hay forma de saber si eso era suficiente.
+  Solo dinero ganado —nunca llamadas ni correos— y un número que no tenía nadie: cuánto hay que cerrar
+  **por día laborable que queda**.
 
 Lo que se añadió después del octavo y no es un módulo —auditoría, trabajos en segundo plano, límite de
 intentos de acceso, sonda de salud real y el rol de base de datos sin superusuario— está en
@@ -115,7 +120,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 914 pruebas: 607 unitarias + 307 de integración
+dotnet test                                  # 963 pruebas: 640 unitarias + 323 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

@@ -674,6 +674,57 @@ public sealed class PruebasMovil(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task La_linea_del_mes_dice_cuanto_al_dia_y_no_solo_el_porcentaje()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // `PorDiaQueQueda` es lo único del módulo de objetivos que no se puede sacar de ninguna otra
+        // pantalla, y es lo que cambia lo que alguien hace esta tarde. Un 39 % no le dice a nadie si
+        // tiene que darse prisa; «1.840 € al día» sí. Si esto se cae, la línea deja de servir para nada.
+        var mes = Entre(html, "async function pintarMes()", "async function cargarHoy()");
+        mes.Should().Contain("a.porDiaQueQueda");
+        mes.Should().Contain("' al día'");
+        mes.Should().Contain("Objetivo cumplido", "pasarse del objetivo se dice, no se esconde");
+
+        // A cero no se pinta nada, igual que una etapa vacía del embudo: un tope de color donde no hay
+        // dato es un color sin motivo.
+        mes.Should().Contain("a.porcentaje <= 0 ? '0'");
+    }
+
+    [Fact]
+    public async Task Sin_objetivo_la_pantalla_no_ensena_la_linea_del_mes()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // Ni la línea ni lo ganado: el número solo dice algo al lado del compromiso. Y si la consulta
+        // falla, la pila de acciones se pinta igual — el objetivo es contexto, no la pantalla.
+        var mes = Entre(html, "async function pintarMes()", "async function cargarHoy()");
+        mes.Should().Contain("if (!mio || !mio.avance)");
+        mes.Should().Contain("caja.hidden = true");
+
+        Entre(html, "async function cargarHoy()", "hoy-vacio")
+            .Should().Contain("pintarMes();")
+            .And.NotContain("await pintarMes()", "la pila no espera al objetivo para pintarse");
+    }
+
+    [Fact]
+    public async Task Vaciar_la_casilla_quita_el_objetivo_y_no_lo_pone_a_cero()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // Un cero dejaría un 0 % permanente en la pantalla de esa persona. Quitarlo hace desaparecer la
+        // línea, que es lo que significa «esta persona no tiene objetivo este mes».
+        var tabla = Entre(html, "async function pintarObjetivos()", "// ---------- Campañas ----------");
+        tabla.Should().Contain("valor === '' || Number(valor) === 0");
+        tabla.Should().Contain("metodo: 'DELETE'");
+
+        // Y la tabla vive en Equipo, no en Ajustes: un objetivo es de una persona.
+        html.IndexOf("id=\"panel-objetivos\"", StringComparison.Ordinal)
+            .Should().BeLessThan(html.IndexOf("id=\"vista-ajustes\"", StringComparison.Ordinal),
+                "los objetivos están en Equipo, que es la pantalla de las personas");
+    }
+
+    [Fact]
     public async Task La_pagina_declara_lo_que_un_movil_necesita()
     {
         var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));

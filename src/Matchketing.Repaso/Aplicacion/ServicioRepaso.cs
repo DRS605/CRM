@@ -283,7 +283,7 @@ public sealed class ServicioRepaso(
             : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
     }
 
-    private DateOnly Hoy() => DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+    private DateOnly Hoy() => HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
 
     private DateOnly SiguienteDiaLaborable()
     {

@@ -115,3 +115,28 @@ no un accidente— y si la creó el sistema.
   «volver a llamar» crea la tarea sola**, no se duplica, «contactado» no crea ninguna, **la
   oportunidad parada sale en Hoy** (envejecida en la base para no esperar cuatro días), y una empresa
   no ve las tareas de otra.
+
+## Un solo «hoy», y es el de aquí
+
+Esto estuvo mal y se arregló al construir el módulo de objetivos, que fue el que lo destapó.
+
+Había **nueve** sitios contando el día con `DateTime.UtcNow` y **tres** contándolo en hora española. El
+noventa por ciento del día da lo mismo, y por eso duró: en verano España va dos horas por delante de
+UTC, así que entre medianoche y las dos de la mañana de aquí los dos calendarios discrepan. En invierno
+la ventana es de una hora, que es peor porque se reproduce menos.
+
+Lo que pasaba en esa ventana:
+
+- Una tarea que el sistema creaba «para hoy» —una regla de automatización, «le llamo hoy» del repaso—
+  salía con la fecha de aquí y se comparaba contra el hoy de UTC, así que **no aparecía en Hoy**.
+- El trabajo cerrado a las 00:30 se contaba como de ayer.
+- Un informe «desde el 22» se perdía las ventas cerradas el 22 antes de las dos de la mañana.
+
+Ahora todo pasa por `HorasLaborables.DiaDeTrabajo(instante)` y, cuando hace falta comparar instantes en
+la base de datos, por `HorasLaborables.LimitesDelDia(...)`, que da la medianoche de aquí y la siguiente
+—pidiendo el desfase a cada una por su propia fecha, porque el día del cambio de hora no dura
+veinticuatro horas—.
+
+Lo cubren cinco pruebas en `PruebasHorasLaborables`, una de ellas recorriendo un año hora a hora para
+comprobar que todo instante cae dentro de los límites de su propio día. Es la única forma de probar
+algo que en producción falla dos horas al día.

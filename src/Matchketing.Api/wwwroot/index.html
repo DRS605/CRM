@@ -787,6 +787,41 @@
   .wh-entregas .e.mal { color: var(--ambar); }
 
 
+  /* ---- El mes ----
+     Una línea, no un panel. El objetivo del mes es contexto para lo de hoy, no la pantalla: en cuanto
+     ocupa una tarjeta con su título y sus tres cifras, compite con la primera tarjeta de la pila, que
+     es lo único que hay que hacer ahora. */
+  .mes-caja {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    border: 1px solid var(--trazo); border-radius: 4px; background: var(--superficie);
+    padding: 12px 16px; max-width: 780px; margin-bottom: 12px;
+  }
+  .mes-cifras { display: flex; align-items: baseline; gap: 8px; }
+  .mes-que {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--grafito);
+  }
+  .mes-num {
+    font-family: var(--serif); font-size: 22px; font-weight: 400; letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .mes-de { font-family: var(--mono); font-size: 12px; color: var(--grafito); font-variant-numeric: tabular-nums; }
+  .mes-pista { flex: 1 1 140px; height: 6px; border-radius: 999px; background: var(--trazo-suave); overflow: hidden; }
+  .mes-pista i { display: block; height: 100%; border-radius: 999px; }
+  /* La frase que de verdad cambia la tarde: cuánto hay que cerrar al día. Va en tinta, no en gris. */
+  .mes-falta { font-size: 13px; color: var(--tinta); }
+  .mes-falta.hecho { color: var(--verde); font-weight: 600; }
+
+  /* La tabla de objetivos del equipo, en Equipo. */
+  .obj-fila { display: grid; grid-template-columns: 1fr 130px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--trazo-suave); }
+  .obj-fila:last-child { border-bottom: 0; }
+  .obj-fila .quien { font-weight: 600; font-size: 14px; }
+  .obj-fila input { width: 100%; }
+  .obj-fila .logro { font-family: var(--mono); font-size: 12px; color: var(--grafito); font-variant-numeric: tabular-nums; }
+  @media (max-width: 700px) {
+    .obj-fila { grid-template-columns: 1fr; gap: 6px; }
+  }
+
   /* ---- Match ---- */
   .match-caja { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
   .match-caja .rot {
@@ -1252,6 +1287,19 @@
         <h1>Hoy</h1>
         <span class="sub" id="sub-hoy">—</span>
       </div>
+
+      <!-- El mes, en una línea y solo si hay objetivo. Sin objetivo esto no existe: un número sin
+           compromiso al lado es una curiosidad, y Hoy no es sitio para curiosidades. -->
+      <div class="mes-caja" id="hoy-mes" hidden>
+        <div class="mes-cifras">
+          <span class="mes-que">Este mes</span>
+          <span class="mes-num" id="mes-logrado">—</span>
+          <span class="mes-de" id="mes-objetivo">—</span>
+        </div>
+        <div class="mes-pista"><i id="mes-barra"></i></div>
+        <span class="mes-falta" id="mes-falta">—</span>
+      </div>
+
       <div class="pila" id="hoy-pila"></div>
       <div class="hecho-caja" id="hoy-vacio" hidden>
         <span class="bolita"></span>
@@ -1693,6 +1741,23 @@
 
         <div class="aviso" id="eq-aviso" hidden></div>
         <div class="acciones"><button class="btn" type="button" id="eq-invitar">Invitar</button></div>
+      </div>
+
+      <!-- Los objetivos viven aquí y no en Ajustes: un objetivo es de una persona, y esta es la
+           pantalla de las personas. En Ajustes habría sido un panel más entre catorce. -->
+      <div class="panel" id="panel-objetivos" style="max-width:820px" data-permiso="usuario.gestionar">
+        <h2>Objetivos del mes</h2>
+        <p class="explica">Cuánto se compromete a cerrar cada uno este mes. <strong>Solo dinero
+          ganado</strong>: no hay objetivo de llamadas ni de correos, porque un objetivo sobre actividad
+          se cumple haciendo actividad. La actividad ya la propone Hoy; lo que se le pide a la persona es
+          el resultado. Cada uno ve el suyo en Hoy, con lo que le falta al día.</p>
+
+        <div class="mes-cifras" id="obj-total"></div>
+        <div class="filas" id="obj-filas"></div>
+
+        <p class="pista">El objetivo de un mes que ya pasó no se puede tocar: lo que se cumplió, se
+          cumplió.</p>
+        <div class="aviso" id="obj-aviso" hidden></div>
       </div>
 
     </section>
@@ -2197,7 +2262,7 @@
 
       <!-- El número lo comprueba `PruebasMovil.El_pie_dice_cuantos_modulos_hay_de_verdad` contra la
            tabla del README: se quedó en «ocho» durante cinco módulos porque nadie lo miraba. -->
-      <footer class="nota"><span class="bolita"></span> 15 módulos terminados</footer>
+      <footer class="nota"><span class="bolita"></span> 16 módulos terminados</footer>
     </section>
   </main>
 </div>
@@ -3810,6 +3875,112 @@
     }
   });
 
+  // ---------- Objetivos ----------
+  //
+  // Una tabla con una fila por persona que vende y un campo por fila. No hay «guardar»: cada campo se
+  // guarda al salir de él, porque quien pone objetivos rellena cinco casillas seguidas y un botón al
+  // final significa perderlas todas si se cierra la pestaña.
+  function mesActualIso() {
+    var hoy = new Date();
+    return hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-01';
+  }
+
+  async function pintarObjetivos() {
+    var mes;
+    try {
+      mes = await api('/objetivos/equipo');
+    } catch (e) {
+      // Un comercial no llega aquí —el panel está oculto— así que si falla es de verdad.
+      mostrarAviso($('obj-aviso'), motivoDe(e, 'No se han podido cargar los objetivos.'));
+      return;
+    }
+
+    var total = $('obj-total');
+    total.textContent = '';
+    if (mes.hayObjetivos) {
+      var que = document.createElement('span');
+      que.className = 'mes-que';
+      que.textContent = 'El equipo';
+      var num = document.createElement('span');
+      num.className = 'mes-num';
+      num.textContent = euros(mes.logrado);
+      var de = document.createElement('span');
+      de.className = 'mes-de';
+      de.textContent = 'de ' + euros(mes.objetivo) + ' · ' + mes.porcentaje + ' %'
+        + (mes.diasLaborablesRestantes > 0 ? ' · quedan ' + mes.diasLaborablesRestantes + ' días' : '');
+      total.appendChild(que);
+      total.appendChild(num);
+      total.appendChild(de);
+    }
+
+    var filas = $('obj-filas');
+    filas.textContent = '';
+
+    mes.personas.forEach(function (p) {
+      var fila = document.createElement('div');
+      fila.className = 'obj-fila';
+
+      var quien = document.createElement('span');
+      quien.className = 'quien';
+      quien.textContent = p.nombre;
+      fila.appendChild(quien);
+
+      var campo = document.createElement('input');
+      campo.type = 'number';
+      campo.min = '0';
+      campo.step = '500';
+      campo.placeholder = 'Sin objetivo';
+      campo.value = p.avance ? String(p.avance.objetivo) : '';
+      campo.setAttribute('aria-label', 'Objetivo de ' + p.nombre);
+      fila.appendChild(campo);
+
+      // La barra solo si hay objetivo. Con un objetivo vacío no hay porcentaje que pintar, y una barra
+      // al 0 % junto a alguien que ha vendido 40.000 € sería exactamente lo contrario de lo que pasa.
+      var pista = document.createElement('div');
+      pista.className = 'mes-pista';
+      if (p.avance) {
+        var relleno = document.createElement('i');
+        relleno.style.width = p.avance.porcentaje <= 0
+          ? '0'
+          : Math.min(100, Math.max(2, p.avance.porcentaje)) + '%';
+        relleno.style.background = colorAvance(Math.min(100, p.avance.porcentaje)) || 'var(--trazo)';
+        pista.appendChild(relleno);
+      }
+      fila.appendChild(pista);
+
+      var logro = document.createElement('span');
+      logro.className = 'logro';
+      logro.textContent = p.avance
+        ? euros(p.logrado) + ' · ' + p.avance.porcentaje + ' %'
+        : euros(p.logrado) + ' ganados';
+      fila.appendChild(logro);
+
+      campo.addEventListener('change', async function () {
+        var valor = campo.value.trim();
+        try {
+          if (valor === '' || Number(valor) === 0) {
+            // Vaciar el campo **quita** el objetivo, no lo pone a cero: un cero dejaría un 0 %
+            // permanente en la pantalla de esa persona.
+            if (p.avance) {
+              await api('/objetivos/personas/' + p.usuarioId + '?mes=' + mesActualIso(), { metodo: 'DELETE' });
+            }
+          } else {
+            await api('/objetivos', {
+              metodo: 'PUT',
+              cuerpo: { usuarioId: p.usuarioId, mes: mesActualIso(), importe: Number(valor) }
+            });
+          }
+          mostrarAviso($('obj-aviso'), '');
+          await pintarObjetivos();
+        } catch (e) {
+          mostrarAviso($('obj-aviso'), motivoDe(e, 'No se ha podido guardar el objetivo.'));
+        }
+      });
+
+      filas.appendChild(fila);
+    });
+  }
+
   // ---------- Campañas ----------
   //
   // La pantalla que hace que esto sea un CRM con campañas y no una herramienta de mailing con un CRM
@@ -4240,6 +4411,11 @@
     // direcciones de quien todavía no ha entrado.
     $('eq-form').hidden = !datos.puedeGestionar;
     $('eq-invitar').hidden = !datos.puedeGestionar;
+
+    // Los objetivos, aparte y sin `await`: si esa consulta falla, la lista del equipo se pinta igual.
+    // El panel ya está oculto por permiso, pero se comprueba también aquí: la marca de permiso esconde
+    // el panel y esto evita la petición, que si no daría un 403 en la consola de todos los comerciales.
+    if (datos.puedeGestionar) { pintarObjetivos(); }
 
     var lista = $('eq-lista');
     lista.textContent = '';
@@ -5942,10 +6118,66 @@
     return d.toISOString().slice(0, 10);
   }
 
+  /// La línea del mes en Hoy.
+  ///
+  /// Se pide aparte de la pila y **no bloquea la pantalla si falla**: el objetivo es contexto, y una
+  /// pila de acciones que no se pinta porque el objetivo no cargó sería cambiar lo importante por lo
+  /// accesorio. Sin objetivo puesto el endpoint contesta 204, el ayudante devuelve nulo y la línea
+  /// simplemente no está.
+  async function pintarMes() {
+    var caja = $('hoy-mes');
+    var mio = null;
+
+    try {
+      mio = await api('/objetivos/mio');
+    } catch (e) {
+      caja.hidden = true;
+      return;
+    }
+
+    if (!mio || !mio.avance) {
+      caja.hidden = true;
+      return;
+    }
+
+    var a = mio.avance;
+    $('mes-logrado').textContent = euros(mio.logrado);
+    $('mes-objetivo').textContent = 'de ' + euros(a.objetivo);
+
+    // La barra usa la misma escala de avance que el embudo: es un porcentaje, igual que ellos, así que
+    // un mes al 84 % y una etapa al 84 % son del mismo color a propósito. Por encima del 100 %, verde.
+    // El suelo del 2 % es para que un mes empezado se vea; **a cero no se pinta nada**. Es la misma
+    // regla que las barras de Informes, donde un tope de color en una etapa vacía era un color sin
+    // dato. Un mes recién empezado tiene que estar vacío, no tener una pizca.
+    var barra = $('mes-barra');
+    barra.style.width = a.porcentaje <= 0 ? '0' : Math.min(100, Math.max(2, a.porcentaje)) + '%';
+    barra.style.background = colorAvance(Math.min(100, a.porcentaje)) || 'var(--trazo)';
+
+    var falta = $('mes-falta');
+    falta.classList.toggle('hecho', a.cumplido);
+
+    if (a.cumplido) {
+      falta.textContent = 'Objetivo cumplido · ' + a.porcentaje + ' %';
+    } else if (a.porDiaQueQueda !== null && a.porDiaQueQueda !== undefined) {
+      // **El número que cambia la tarde.** Un 39 % no le dice a nadie si tiene que darse prisa;
+      // «1.840 € al día» sí.
+      falta.textContent = 'Faltan ' + euros(a.falta) + ' · quedan '
+        + a.diasLaborablesRestantes + (a.diasLaborablesRestantes === 1 ? ' día' : ' días')
+        + ' · ' + euros(a.porDiaQueQueda) + ' al día';
+    } else {
+      falta.textContent = 'Faltan ' + euros(a.falta) + ' y el mes se ha acabado';
+    }
+
+    caja.hidden = false;
+  }
+
   async function cargarHoy() {
     var pila = await api('/hoy');
     var cont = $('hoy-pila');
     cont.textContent = '';
+
+    // Sin `await`: la pila se pinta ya y el mes aparece cuando llegue.
+    pintarMes();
 
     var partes = [];
     if (pila.pendientes) { partes.push(pila.pendientes + (pila.pendientes === 1 ? ' acción' : ' acciones')); }

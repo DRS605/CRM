@@ -10,7 +10,7 @@ public static class EndpointsInformes
     /// <summary>Atajos de periodo en lenguaje de persona, que es como se piden los informes.</summary>
     private static Periodo Resolver(string? periodo, DateOnly? desde, DateOnly? hasta, IReloj reloj)
     {
-        var hoy = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+        var hoy = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
 
         return periodo?.ToLowerInvariant() switch
         {

@@ -126,6 +126,17 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   saltarse etapas, así que lo segundo daba etapas de más adelante con más oportunidades que las de
   antes y el informe enseñaba «↓ 200 % pasa a propuesta». Contando el punto más lejano alcanzado, la
   serie es decreciente por construcción. Ver [`docs/modulos/informes.md`](docs/modulos/informes.md).
+- **Hay un solo «hoy», y es el de España.** `HorasLaborables.DiaDeTrabajo(instante)`. Había nueve sitios
+  contando el día en UTC y tres en hora local, y entre medianoche y las dos de la mañana en verano no
+  eran el mismo día: una tarea que el sistema creaba «para hoy» no aparecía en Hoy, y el trabajo hecho a
+  las 00:30 se contaba como de ayer. Todo lo que convierta un instante en fecha —o una fecha en rango de
+  instantes, con `LimitesDelDia`— pasa por ahí. Y `current_date` de PostgreSQL **es UTC**: no lo uses
+  para «hoy» ni en las pruebas.
+- **Npgsql solo escribe `DateTimeOffset` con desfase 0.** «only offset 0 (UTC) is supported». Un límite
+  de día calculado en hora local hay que pasarlo por `ToUniversalTime()` antes de que llegue a un
+  `WHERE`; si no, la consulta revienta en ejecución y no al compilar.
+- **`Results.Ok(null)` devuelve el cuerpo vacío**, que no es JSON válido. Para «esto no existe y es
+  normal», `Results.NoContent()`.
 - **Un envío desde un trabajo de fondo no tiene sesión.** `ServicioCorreo.DireccionAsync` leía el
   usuario del contexto, así que al encolar desde el trabajo de campañas devolvía nulo y el correo se
   rechazaba con «ese contacto no tiene una dirección válida». El contacto sí la tenía; faltaba la

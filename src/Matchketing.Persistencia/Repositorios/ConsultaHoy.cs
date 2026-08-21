@@ -22,7 +22,7 @@ public sealed class ConsultaHoy(ContextoMatchketing bd, IReloj reloj) : IConsult
 {
     public async Task<PilaHoy> PilaAsync(CancellationToken ct = default)
     {
-        var hoy = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+        var hoy = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
         var tarjetas = new List<TarjetaHoy>();
 
         // 1. Lo que toca hoy o ya tocaba.
@@ -146,8 +146,13 @@ public sealed class ConsultaHoy(ContextoMatchketing bd, IReloj reloj) : IConsult
             .ThenBy(t => t.NombreContacto, StringComparer.Ordinal)
             .ToList();
 
+        // «Hoy» es el día de aquí, no el de UTC, así que se compara contra los instantes que lo limitan
+        // en vez de contra una fecha: convertir zonas dentro del SQL no se puede, y comparar por fecha
+        // UTC contaba como de ayer todo lo cerrado después de medianoche.
+        var (desdeHoy, hastaHoy) = HorasLaborables.LimitesDelDia(ahora);
         var hechasHoy = await bd.Tareas
-            .CountAsync(t => t.Estado == EstadoTarea.Hecha && t.CerradaEn != null && t.CerradaEn.Value.UtcDateTime.Date == ahora.UtcDateTime.Date, ct)
+            .CountAsync(t => t.Estado == EstadoTarea.Hecha && t.CerradaEn != null
+                && t.CerradaEn >= desdeHoy && t.CerradaEn < hastaHoy, ct)
             .ConfigureAwait(false);
 
         return new PilaHoy(

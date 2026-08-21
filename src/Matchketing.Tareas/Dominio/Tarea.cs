@@ -91,7 +91,7 @@ public sealed class Tarea : RaizAgregadoEmpresa<Guid>
         }
 
         // Sin fecha, hoy: una tarea sin día es una tarea que no se hace nunca.
-        var fecha = venceEl ?? DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+        var fecha = venceEl ?? HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
 
         var tarea = new Tarea(Guid.NewGuid(), empresaId, titulo.Trim(), contactoId, oportunidadId, fecha, responsableId, origen, reloj.AhoraUtc);
         tarea.RegistrarEvento(new TareaCreada(tarea.Id, empresaId, contactoId, reloj.AhoraUtc));
@@ -147,7 +147,7 @@ public sealed class Tarea : RaizAgregadoEmpresa<Guid>
             return Resultado.Fallo(Error.Validacion("tarea.aplazar_sin_fecha", "Para aplazar hay que decir hasta cuándo."));
         }
 
-        var hoy = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+        var hoy = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
         if (fecha <= hoy)
         {
             return Resultado.Fallo(Error.Validacion("tarea.aplazar_al_pasado", "Aplazar es para más adelante: elige un día posterior a hoy."));

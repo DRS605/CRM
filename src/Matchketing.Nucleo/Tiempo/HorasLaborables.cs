@@ -37,6 +37,57 @@ public static class HorasLaborables
     public static DateTimeOffset EnHoraLocal(DateTimeOffset instante) => TimeZoneInfo.ConvertTime(instante, Zona);
 
     /// <summary>
+    /// El día de hoy **como lo cuenta la persona que lo está viviendo**, no como lo cuenta UTC.
+    ///
+    /// Existe porque no existía, y eso era un fallo con dos horas de ventana cada noche. Lo que crea
+    /// tareas usaba la hora española y lo que las enseña usaba UTC, así que entre medianoche y las dos
+    /// de la mañana en verano el mismo instante era «hoy» en un sitio y «mañana» en otro: una tarea que
+    /// el sistema creaba para hoy no aparecía en Hoy, y el trabajo hecho a las 00:30 se contaba como de
+    /// ayer. En invierno la ventana es de una hora, que es peor: se reproduce menos.
+    ///
+    /// Un CRM tiene **un solo** concepto de día, y es el del comercial que lo abre. Todo lo que
+    /// convierta un instante en fecha pasa por aquí.
+    /// </summary>
+    public static DateOnly DiaDeTrabajo(DateTimeOffset instante) =>
+        DateOnly.FromDateTime(EnHoraLocal(instante).Date);
+
+    /// <summary>
+    /// Lo mismo, para una fecha que ya viene dada: de su medianoche de aquí a la siguiente.
+    ///
+    /// Es la sobrecarga que usan los filtros por fechas —«desde el 22 hasta el 31»— para que un rango
+    /// escrito por una persona signifique lo que esa persona vivió y no lo que marcaba UTC.
+    /// </summary>
+    public static (DateTimeOffset Desde, DateTimeOffset Hasta) LimitesDelDia(DateOnly dia)
+    {
+        // A las dos medianoches se les pide el desfase **por su propia fecha**, cada una la suya. El día
+        // del cambio de hora no dura veinticuatro horas: el 29 de marzo a mediodía el desfase ya es +2,
+        // pero la medianoche de ese mismo día fue +1, y usar uno para las dos se come una hora.
+        //
+        // Y salen **en UTC**: es el mismo instante, pero Npgsql se niega a escribir un `DateTimeOffset`
+        // con desfase distinto de cero en un `timestamp with time zone` —«only offset 0 (UTC) is
+        // supported»—, y estos dos valores acaban en un `WHERE` como parámetros. Con +02:00 la consulta
+        // revienta en tiempo de ejecución y no al compilar.
+        var hoy = dia.ToDateTime(TimeOnly.MinValue);
+        var manana = hoy.AddDays(1);
+
+        return (
+            new DateTimeOffset(hoy, Zona.GetUtcOffset(hoy)).ToUniversalTime(),
+            new DateTimeOffset(manana, Zona.GetUtcOffset(manana)).ToUniversalTime());
+    }
+
+    /// <summary>
+    /// El día local de un instante, en instantes: de la medianoche de aquí a la siguiente.
+    ///
+    /// Hace falta para contar en la base de datos «lo cerrado hoy» sin convertir zonas dentro del SQL:
+    /// se comparan instantes contra un rango, que además usa índice. Abierto por arriba, igual que los
+    /// límites de un mes: con `<=` se perdería lo que pasa exactamente a medianoche.
+    /// </summary>
+    public static (DateTimeOffset Desde, DateTimeOffset Hasta) LimitesDelDia(DateTimeOffset instante)
+    {
+        return LimitesDelDia(DiaDeTrabajo(instante));
+    }
+
+    /// <summary>
     /// Instante en el que se cumplen <paramref name="horas"/> horas laborables contadas desde
     /// <paramref name="desde"/>. Si arranca fuera de horario, empieza a contar en la siguiente
     /// apertura: un lead que entra a medianoche tiene su plazo desde las nueve de la mañana.

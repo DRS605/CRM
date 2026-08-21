@@ -45,7 +45,7 @@ public sealed class ConsultaPendientes(ContextoMatchketing bd, IReloj reloj) : I
 {
     public async Task<IReadOnlyDictionary<Guid, int>> PorUsuarioAsync(CancellationToken ct = default)
     {
-        var hoy = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+        var hoy = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
         var ahora = reloj.AhoraUtc;
 
         var aparcadas = await bd.Pospuestas

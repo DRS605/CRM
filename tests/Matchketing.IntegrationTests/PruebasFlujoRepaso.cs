@@ -7,12 +7,21 @@ using Matchketing.Persistencia;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using Matchketing.Nucleo.Tiempo;
 
 namespace Matchketing.IntegrationTests;
 
 [Collection(ColeccionApi.Nombre)]
 public sealed class PruebasFlujoRepaso(ApiDePrueba api)
 {
+    /// <summary>
+    /// Hoy, contado **como lo cuenta la aplicación**: el día en hora española.
+    ///
+    /// Con `DateTime.UtcNow` estas pruebas fallaban entre medianoche y las dos de la mañana de aquí,
+    /// que es cuando UTC va todavía en el día anterior. No era una prueba frágil: era la prueba
+    /// avisando de que el producto tenía dos calendarios. Ahora hay uno, y las pruebas usan ese.
+    /// </summary>
+    private static DateOnly Hoy => HorasLaborables.DiaDeTrabajo(DateTimeOffset.UtcNow);
     private static async Task<JsonElement> LeerAsync(HttpResponseMessage r) =>
         JsonDocument.Parse(await r.Content.ReadAsStringAsync()).RootElement.Clone();
 
@@ -139,10 +148,13 @@ public sealed class PruebasFlujoRepaso(ApiDePrueba api)
         {
             titulo = "Enviar el presupuesto",
             contactoId = contacto,
-            venceEl = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1),
+            venceEl = Hoy.AddDays(1),
         }))).GetProperty("id").GetGuid();
 
-        await EnvejecerAsync($"UPDATE tareas.tarea SET vence_el = current_date - 4 WHERE id = '{tarea}'");
+        // `current_date` de PostgreSQL es UTC y la aplicación cuenta los días en hora de aquí: entre
+        // medianoche y las dos de la mañana no son el mismo día. La fecha se calcula en C# con el
+        // mismo reloj que usa el producto.
+        await EnvejecerAsync($"UPDATE tareas.tarea SET vence_el = '{Hoy.AddDays(-4):yyyy-MM-dd}' WHERE id = '{tarea}'");
 
         var pila = await PilaAsync(cliente);
         var pregunta = pila.GetProperty("preguntas").EnumerateArray()
@@ -165,10 +177,10 @@ public sealed class PruebasFlujoRepaso(ApiDePrueba api)
             contactoId = contacto,
             titulo = "Reforma completa",
             importe = 24000m,
-            previstaCierre = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30),
+            previstaCierre = Hoy.AddDays(30),
         }))).GetProperty("id").GetGuid();
 
-        await EnvejecerAsync($"UPDATE embudo.oportunidad SET prevista_cierre = current_date - 6 WHERE id = '{oportunidad}'");
+        await EnvejecerAsync($"UPDATE embudo.oportunidad SET prevista_cierre = '{Hoy.AddDays(-6):yyyy-MM-dd}' WHERE id = '{oportunidad}'");
 
         var pregunta = (await PilaAsync(cliente)).GetProperty("preguntas").EnumerateArray()
             .Single(p => p.GetProperty("tipo").GetInt32() == 3); // CierrePasado
@@ -280,7 +292,7 @@ public sealed class PruebasFlujoRepaso(ApiDePrueba api)
             {
                 titulo = $"Pendiente {i}",
                 contactoId = conTarea,
-                venceEl = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1),
+                venceEl = Hoy.AddDays(1),
             });
         }
 
@@ -293,7 +305,7 @@ public sealed class PruebasFlujoRepaso(ApiDePrueba api)
                 contactoId = deOportunidades,
                 titulo = $"Obra {i}",
                 importe = 1000m * i,
-                previstaCierre = i <= 2 ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(20) : (DateOnly?)null,
+                previstaCierre = i <= 2 ? Hoy.AddDays(20) : (DateOnly?)null,
             });
         }
 
@@ -303,8 +315,8 @@ public sealed class PruebasFlujoRepaso(ApiDePrueba api)
         var empresa = (await LeerAsync(await cliente.GetAsync(new Uri("/empresas/activa", UriKind.Relative))))
             .GetProperty("id").GetGuid();
 
-        await EnvejecerAsync($"UPDATE tareas.tarea SET vence_el = current_date - 3 WHERE empresa_id = '{empresa}'");
-        await EnvejecerAsync($"UPDATE embudo.oportunidad SET prevista_cierre = current_date - 5 WHERE empresa_id = '{empresa}' AND prevista_cierre IS NOT NULL");
+        await EnvejecerAsync($"UPDATE tareas.tarea SET vence_el = '{Hoy.AddDays(-3):yyyy-MM-dd}' WHERE empresa_id = '{empresa}'");
+        await EnvejecerAsync($"UPDATE embudo.oportunidad SET prevista_cierre = '{Hoy.AddDays(-5):yyyy-MM-dd}' WHERE empresa_id = '{empresa}' AND prevista_cierre IS NOT NULL");
         await EnvejecerAsync($"UPDATE embudo.oportunidad SET entro_en_etapa_en = now() - interval '25 days' WHERE empresa_id = '{empresa}' AND prevista_cierre IS NULL");
 
         var pila = await PilaAsync(cliente);

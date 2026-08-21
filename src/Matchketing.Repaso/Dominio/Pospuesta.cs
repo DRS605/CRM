@@ -45,7 +45,7 @@ public sealed class Pospuesta : RaizAgregadoEmpresa<Guid>
     {
         ArgumentNullException.ThrowIfNull(reloj);
 
-        var hasta = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime).AddDays(Math.Max(dias, 1));
+        var hasta = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc).AddDays(Math.Max(dias, 1));
         return new Pospuesta(Guid.NewGuid(), empresaId, clave.ToString(), usuarioId, hasta, reloj.AhoraUtc);
     }
 

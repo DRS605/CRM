@@ -47,7 +47,7 @@ public sealed class ServicioTareas(
             return Resultado.Fallo<Tarea>(Error.Conflicto("tarea.ya_existe", "Ya hay un seguimiento pendiente para este contacto."));
         }
 
-        var manana = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime).AddDays(1);
+        var manana = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc).AddDays(1);
         return Crear(titulo, contactoId, null, manana, OrigenTarea.Automatica);
     }
 

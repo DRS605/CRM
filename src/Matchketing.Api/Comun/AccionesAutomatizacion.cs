@@ -30,7 +30,7 @@ public sealed class AccionesAutomatizacion(
 {
     public Task<string?> CrearTareaAsync(Guid contactoId, string titulo, int dias, CancellationToken ct = default)
     {
-        var vence = DateOnly.FromDateTime(HorasLaborables.EnHoraLocal(reloj.AhoraUtc).DateTime).AddDays(dias);
+        var vence = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc).AddDays(dias);
 
         // `OrigenTarea.Automatica`, igual que las que crea el repaso: es lo que permite distinguir en la
         // pantalla una tarea que se puso una persona de una que puso el sistema.

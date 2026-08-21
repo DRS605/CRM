@@ -1,6 +1,7 @@
 using Matchketing.Embudo.Dominio;
 using Matchketing.Informes.Aplicacion;
 using Microsoft.EntityFrameworkCore;
+using Matchketing.Nucleo.Tiempo;
 
 namespace Matchketing.Persistencia.Repositorios;
 
@@ -127,18 +128,27 @@ public sealed class ConsultaInformes(ContextoMatchketing bd) : IConsultaInformes
             ganadas.Count, ganadas.Sum(o => o.Importe));
     }
 
+    /// <summary>
+    /// Recorta la consulta al periodo. Las dos fechas se convierten a instantes **con la medianoche de
+    /// aquí**, no con la de UTC.
+    ///
+    /// Parece un detalle y no lo es: en verano la medianoche de aquí son las 22:00 UTC del día anterior,
+    /// así que con los límites en UTC una venta cerrada a las once de la noche caía fuera del informe
+    /// del día en que se cerró. Quien pide «desde el 22» quiere lo del 22 tal como lo vivió, y el resto
+    /// de la aplicación ya cuenta los días así.
+    /// </summary>
     private static IQueryable<Oportunidad> EnPeriodo(IQueryable<Oportunidad> consulta, Periodo periodo)
     {
         if (periodo.Desde is { } desde)
         {
-            var inicio = new DateTimeOffset(desde.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            var (inicio, _) = HorasLaborables.LimitesDelDia(desde);
             consulta = consulta.Where(o => o.CerradaEn >= inicio);
         }
 
         if (periodo.Hasta is { } hasta)
         {
             // Fin de día: quien pide «hasta el 31» espera que entre lo del 31.
-            var fin = new DateTimeOffset(hasta.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            var (_, fin) = HorasLaborables.LimitesDelDia(hasta);
             consulta = consulta.Where(o => o.CerradaEn < fin);
         }
 

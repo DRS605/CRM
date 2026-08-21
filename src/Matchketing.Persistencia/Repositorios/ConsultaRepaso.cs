@@ -44,7 +44,7 @@ public sealed class ConsultaRepaso(ContextoMatchketing bd, IContextoEmpresa cont
 
     public async Task<IReadOnlyList<Hallazgo>> HallazgosAsync(CancellationToken ct = default)
     {
-        var hoy = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
+        var hoy = HorasLaborables.DiaDeTrabajo(reloj.AhoraUtc);
         var ahora = reloj.AhoraUtc;
         var mio = contexto.UsuarioId;
 

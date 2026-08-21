@@ -42,7 +42,10 @@ public static class EndpointsCorreo
                 return Results.Forbid();
             }
 
-            return Results.Ok(Campos.Todos.Select(c => new { campo = c, hueco = "{{" + c + "}}" }));
+            // Cualificado a la fuerza: desde que existe el módulo `Matchketing.Campos`, un `Campos`
+            // a secas en un archivo de la API es ambiguo. Son dos cosas distintas —los huecos de
+            // una plantilla y los campos propios de la empresa— y aquí toca el primero.
+            return Results.Ok(Correo.Dominio.Campos.Todos.Select(c => new { campo = c, hueco = "{{" + c + "}}" }));
         })
         .WithSummary("Los cuatro huecos que puede llevar una plantilla.");
 

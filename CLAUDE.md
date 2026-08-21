@@ -132,6 +132,25 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   **todas** las columnas de la base buscando el identificador del contacto después de borrarlo, así que
   si te olvidas te enteras al momento; lo que no puede pasar es «arreglarla» quitando la tabla de la
   prueba. Ver [`docs/modulos/cumplimiento.md`](docs/modulos/cumplimiento.md).
+- **Y esa prueba solo mira donde alguien haya escrito.** El barrido busca el identificador del contacto,
+  así que si su preparación no guarda nada en tu tabla nueva, **pasa sin mirar nada**. Comprobado a
+  propósito en el módulo 17: quitando el borrado de los campos propios, la prueba del módulo falló y el
+  barrido pasó. Al cerrar un módulo que guarde datos de una persona hay que **dejar rastro en esa
+  preparación** y añadir su tabla a la lista de `antes.Should().Contain(...)`.
+- **Un ámbito, un tipo o un estado nuevo necesita una pantalla donde usarse.** No se añade el valor al
+  enumerado «para después»: queda algo que se puede definir y no se puede rellenar. Por eso los campos
+  propios no tienen ámbito de oportunidad (no hay ficha de oportunidad) y por eso el módulo 17 tuvo que
+  construir la **ficha de cuenta**, que no existía: sin ella, el ámbito de cuenta habría sido ese error.
+- **Antes de añadir `id="…"` al HTML, comprueba que no está usado.**
+  `grep -o 'id="[a-z0-9-]*"' index.html | sed 's/id="//;s/"//' | sort | uniq -d` tiene que salir vacío.
+  El prefijo `cp-` es de campañas, y los campos propios estrenaron seis identificadores repetidos que
+  habrían hecho que `$('cp-lista')` devolviera el panel equivocado.
+- **Un namespace nuevo puede tapar una clase con el mismo nombre.** Al aparecer `Matchketing.Campos`,
+  `Campos.Todos` en un archivo de la API dejó de resolver a `Correo.Dominio.Campos` —los huecos de una
+  plantilla— y el proyecto no compiló. Se arregla cualificando en ese archivo, no renombrando el módulo.
+- **Una lista con conversión de valor necesita `ValueComparer`.** Sin él EF la compara por referencia,
+  no detecta el cambio y **no emite el `UPDATE`**: se pierde en silencio y solo se ve recargando. Pasa
+  en webhooks (los tipos de evento) y en campos propios (las opciones de una lista).
 - **Hay un solo «hoy», y es el de España.** `HorasLaborables.DiaDeTrabajo(instante)`. Había nueve sitios
   contando el día en UTC y tres en hora local, y entre medianoche y las dos de la mañana en verano no
   eran el mismo día: una tarea que el sistema creaba «para hoy» no aparecía en Hoy, y el trabajo hecho a

@@ -23,5 +23,6 @@
     <ProjectReference Include="..\Matchketing.Automatizacion\Matchketing.Automatizacion.csproj" />
     <ProjectReference Include="..\Matchketing.Campanias\Matchketing.Campanias.csproj" />
     <ProjectReference Include="..\Matchketing.Objetivos\Matchketing.Objetivos.csproj" />
+    <ProjectReference Include="..\Matchketing.Campos\Matchketing.Campos.csproj" />
   </ItemGroup>
 </Project>

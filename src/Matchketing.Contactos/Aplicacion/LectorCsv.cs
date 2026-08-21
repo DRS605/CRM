@@ -80,26 +80,11 @@ public static class LectorCsv
 
     /// <summary>
     /// Quita acentos y pasa a minúsculas, para que «Teléfono» y «telefono» sean la misma columna.
-    /// Con un mapa explícito y no con <c>Normalize(FormD)</c>: el proyecto compila con
-    /// <c>InvariantGlobalization</c>, y en ese modo la normalización Unicode no hace nada. Para
-    /// cabeceras en español esto basta y además es determinista.
+    /// El mapa vive en <see cref="Matchketing.Nucleo.Comun.Castellano.SinAcentos"/>: lo necesitan
+    /// también las claves de los campos propios, y dos mapas de acentos son dos mapas que se separan.
     /// </summary>
-    public static string NormalizarCabecera(string valor)
-    {
-        ArgumentNullException.ThrowIfNull(valor);
-
-        const string ConAcento = "áàäâãéèëêíìïîóòöôõúùüûñçÁÀÄÂÃÉÈËÊÍÌÏÎÓÒÖÔÕÚÙÜÛÑÇ";
-        const string SinAcento = "aaaaaeeeeiiiiooooouuuuncAAAAAEEEEIIIIOOOOOUUUUNC";
-
-        var sb = new System.Text.StringBuilder(valor.Length);
-        foreach (var c in valor.Trim())
-        {
-            var i = ConAcento.IndexOf(c, StringComparison.Ordinal);
-            sb.Append(i >= 0 ? SinAcento[i] : c);
-        }
-
-        return sb.ToString().ToLowerInvariant();
-    }
+    public static string NormalizarCabecera(string valor) =>
+        Matchketing.Nucleo.Comun.Castellano.SinAcentos(valor);
 
     /// <summary>Devuelve el índice de la primera cabecera que coincida con alguno de los alias.</summary>
     public static int IndiceDe(IReadOnlyList<string> cabeceras, params string[] alias)

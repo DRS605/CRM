@@ -350,8 +350,14 @@ public sealed class PruebasFlujoCumplimiento(ApiDePrueba api)
         // webhook con su identificador y sus preguntas aparcadas.
         //
         // No fue un descuido de una tabla: fue que cada módulo nuevo añadía datos de personas y nadie
-        // volvía a la lista de la supresión. Así que esta prueba no lleva lista: recorre las columnas de
-        // la base tal como están hoy.
+        // volvía a la lista de la supresión. Así que esta prueba no lleva lista de tablas: recorre las
+        // columnas de la base tal como están hoy.
+        //
+        // **Lo que sí hay que ampliar es lo de abajo.** El barrido solo encuentra el identificador donde
+        // alguien lo haya escrito, así que un módulo nuevo que guarde datos de una persona tiene que
+        // dejar aquí su rastro antes del borrado. Si no, esta prueba pasa por no haber creado nada, que
+        // es la forma más silenciosa de que una red de seguridad no sirva. Se comprueba abajo que el
+        // rastro estaba, tabla por tabla, para que ese fallo tampoco pase desapercibido.
         var cliente = await EnEmpresaAsync("Ribera Sin Rastro");
         var contacto = await ContactoAsync(cliente, "Borrable Pérez");
 
@@ -398,12 +404,23 @@ public sealed class PruebasFlujoCumplimiento(ApiDePrueba api)
             respuesta = 12, // Déjalo estar
         });
 
+        // Un campo propio con algo dentro. Es el sitio del sistema con más probabilidad de guardar un DNI
+        // o una dirección, porque es donde la empresa mete lo que este CRM no tiene.
+        var campo = (await LeerAsync(await cliente.PostAsJsonAsync("/campos", new
+        {
+            ambito = "contacto", nombre = "DNI del titular", tipo = "texto",
+        }))).GetProperty("id").GetGuid();
+        (await cliente.PutAsJsonAsync($"/campos/{campo}/valor/{contacto}", new { valor = "12345678Z" }))
+            .IsSuccessStatusCode.Should().BeTrue();
+
         // Antes de borrar, tiene que aparecer en varios sitios: si no, la prueba pasaría por no haber
         // creado nada y no por haber borrado bien.
         var antes = await DondeApareceAsync(contacto);
         antes.Should().HaveCountGreaterThan(4, "hay que dejar rastro antes de comprobar que se limpia");
         antes.Should().Contain(x => x.StartsWith("correo.mensaje", StringComparison.Ordinal),
             "el correo enviado es el rastro que más importa");
+        antes.Should().Contain(x => x.StartsWith("campos.valor", StringComparison.Ordinal),
+            "el valor de un campo propio tiene que estar puesto, o el barrido no mira nada de ese módulo");
 
         var r = await cliente.DeleteAsync(new Uri($"/cumplimiento/contactos/{contacto}", UriKind.Relative));
         r.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -418,6 +435,7 @@ public sealed class PruebasFlujoCumplimiento(ApiDePrueba api)
         // Y se cuenta lo que se borró, porque es lo que se le contesta a quien ejerció el derecho.
         var recuento = await LeerAsync(r);
         recuento.GetProperty("correos").GetInt32().Should().Be(1, "el correo se cuenta, no se borra a escondidas");
+        recuento.GetProperty("camposPropios").GetInt32().Should().Be(1);
     }
 
     [Fact]

@@ -40,11 +40,12 @@ public sealed record RecuentoBorrado(
     int EnviosDeCampania = 0,
     int Ejecuciones = 0,
     int EntregasWebhook = 0,
-    int PreguntasAparcadas = 0)
+    int PreguntasAparcadas = 0,
+    int CamposPropios = 0)
 {
     public int Total =>
         Contactos + Actividades + Oportunidades + Tareas + Senales + Puntuaciones + Envios + Consentimientos
-        + Correos + EnviosDeCampania + Ejecuciones + EntregasWebhook + PreguntasAparcadas;
+        + Correos + EnviosDeCampania + Ejecuciones + EntregasWebhook + PreguntasAparcadas + CamposPropios;
 }
 
 /// <summary>

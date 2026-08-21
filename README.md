@@ -84,8 +84,9 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 14. Equipo | ✅ Terminado |
 | 15. Campañas | ✅ Terminado |
 | 16. Objetivos | ✅ Terminado |
+| 17. Campos propios | ✅ Terminado |
 
-Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los ocho siguientes son los que hacen
+Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los nueve siguientes son los que hacen
 que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto:
 
 - **[Repaso](docs/modulos/repaso.md)** reduce cerrar la semana a dos minutos.
@@ -109,6 +110,11 @@ que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto
   resumen del repaso dicen *qué pasó*, y sin un objetivo no hay forma de saber si eso era suficiente.
   Solo dinero ganado —nunca llamadas ni correos— y un número que no tenía nadie: cuánto hay que cerrar
   **por día laborable que queda**.
+- **[Campos propios](docs/modulos/campos.md)** cierra el agujero por el que se abandona un CRM: todo
+  negocio tiene un dato que no cabe, se acaba llevando en una hoja aparte y desde ese día la hoja es la
+  verdad. **Diez por objeto**, el tipo no se cambia nunca y la clave no cambia al renombrar. Y no
+  traicionan la tesis del producto: no son obligatorios, no aparecen en Hoy y el sistema no pide que se
+  rellenen.
 
 Lo que se añadió después del octavo y no es un módulo —auditoría, trabajos en segundo plano, límite de
 intentos de acceso, sonda de salud real y el rol de base de datos sin superusuario— está en
@@ -120,7 +126,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 965 pruebas: 640 unitarias + 325 de integración
+dotnet test                                  # 1.033 pruebas: 693 unitarias + 340 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

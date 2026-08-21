@@ -32,4 +32,31 @@ public static class Castellano
 
     /// <summary>Un número entero con separador de millares: «1.275 filas».</summary>
     public static string Numero(long valor) => valor.ToString("N0", Formato);
+
+    /// <summary>
+    /// Quita acentos y pasa a minúsculas, para que «Teléfono» y «telefono» sean lo mismo.
+    ///
+    /// Con un mapa explícito y no con <c>Normalize(FormD)</c>: el proyecto compila con
+    /// <c>InvariantGlobalization</c>, y en ese modo la normalización Unicode **no hace nada**. Para
+    /// texto en español esto basta, es determinista y no depende de qué haya instalado en la máquina.
+    ///
+    /// Vive aquí y no en el lector de CSV porque hay dos sitios que lo necesitan —las cabeceras de una
+    /// importación y la clave de un campo propio— y dos mapas de acentos son dos mapas que se separan.
+    /// </summary>
+    public static string SinAcentos(string valor)
+    {
+        ArgumentNullException.ThrowIfNull(valor);
+
+        const string ConAcento = "áàäâãéèëêíìïîóòöôõúùüûñçÁÀÄÂÃÉÈËÊÍÌÏÎÓÒÖÔÕÚÙÜÛÑÇ";
+        const string SinAcento = "aaaaaeeeeiiiiooooouuuuncAAAAAEEEEIIIIOOOOOUUUUNC";
+
+        var sb = new System.Text.StringBuilder(valor.Length);
+        foreach (var c in valor.Trim())
+        {
+            var i = ConAcento.IndexOf(c, StringComparison.Ordinal);
+            sb.Append(i >= 0 ? SinAcento[i] : c);
+        }
+
+        return sb.ToString().ToLowerInvariant();
+    }
 }

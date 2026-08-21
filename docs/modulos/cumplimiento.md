@@ -92,7 +92,8 @@ evitarlo otra vez es más interesante que el arreglo.
 
 Al principio la supresión cubría las nueve tablas que existían. Después llegaron correo, automatización,
 webhooks, campañas y objetivos, y **cada módulo nuevo añadió datos de personas sin que nadie volviera
-aquí**. Lo que quedaba en la base después de ejercer el artículo 17:
+aquí**. (El siguiente, campos propios, entró en la supresión el mismo día que en el producto; es lo que
+tenía que haber pasado con los cinco anteriores.) Lo que quedaba en la base después de ejercer el artículo 17:
 
 - **`correo.mensaje`**: su dirección, el asunto y el **texto completo** de cada correo que se le mandó.
   Es lo más personal que guarda el sistema de alguien, y era lo único que no se borraba.
@@ -112,10 +113,18 @@ pasaría.
 
 **Cómo se evita la próxima vez.** No con una lista mejor: con una prueba sin lista.
 `Borrar_un_contacto_no_deja_ni_un_rastro_suyo_en_ninguna_tabla` deja rastro del contacto por todos los
-sitios que lo pueden guardar —nota, oportunidad, tarea, correo, webhook, regla, pregunta aparcada—, lo
-borra, y después **recorre todas las columnas `uuid` y de texto de la base** leyendo
+sitios que lo pueden guardar —nota, oportunidad, tarea, correo, webhook, regla, pregunta aparcada, campo
+propio—, lo borra, y después **recorre todas las columnas `uuid` y de texto de la base** leyendo
 `information_schema`, buscando su identificador. El día que alguien añada una tabla con un `contacto_id`
 y se olvide de la supresión, la prueba falla nombrando la tabla.
+
+**Y la red tiene un agujero que hay que conocer:** el barrido solo encuentra el identificador donde
+alguien lo haya escrito. El módulo 17 lo demostró en el mismo día que se escribió esto: al añadir campos
+propios y quitar a propósito su borrado, la prueba del módulo falló y **el barrido pasó**, porque su
+preparación no rellenaba ningún campo propio. Así que un módulo nuevo que guarde datos de una persona
+tiene que dejar su rastro en esa preparación, y la prueba comprueba ahora, tabla por tabla, que el
+rastro estaba antes de borrar. Una red de seguridad que pasa por no haber mirado nada es peor que no
+tenerla, porque además tranquiliza.
 
 La única exclusión es `auditoria.registro`, y está razonada: es append-only por diseño, no guarda datos
 personales en el detalle, y su identificador de entidad es lo único que permite demostrar después que la

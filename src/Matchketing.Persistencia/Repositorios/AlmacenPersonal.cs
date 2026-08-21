@@ -134,11 +134,24 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
+        // Los campos que la empresa se definió, con lo que puso en los de esta persona. Son datos suyos
+        // aunque el nombre de la columna se lo haya inventado la empresa: «nº de póliza» o «fecha de la
+        // última revisión» dicen de él tanto como cualquier campo de serie. Sale la etiqueta y no la
+        // clave, porque esto lo lee una persona.
+        var propios = await bd.ValoresCampo
+            .Where(v => v.Ambito == Campos.Dominio.Ambito.Contacto && v.EntidadId == contactoId)
+            .Join(bd.Campos, v => v.CampoId, c => c.Id, (v, c) => new { c.Orden, campo = c.Nombre, c.Clave, valor = v.Texto })
+            .OrderBy(x => x.Orden)
+            .Select(x => new { x.campo, x.Clave, x.valor })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
         return new
         {
             generado = reloj.AhoraUtc,
             aviso = "Copia de todos los datos personales que match.keting guarda de esta persona.",
             contacto,
+            camposPropios = propios,
             consentimientos = permisos,
             cronologia = actividades,
             correos,
@@ -200,6 +213,27 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
+        // Los campos que se definió la empresa y lo que hay puesto en ellos. La definición va aparte de
+        // los valores porque son dos cosas distintas: una es cómo se configuró el CRM y la otra son los
+        // datos. Y los valores llevan la clave, no la etiqueta: esta copia se abre con una herramienta.
+        var camposPropios = await bd.Campos
+            .OrderBy(c => c.Ambito).ThenBy(c => c.Orden)
+            .Select(c => new
+            {
+                c.Id, ambito = c.Ambito.ToString(), c.Nombre, c.Clave,
+                tipo = c.Tipo.ToString(), c.Opciones, c.Orden,
+            })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        var valoresPropios = await bd.ValoresCampo
+            .Join(bd.Campos, v => v.CampoId, c => c.Id, (v, c) => new
+            {
+                ambito = c.Ambito.ToString(), c.Clave, v.EntidadId, valor = v.Texto,
+            })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
         return new
         {
             generado = reloj.AhoraUtc,
@@ -207,6 +241,8 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             empresa,
             cuentas,
             contactos,
+            camposPropios,
+            valoresPropios,
             consentimientos = permisos,
             cronologia = actividades,
             oportunidades,
@@ -277,6 +313,14 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             .ExecuteDeleteAsync(ct)
             .ConfigureAwait(false);
 
+        // Los valores de sus campos propios. Son el sitio donde una empresa mete lo que este CRM no tiene,
+        // así que ahí puede haber cualquier cosa: un DNI, una matrícula, una dirección. Se borran por
+        // `entidad_id` sin cruzar con la tabla de campos, y para eso el valor lleva el ámbito copiado.
+        var propios = await bd.ValoresCampo
+            .Where(v => v.Ambito == Campos.Dominio.Ambito.Contacto && v.EntidadId == contactoId)
+            .ExecuteDeleteAsync(ct)
+            .ConfigureAwait(false);
+
         // Quien se hubiera fusionado dentro de este contacto deja de apuntar a un fantasma.
         await bd.Contactos.Where(c => c.FusionadoEnId == contactoId).ExecuteUpdateAsync(
             s => s.SetProperty(c => c.FusionadoEnId, (Guid?)null), ct).ConfigureAwait(false);
@@ -285,7 +329,7 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
 
         return new RecuentoBorrado(
             contactos, actividades, borradasOportunidades, tareas, senales, puntuaciones, envios, permisos,
-            correos, deCampania, ejecuciones, entregas, aparcadas);
+            correos, deCampania, ejecuciones, entregas, aparcadas, propios);
     }
 
     /// <summary>
@@ -327,6 +371,12 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             .ConfigureAwait(false);
         await bd.Webhooks.ExecuteDeleteAsync(ct).ConfigureAwait(false);
 
+        // Los campos propios y sus valores: primero los valores, que cuelgan de los campos. Van aquí y no
+        // en el módulo, porque esta clase es la única que conoce todas las tablas donde hay datos de
+        // alguien, y los valores de un campo de contacto lo son.
+        var propios = await bd.ValoresCampo.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Campos.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
         var aparcadas = await bd.Pospuestas.ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await bd.Suscripciones.ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await bd.Objetivos.ExecuteDeleteAsync(ct).ConfigureAwait(false);
@@ -343,7 +393,7 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
 
         return new RecuentoBorrado(
             contactos, actividades, oportunidades, tareas, senales, puntuaciones, envios, permisos,
-            correos, deCampania, ejecuciones, entregas, aparcadas);
+            correos, deCampania, ejecuciones, entregas, aparcadas, propios);
     }
 
     /// <summary>

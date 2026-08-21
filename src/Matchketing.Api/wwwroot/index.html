@@ -380,6 +380,35 @@
   .fila-dato .k { color: var(--grafito); }
   .fila-dato .v { font-weight: 600; }
 
+  /* Campos propios. Dos formas de la misma cosa: la definición, en Ajustes, y el valor, en la ficha.
+     La clave se enseña en monoespaciada porque es lo que va en la cabecera del CSV: verla ahí, al lado
+     del nombre, es lo que hace entender por qué no cambia al renombrar. */
+  .def-campo { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--trazo-suave); }
+  .def-campo:last-child { border-bottom: 0; padding-bottom: 0; }
+  /* Rejilla y no `flex`: con `flex`, la clave de cada campo caía a una altura distinta según lo largo
+     que fuera su nombre, y la columna que hay que poder leer de un tirón —qué clave tiene cada uno—
+     salía en zigzag. Con `max-content` en esa columna, todas quedan alineadas. */
+  .def-campo .cabeza { display: grid; grid-template-columns: minmax(140px, 1fr) max-content max-content auto auto; align-items: center; gap: 10px; }
+  /* En el móvil no caben cinco columnas: la clave se salía del panel por la derecha y quedaba cortada,
+     que es justo el dato que hay que poder leer. Ahí se apila en tres líneas —nombre, clave, y lo que
+     se hace con él— y no se corta nada. */
+  @media (max-width: 720px) {
+    .def-campo .cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+    .def-campo .cabeza > input[type="text"] { flex: 1 1 100%; }
+    .def-campo .marca { flex: 1 1 100%; white-space: normal; overflow-wrap: anywhere; }
+    .def-campo .mover { margin-left: auto; }
+  }
+  .def-campo .marca { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--grafito); white-space: nowrap; }
+  .def-campo .cuantos { font-size: 12.5px; color: var(--grafito); white-space: nowrap; }
+  .def-campo .mover { display: flex; gap: 4px; }
+  .def-campo .mover button { min-width: 32px; padding: 6px 8px; }
+  .def-campo textarea { width: 100%; }
+
+  .campos-propios { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .campo-propio { display: flex; flex-direction: column; gap: 5px; }
+  .campo-propio label { font-size: 12.5px; color: var(--grafito); }
+  .campo-propio .marca { font-family: var(--mono); font-size: 10px; color: var(--grafito); opacity: .75; }
+
   .balanza { display: flex; flex-direction: column; gap: 10px; }
   .balanza .cabeza { display: flex; justify-content: space-between; font-size: 13px; }
   .balanza .cabeza .enc { color: var(--magenta); font-weight: 700; }
@@ -1406,6 +1435,14 @@
           </div>
         </div>
 
+        <div class="panel" id="panel-propios-contacto" style="max-width:820px" hidden>
+          <h2>Datos propios</h2>
+          <p class="explica">Los campos que se definió esta empresa. <strong>Ninguno es obligatorio</strong>:
+            se rellenan cuando hace falta y se guardan al salir de la casilla.</p>
+          <div class="campos-propios" id="cpv-contacto"></div>
+          <div class="aviso" id="cpv-aviso-contacto" hidden></div>
+        </div>
+
         <div class="panel" style="max-width:820px">
           <h2>Match</h2>
           <p class="explica">Cuánto encaja con tus mejores clientes y qué ha hecho últimamente.
@@ -1569,6 +1606,33 @@
           <div class="grande">Aún no hay cuentas</div>
           <p>Una cuenta es la empresa a la que pertenece un contacto. Si vendes a particulares no
             hacen falta: un contacto sin cuenta es un contacto normal.</p>
+        </div>
+      </div>
+
+      <div id="cta-ficha" hidden style="display:none">
+        <div class="panel" style="max-width:820px">
+          <div class="ficha-cabecera">
+            <div class="quien-ficha">
+              <h2 id="cta-f-nombre">—</h2>
+              <span class="medios" id="cta-f-medios">—</span>
+            </div>
+            <div class="derecha">
+              <button class="btn fantasma" type="button" id="cta-f-volver">Volver</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-propios-cuenta" style="max-width:820px" hidden>
+          <h2>Datos propios</h2>
+          <p class="explica">Los campos de cuenta que se definió esta empresa. Se guardan al salir de la casilla.</p>
+          <div class="campos-propios" id="cpv-cuenta"></div>
+          <div class="aviso" id="cpv-aviso-cuenta" hidden></div>
+        </div>
+
+        <div class="panel" style="max-width:820px">
+          <h2>Contactos de esta cuenta</h2>
+          <p class="explica" id="cta-f-sin-contactos" hidden>Todavía no hay ninguno.</p>
+          <div class="filas" id="cta-f-contactos"></div>
         </div>
       </div>
 
@@ -1988,6 +2052,53 @@
           <button class="btn fantasma" type="button" id="btn-cambiar-empresa">Cambiar de empresa</button>
         </div>
       </div>
+
+      <div class="panel" id="panel-campos" style="max-width:820px" data-permiso="empresa.ajustes">
+        <h2>Campos propios</h2>
+        <p class="explica">Todo negocio tiene un dato que este CRM no trae: el <strong>nº de póliza</strong>,
+          la <strong>potencia contratada</strong>, la <strong>fecha de la última revisión</strong>. Cuando no
+          cabe aquí se acaba llevando en una hoja aparte, y desde ese día la hoja es la verdad y esto es una
+          copia vieja. <strong>Diez por objeto</strong>, y nunca se pide que se rellenen: se ven en la ficha
+          y salen en la copia de los datos.</p>
+
+        <div class="pestanas" id="cx-ambitos">
+          <button class="pestana on" type="button" data-ambito="contacto">De contacto</button>
+          <button class="pestana" type="button" data-ambito="cuenta">De cuenta</button>
+        </div>
+
+        <div class="filas" id="cx-lista"></div>
+        <p class="explica" id="cx-vacio" hidden>Aquí no hay ninguno todavía.</p>
+
+        <div class="rejilla-form" style="margin-top:4px">
+          <div class="campo">
+            <label for="cx-nombre">Nombre del campo</label>
+            <input id="cx-nombre" type="text" maxlength="40" placeholder="Nº de póliza" />
+            <span class="pista">Como se leerá en la ficha. Se puede corregir después.</span>
+          </div>
+          <div class="campo">
+            <label for="cx-tipo">Tipo</label>
+            <select id="cx-tipo">
+              <option value="texto">Texto</option>
+              <option value="numero">Número</option>
+              <option value="fecha">Fecha</option>
+              <option value="si_no">Sí o no</option>
+              <option value="lista">Lista de opciones</option>
+            </select>
+            <span class="pista">El tipo no se cambia luego: los valores guardados se quedarían sin sentido.</span>
+          </div>
+        </div>
+
+        <div class="campo" id="cx-caja-opciones" hidden>
+          <label for="cx-opciones">Opciones</label>
+          <textarea id="cx-opciones" rows="4" placeholder="Gas natural&#10;Eléctrica&#10;Aerotermia"></textarea>
+          <span class="pista">Una por línea, entre dos y doce. Con más, es un texto libre disfrazado.</span>
+        </div>
+
+        <div class="aviso" id="cx-aviso" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="cx-crear">Añadir campo</button>
+        </div>
+      </div>
       </div>
 
       <div class="grupo-ajustes" data-grupo="captacion" hidden>
@@ -2262,7 +2373,7 @@
 
       <!-- El número lo comprueba `PruebasMovil.El_pie_dice_cuantos_modulos_hay_de_verdad` contra la
            tabla del README: se quedó en «ocho» durante cinco módulos porque nadie lo miraba. -->
-      <footer class="nota"><span class="bolita"></span> 16 módulos terminados</footer>
+      <footer class="nota"><span class="bolita"></span> 17 módulos terminados</footer>
     </section>
   </main>
 </div>
@@ -3638,7 +3749,7 @@
   var cuentasCargadas = [];
 
   function subVistaCuentas(cual) {
-    ['cta-lista', 'cta-form'].forEach(function (v) {
+    ['cta-lista', 'cta-form', 'cta-ficha'].forEach(function (v) {
       $(v).hidden = v !== cual;
       $(v).style.display = v === cual ? '' : 'none';
     });
@@ -3693,10 +3804,56 @@
         if (i === 0) { td.style.fontWeight = '600'; }
         tr.appendChild(td);
       });
+
+      // La fila abre la cuenta. Hasta ahora la tabla no llevaba a ningún sitio, y con los campos
+      // propios hacía falta: un campo de cuenta que no se puede rellenar en ninguna pantalla es media
+      // funcionalidad, que es el error que este proyecto ya ha cometido cuatro veces.
+      tr.style.cursor = 'pointer';
+      tr.tabIndex = 0;
+      tr.addEventListener('click', function () { abrirCuenta(c); });
+      tr.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrirCuenta(c); }
+      });
+
       cuerpo.appendChild(tr);
     });
   }
 
+  async function abrirCuenta(c) {
+    $('cta-f-nombre').textContent = c.nombre;
+    $('cta-f-medios').textContent =
+      [c.nif, c.sector, c.provincia, c.tamano ? c.tamano + ' personas' : null, c.web]
+        .filter(Boolean).join(' · ') || '—';
+
+    $('panel-propios-cuenta').hidden =
+      !(await pintarCamposDe('cuenta', c.id, $('cpv-cuenta'), $('cpv-aviso-cuenta')));
+
+    var caja = $('cta-f-contactos');
+    caja.textContent = '';
+    var suyos = [];
+    try {
+      suyos = (await api('/contactos')).filter(function (x) { return x.cuentaId === c.id; });
+    } catch (e) { /* la ficha sirve igual sin la lista */ }
+
+    $('cta-f-sin-contactos').hidden = suyos.length > 0;
+    suyos.forEach(function (x) {
+      var fila = document.createElement('div');
+      fila.className = 'fila-dato';
+      var k = document.createElement('span');
+      k.className = 'k';
+      k.textContent = x.nombre + (x.cargo ? ' · ' + x.cargo : '');
+      var v = document.createElement('span');
+      v.className = 'v';
+      v.textContent = x.email || x.telefono || '—';
+      fila.appendChild(k);
+      fila.appendChild(v);
+      caja.appendChild(fila);
+    });
+
+    subVistaCuentas('cta-ficha');
+  }
+
+  $('cta-f-volver').addEventListener('click', function () { subVistaCuentas('cta-lista'); });
   $('cta-busca').addEventListener('input', function () { pintarCuentas(); });
   $('cta-nueva').addEventListener('click', function () { subVistaCuentas('cta-form'); });
   $('cta-cancelar').addEventListener('click', function () { subVistaCuentas('cta-lista'); });
@@ -5581,11 +5738,294 @@
       crono.appendChild(hito);
     });
 
+    // El bloque solo aparece si la empresa se ha definido algún campo. Un panel vacío titulado «Datos
+    // propios» en todas las fichas de quien no usa esto sería ruido en la pantalla más visitada.
+    $('panel-propios-contacto').hidden =
+      !(await pintarCamposDe('contacto', id, $('cpv-contacto'), $('cpv-aviso-contacto')));
+
     await pintarMatch(id);
     await pintarPrivacidad(id);
     await pintarCorreo(id);
     subVista('con-ficha');
   }
+
+  // ---------- Campos propios ----------
+  //
+  // Dos pantallas de la misma cosa: la definición (Ajustes) y el valor (la ficha). Van juntas aquí
+  // porque comparten la traducción de tipo a control, y tenerla escrita dos veces era la forma segura
+  // de que un día el desplegable de una lista se convirtiera en un texto libre en una de las dos.
+
+  var TIPOS_CAMPO = {
+    texto: 'Texto', numero: 'Número', fecha: 'Fecha', si_no: 'Sí o no', lista: 'Lista'
+  };
+
+  var camposDef = [];
+  var cpAmbito = 'contacto';
+
+  async function cargarCamposDef() {
+    try {
+      camposDef = await api('/campos');
+    } catch (e) {
+      camposDef = [];
+    }
+    pintarCamposDef();
+  }
+
+  /// El control que le toca a un campo según su tipo, con el valor puesto. Uno y solo uno.
+  function controlDeCampo(campo, valor) {
+    if (campo.tipo === 'si_no' || campo.tipo === 'lista') {
+      var sel = document.createElement('select');
+      var vacia = document.createElement('option');
+      vacia.value = '';
+      vacia.textContent = '—';
+      sel.appendChild(vacia);
+
+      var opciones = campo.tipo === 'si_no'
+        ? [{ v: 'si', t: 'Sí' }, { v: 'no', t: 'No' }]
+        : (campo.opciones || []).map(function (o) { return { v: o, t: o }; });
+
+      opciones.forEach(function (o) {
+        var op = document.createElement('option');
+        op.value = o.v;
+        op.textContent = o.t;
+        sel.appendChild(op);
+      });
+      sel.value = valor || '';
+      return sel;
+    }
+
+    var input = document.createElement('input');
+    if (campo.tipo === 'fecha') {
+      input.type = 'date';
+    } else if (campo.tipo === 'numero') {
+      // `type="number"` habría parecido lo correcto y habría rechazado «3,5» en algunos navegadores
+      // según su idioma, que es justo la forma en que se teclea aquí. Texto con teclado numérico, y la
+      // coma la arregla el servidor.
+      input.type = 'text';
+      input.inputMode = 'decimal';
+    } else {
+      input.type = 'text';
+      input.maxLength = 500;
+    }
+    input.value = valor || '';
+    return input;
+  }
+
+  /// Los campos propios de una ficha, listos para rellenar. Devuelve si había alguno.
+  async function pintarCamposDe(ambito, entidadId, caja, aviso) {
+    var lista;
+    try {
+      lista = await api('/campos/' + ambito + '/' + entidadId);
+    } catch (e) {
+      lista = [];
+    }
+
+    caja.textContent = '';
+    lista.forEach(function (campo) {
+      var celda = document.createElement('div');
+      celda.className = 'campo-propio';
+
+      var etiqueta = document.createElement('label');
+      etiqueta.textContent = campo.nombre;
+      etiqueta.htmlFor = 'cpv-' + campo.campoId;
+      celda.appendChild(etiqueta);
+
+      var control = controlDeCampo(campo, campo.valor);
+      control.id = 'cpv-' + campo.campoId;
+
+      // Quien no puede gestionar contactos ve el dato y no lo toca. Esconderlo habría sido peor: es
+      // información de la ficha, y el papel de solo lectura existe para leerla.
+      control.disabled = !puede('contacto.gestionar');
+
+      var ultimo = campo.valor || '';
+      control.addEventListener('change', async function () {
+        var nuevo = control.value;
+        mostrarAviso(aviso, '');
+        try {
+          await api('/campos/' + campo.campoId + '/valor/' + entidadId, {
+            metodo: 'PUT', cuerpo: { valor: nuevo }
+          });
+          ultimo = nuevo;
+        } catch (e) {
+          // Se devuelve la casilla a lo que había: dejar en pantalla un valor que el servidor rechazó
+          // es prometer que está guardado.
+          control.value = ultimo;
+          mostrarAviso(aviso, motivoDe(e, 'No se ha podido guardar ese dato.'));
+        }
+      });
+
+      celda.appendChild(control);
+      caja.appendChild(celda);
+    });
+
+    return lista.length > 0;
+  }
+
+  function pintarCamposDef() {
+    var suyos = camposDef.filter(function (c) { return c.ambito === cpAmbito; });
+    var caja = $('cx-lista');
+    caja.textContent = '';
+    $('cx-vacio').hidden = suyos.length > 0;
+
+    suyos.forEach(function (campo, i) {
+      var fila = document.createElement('div');
+      fila.className = 'def-campo';
+
+      var cabeza = document.createElement('div');
+      cabeza.className = 'cabeza';
+
+      var nombre = document.createElement('input');
+      nombre.type = 'text';
+      nombre.maxLength = 40;
+      nombre.value = campo.nombre;
+      nombre.setAttribute('aria-label', 'Nombre del campo');
+      nombre.addEventListener('change', async function () {
+        try {
+          await api('/campos/' + campo.id + '/nombre', { metodo: 'PUT', cuerpo: { nombre: nombre.value } });
+          campo.nombre = nombre.value;
+          mostrarAviso($('cx-aviso'), 'Cambiado. La clave sigue siendo «' + campo.clave + '».', true);
+        } catch (e) {
+          nombre.value = campo.nombre;
+          mostrarAviso($('cx-aviso'), motivoDe(e, 'No se ha podido cambiar el nombre.'));
+        }
+      });
+      cabeza.appendChild(nombre);
+
+      var marca = document.createElement('span');
+      marca.className = 'marca';
+      marca.textContent = campo.clave + ' · ' + (TIPOS_CAMPO[campo.tipo] || campo.tipo);
+      cabeza.appendChild(marca);
+
+      var cuantos = document.createElement('span');
+      cuantos.className = 'cuantos';
+      cuantos.textContent = campo.rellenos === 0
+        ? 'sin usar'
+        : (campo.rellenos === 1 ? '1 ficha' : campo.rellenos + ' fichas');
+      cabeza.appendChild(cuantos);
+
+      var mover = document.createElement('div');
+      mover.className = 'mover';
+      [['↑', -1], ['↓', 1]].forEach(function (par) {
+        var b = document.createElement('button');
+        b.className = 'btn fantasma';
+        b.type = 'button';
+        b.textContent = par[0];
+        b.setAttribute('aria-label', par[1] < 0 ? 'Subir' : 'Bajar');
+        b.disabled = (par[1] < 0 && i === 0) || (par[1] > 0 && i === suyos.length - 1);
+        b.addEventListener('click', function () { moverCampo(suyos, i, par[1]); });
+        mover.appendChild(b);
+      });
+      cabeza.appendChild(mover);
+
+      var quitar = document.createElement('button');
+      quitar.className = 'btn fantasma';
+      quitar.type = 'button';
+      quitar.textContent = 'Quitar';
+      quitar.addEventListener('click', async function () {
+        // Se dice lo que se pierde **antes**, con el número delante. «¿Seguro?» a secas no informa de
+        // nada, y aquí hay algo que se va con el campo.
+        var cuenta = campo.rellenos === 0
+          ? 'No hay ninguna ficha con este campo relleno.'
+          : (campo.rellenos === 1
+            ? 'Hay 1 ficha con este campo relleno, y ese dato se borra.'
+            : 'Hay ' + campo.rellenos + ' fichas con este campo relleno, y esos datos se borran.');
+        if (!window.confirm('Quitar «' + campo.nombre + '».\n\n' + cuenta + '\n\nNo hay vuelta.')) { return; }
+
+        quitar.disabled = true;
+        try {
+          var r = await api('/campos/' + campo.id, { metodo: 'DELETE' });
+          await cargarCamposDef();
+          mostrarAviso($('cx-aviso'), r && r.valoresBorrados
+            ? 'Campo quitado, y con él ' + r.valoresBorrados + (r.valoresBorrados === 1 ? ' dato.' : ' datos.')
+            : 'Campo quitado.', true);
+        } catch (e) {
+          quitar.disabled = false;
+          mostrarAviso($('cx-aviso'), motivoDe(e, 'No se ha podido quitar.'));
+        }
+      });
+      cabeza.appendChild(quitar);
+      fila.appendChild(cabeza);
+
+      // Las opciones de una lista se editan aquí mismo. Cambiarlas puede fallar —si alguien está usando
+      // una de las que se quitan— y entonces se devuelve el cuadro a lo que había.
+      if (campo.tipo === 'lista') {
+        var area = document.createElement('textarea');
+        area.rows = Math.max(2, (campo.opciones || []).length);
+        area.value = (campo.opciones || []).join('\n');
+        area.setAttribute('aria-label', 'Opciones de ' + campo.nombre);
+        area.addEventListener('change', async function () {
+          var opciones = area.value.split('\n').map(function (o) { return o.trim(); })
+            .filter(function (o) { return o.length > 0; });
+          try {
+            await api('/campos/' + campo.id + '/opciones', { metodo: 'PUT', cuerpo: { opciones: opciones } });
+            campo.opciones = opciones;
+            mostrarAviso($('cx-aviso'), 'Opciones cambiadas.', true);
+          } catch (e) {
+            area.value = (campo.opciones || []).join('\n');
+            mostrarAviso($('cx-aviso'), motivoDe(e, 'No se han podido cambiar las opciones.'));
+          }
+        });
+        fila.appendChild(area);
+      }
+
+      caja.appendChild(fila);
+    });
+  }
+
+  async function moverCampo(suyos, i, hacia) {
+    var orden = suyos.map(function (c) { return c.id; });
+    var destino = i + hacia;
+    var guarda = orden[i];
+    orden[i] = orden[destino];
+    orden[destino] = guarda;
+
+    try {
+      await api('/campos/orden', { metodo: 'PUT', cuerpo: { ambito: cpAmbito, orden: orden } });
+      await cargarCamposDef();
+    } catch (e) {
+      mostrarAviso($('cx-aviso'), motivoDe(e, 'No se ha podido reordenar.'));
+    }
+  }
+
+  $('cx-ambitos').addEventListener('click', function (ev) {
+    var boton = ev.target.closest('.pestana');
+    if (!boton) { return; }
+    cpAmbito = boton.dataset.ambito;
+    Array.prototype.forEach.call(this.querySelectorAll('.pestana'), function (b) {
+      b.classList.toggle('on', b === boton);
+    });
+    pintarCamposDef();
+  });
+
+  $('cx-tipo').addEventListener('change', function () {
+    $('cx-caja-opciones').hidden = this.value !== 'lista';
+  });
+
+  $('cx-crear').addEventListener('click', async function () {
+    var boton = this;
+    var tipo = $('cx-tipo').value;
+    var opciones = tipo === 'lista'
+      ? $('cx-opciones').value.split('\n').map(function (o) { return o.trim(); })
+          .filter(function (o) { return o.length > 0; })
+      : null;
+
+    boton.disabled = true;
+    mostrarAviso($('cx-aviso'), '');
+    try {
+      var r = await api('/campos', {
+        metodo: 'POST',
+        cuerpo: { ambito: cpAmbito, nombre: $('cx-nombre').value, tipo: tipo, opciones: opciones }
+      });
+      $('cx-nombre').value = '';
+      $('cx-opciones').value = '';
+      await cargarCamposDef();
+      mostrarAviso($('cx-aviso'), 'Campo añadido. En el CSV saldrá como «' + r.clave + '».', true);
+    } catch (e) {
+      mostrarAviso($('cx-aviso'), motivoDe(e, 'No se ha podido añadir el campo.'));
+    } finally {
+      boton.disabled = false;
+    }
+  });
 
   // ---------- Privacidad de la ficha ----------
 
@@ -6783,11 +7223,13 @@
     ['panel-reglas', 'empresa.ajustes'],
     ['panel-plantillas', 'empresa.ajustes'],
     ['panel-webhooks', 'empresa.ajustes'],
-    ['panel-cierre', 'empresa.ajustes']
+    ['panel-cierre', 'empresa.ajustes'],
+    ['panel-campos', 'empresa.ajustes']
   ];
 
   /// Qué hay que cargar al entrar en cada pestaña de Ajustes. Lo que no se ve, no se pide.
   var CARGAS_AJUSTES = {
+    empresa: function () { if (puede('empresa.ajustes')) { cargarCamposDef(); } },
     captacion: function () { if (puede('formulario.gestionar')) { cargarFormularios(); } },
     automatizacion: function () { if (puede('empresa.ajustes')) { cargarReglas(); } },
     correo: function () { if (puede('empresa.ajustes')) { cargarPlantillas(); } },

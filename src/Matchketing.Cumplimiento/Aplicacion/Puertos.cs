@@ -12,9 +12,39 @@ public interface IRepositorioConsentimientos
 }
 
 /// <summary>Cuántas filas se llevó por delante un borrado, por tabla. Va al registro de auditoría.</summary>
-public sealed record RecuentoBorrado(int Contactos, int Actividades, int Oportunidades, int Tareas, int Senales, int Puntuaciones, int Envios, int Consentimientos)
+/// <summary>
+/// Qué se borró, por tabla. El recuento no es decoración: es lo que se le puede contestar a quien
+/// ejerció el derecho, y lo que se apunta en la auditoría.
+///
+/// **Los cinco últimos campos se añadieron arreglando un fallo, y merece la pena que se sepa.** Durante
+/// varios módulos la supresión del artículo 17 borraba contacto, actividades, oportunidades, tareas,
+/// señales, puntuaciones, envíos de formulario y consentimientos… y dejaba en la base **los correos que
+/// se le habían mandado**, con su dirección, su asunto y su texto completo. También su fila en cada
+/// campaña, las ejecuciones de reglas sobre él, los cuerpos de webhook que llevaban su identificador y
+/// sus preguntas aparcadas del repaso.
+///
+/// No era un descuido de una tabla: era que cada módulo nuevo añadía datos de personas y nadie volvía
+/// aquí. Ahora hay una prueba que recorre **todas** las columnas de la base buscando el identificador
+/// del contacto después de borrarlo, así que el siguiente módulo que se olvide se enterará al momento.
+/// </summary>
+public sealed record RecuentoBorrado(
+    int Contactos,
+    int Actividades,
+    int Oportunidades,
+    int Tareas,
+    int Senales,
+    int Puntuaciones,
+    int Envios,
+    int Consentimientos,
+    int Correos = 0,
+    int EnviosDeCampania = 0,
+    int Ejecuciones = 0,
+    int EntregasWebhook = 0,
+    int PreguntasAparcadas = 0)
 {
-    public int Total => Contactos + Actividades + Oportunidades + Tareas + Senales + Puntuaciones + Envios + Consentimientos;
+    public int Total =>
+        Contactos + Actividades + Oportunidades + Tareas + Senales + Puntuaciones + Envios + Consentimientos
+        + Correos + EnviosDeCampania + Ejecuciones + EntregasWebhook + PreguntasAparcadas;
 }
 
 /// <summary>

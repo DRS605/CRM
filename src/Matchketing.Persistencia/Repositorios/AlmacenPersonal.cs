@@ -117,6 +117,23 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
+        // **Los correos que se le mandaron, con su texto.** También son datos suyos, y probablemente los
+        // que más le interese ver a quien ejerce el derecho de acceso: no «se le escribió tres veces»,
+        // sino qué decían esos tres correos. Faltaban, igual que faltaban en la supresión.
+        //
+        // Se dice si lo abrió, porque también es un dato que guardamos de él, y con la misma cautela con
+        // que se dice en la pantalla: pedir el píxel no es lo mismo que leerlo.
+        var correos = await bd.Mensajes
+            .Where(m => m.ContactoId == contactoId)
+            .OrderBy(m => m.CreadoEn)
+            .Select(m => new
+            {
+                m.Para, m.Asunto, m.Cuerpo, estado = m.Estado.ToString(),
+                m.CreadoEn, m.EnviadoEn, m.Aperturas, m.PrimeraAperturaEn,
+            })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
         return new
         {
             generado = reloj.AhoraUtc,
@@ -124,6 +141,7 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
             contacto,
             consentimientos = permisos,
             cronologia = actividades,
+            correos,
             oportunidades,
             tareas,
             senales,
@@ -221,13 +239,53 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
         var envios = await bd.Envios.Where(e => e.ContactoId == contactoId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
         var permisos = await bd.Consentimientos.Where(c => c.ContactoId == contactoId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
 
+        // **Los correos que se le mandaron.** Es lo más personal que guarda el sistema de alguien: su
+        // dirección, el asunto y el texto completo de cada mensaje. Estuvo fuera de la supresión varios
+        // módulos, y eso convertía «borrar es borrar» en una frase falsa.
+        var correos = await bd.Mensajes.Where(m => m.ContactoId == contactoId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
+        // Su fila en cada campaña. No lleva nombre ni correo —eso se decidió así al construirlo— pero sí
+        // su identificador, y una lista de identificadores de gente borrada sigue siendo una lista.
+        var deCampania = await bd.EnviosCampania.Where(e => e.ContactoId == contactoId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
+        // Las reglas que actuaron sobre él. `SujetoId` también, porque en las reglas de contacto el
+        // sujeto **es** el contacto: filtrar solo por `ContactoId` dejaba la mitad de las filas.
+        var ejecuciones = await bd.Ejecuciones
+            .Where(e => e.ContactoId == contactoId || e.SujetoId == contactoId)
+            .ExecuteDeleteAsync(ct)
+            .ConfigureAwait(false);
+
+        // Los cuerpos de webhook que lo mencionan. Aquí no hay columna por la que filtrar: el
+        // identificador va **dentro del JSON** que se envió. Se busca por texto, que es un recorrido de
+        // tabla, y se acepta: una supresión ocurre una vez por persona y como mucho unos cientos de veces
+        // al año; dejar ahí el correo de alguien que pidió que lo borraran, no se acepta.
+        //
+        // Lo que ya salió hacia el sistema de terceros no se puede recoger —eso está dicho en la
+        // documentación del módulo— pero nuestra copia sí, y es nuestra.
+        var texto = contactoId.ToString();
+        var entregas = await bd.EntregasWebhook
+            .Where(e => e.Cuerpo.Contains(texto))
+            .ExecuteDeleteAsync(ct)
+            .ConfigureAwait(false);
+
+        // Sus preguntas aparcadas del repaso. La clave es «tipo:identificador», así que se busca por el
+        // final: sin esto quedaría una fila diciendo que alguien decidió no llamar a un contacto que ya
+        // no existe, y al volver a entrar un contacto con el mismo identificador —imposible, pero— la
+        // pregunta llegaría ya aparcada.
+        var aparcadas = await bd.Pospuestas
+            .Where(p => p.Clave.EndsWith(texto))
+            .ExecuteDeleteAsync(ct)
+            .ConfigureAwait(false);
+
         // Quien se hubiera fusionado dentro de este contacto deja de apuntar a un fantasma.
         await bd.Contactos.Where(c => c.FusionadoEnId == contactoId).ExecuteUpdateAsync(
             s => s.SetProperty(c => c.FusionadoEnId, (Guid?)null), ct).ConfigureAwait(false);
 
         var contactos = await bd.Contactos.Where(c => c.Id == contactoId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
 
-        return new RecuentoBorrado(contactos, actividades, borradasOportunidades, tareas, senales, puntuaciones, envios, permisos);
+        return new RecuentoBorrado(
+            contactos, actividades, borradasOportunidades, tareas, senales, puntuaciones, envios, permisos,
+            correos, deCampania, ejecuciones, entregas, aparcadas);
     }
 
     /// <summary>
@@ -249,6 +307,31 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
         var envios = await bd.Envios.ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await bd.Formularios.ExecuteDeleteAsync(ct).ConfigureAwait(false);
         var permisos = await bd.Consentimientos.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
+        // Todo lo que fueron añadiendo los módulos posteriores. Sin esto, «borrar la empresa» dejaba en
+        // la base sus correos, sus campañas, sus reglas y sus objetivos: invisibles por la RLS —nadie
+        // vuelve a entrar en esa empresa— pero ahí, que es exactamente lo que se prometió que no pasaría.
+        var correos = await bd.Mensajes.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Plantillas.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        var deCampania = await bd.EnviosCampania.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Campanias.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Segmentos.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        var ejecuciones = await bd.Ejecuciones.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Reglas.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
+        // Las entregas cuelgan de la suscripción y no llevan empresa, así que se filtran por las
+        // suscripciones de esta —que sí la llevan— antes de borrarlas.
+        var entregas = await bd.EntregasWebhook
+            .Where(e => bd.Webhooks.Any(w => w.Id == e.SuscripcionId))
+            .ExecuteDeleteAsync(ct)
+            .ConfigureAwait(false);
+        await bd.Webhooks.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
+        var aparcadas = await bd.Pospuestas.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Suscripciones.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Objetivos.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+        await bd.Invitaciones.ExecuteDeleteAsync(ct).ConfigureAwait(false);
+
         var contactos = await bd.Contactos.ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await bd.Cuentas.ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await bd.RegistrosAuditoria.ExecuteDeleteAsync(ct).ConfigureAwait(false);
@@ -258,7 +341,9 @@ public sealed class AlmacenPersonal(ContextoMatchketing bd, IContextoEmpresa con
         await bd.Membresias.Where(m => m.EmpresaId == contexto.EmpresaId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
         await bd.Empresas.Where(e => e.Id == contexto.EmpresaId).ExecuteDeleteAsync(ct).ConfigureAwait(false);
 
-        return new RecuentoBorrado(contactos, actividades, oportunidades, tareas, senales, puntuaciones, envios, permisos);
+        return new RecuentoBorrado(
+            contactos, actividades, oportunidades, tareas, senales, puntuaciones, envios, permisos,
+            correos, deCampania, ejecuciones, entregas, aparcadas);
     }
 
     /// <summary>

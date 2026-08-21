@@ -126,6 +126,12 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   saltarse etapas, así que lo segundo daba etapas de más adelante con más oportunidades que las de
   antes y el informe enseñaba «↓ 200 % pasa a propuesta». Contando el punto más lejano alcanzado, la
   serie es decreciente por construcción. Ver [`docs/modulos/informes.md`](docs/modulos/informes.md).
+- **Un módulo que guarde datos de una persona tiene que entrar en la supresión.** `AlmacenPersonal`,
+  las dos ramas —contacto y empresa—. Se olvidó durante cinco módulos y la supresión del artículo 17
+  dejaba en la base los correos enviados, con dirección y texto completo. Hay una prueba que recorre
+  **todas** las columnas de la base buscando el identificador del contacto después de borrarlo, así que
+  si te olvidas te enteras al momento; lo que no puede pasar es «arreglarla» quitando la tabla de la
+  prueba. Ver [`docs/modulos/cumplimiento.md`](docs/modulos/cumplimiento.md).
 - **Hay un solo «hoy», y es el de España.** `HorasLaborables.DiaDeTrabajo(instante)`. Había nueve sitios
   contando el día en UTC y tres en hora local, y entre medianoche y las dos de la mañana en verano no
   eran el mismo día: una tarea que el sistema creaba «para hoy» no aparecía en Hoy, y el trabajo hecho a

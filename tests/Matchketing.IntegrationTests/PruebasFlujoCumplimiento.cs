@@ -276,6 +276,181 @@ public sealed class PruebasFlujoCumplimiento(ApiDePrueba api)
             .StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// Busca un identificador **en toda la base de datos**: en cada columna `uuid` y en cada columna de
+    /// texto de cada tabla, sin lista escrita a mano.
+    ///
+    /// Sin lista a mano es todo el punto. La supresión del artículo 17 se quedó incompleta durante varios
+    /// módulos porque cada módulo nuevo añadía datos de personas y nadie volvía a la lista. Una prueba
+    /// que enumere las tablas desde `information_schema` no se queda desfasada: el día que alguien añada
+    /// una tabla con un `contacto_id` y se olvide de la supresión, esto falla solo.
+    ///
+    /// Se deja fuera `auditoria.registro` a propósito y está documentado: es append-only por diseño, no
+    /// guarda datos personales en el detalle y su identificador de entidad es lo único que permite
+    /// demostrar después que la supresión se hizo. Borrar la prueba de que se borró sería absurdo.
+    /// </summary>
+    private async Task<IReadOnlyList<string>> DondeApareceAsync(Guid id)
+    {
+        using var alcance = api.Services.CreateScope();
+        var bd = alcance.ServiceProvider.GetRequiredService<ContextoMatchketing>();
+
+        var columnas = await bd.Database
+            .SqlQuery<ColumnaDeLaBase>($"""
+                SELECT table_schema AS "Esquema", table_name AS "Tabla",
+                       column_name AS "Columna", data_type AS "Tipo"
+                  FROM information_schema.columns
+                 WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'publico')
+                   AND table_schema <> 'auditoria'
+                   AND (data_type = 'uuid' OR data_type IN ('text', 'character varying'))
+                """)
+            .ToListAsync();
+
+        columnas.Should().NotBeEmpty("si no se encuentran columnas, la prueba no comprueba nada");
+
+        var texto = id.ToString();
+        var apariciones = new List<string>();
+
+        foreach (var c in columnas)
+        {
+            // La comparación se hace en SQL y con el tipo de cada columna: un `uuid` se compara con un
+            // `uuid`, y un texto se busca dentro por si el identificador viaja en un JSON —los cuerpos de
+            // webhook lo hacen— o en una clave compuesta, como las preguntas aparcadas del repaso.
+            var condicion = c.Tipo == "uuid"
+                ? $@"""{c.Columna}"" = '{texto}'::uuid"
+                : $@"""{c.Columna}"" LIKE '%{texto}%'";
+
+            // EF1002 avisa de SQL interpolado, y hace bien. Aquí se silencia con motivo: el nombre de un
+            // esquema, de una tabla o de una columna **no se puede parametrizar** en SQL, y estos tres
+            // salen de `information_schema` de la propia base, no de nada que escriba un usuario. El
+            // único valor que viaja es un `Guid`, que no puede contener una comilla.
+#pragma warning disable EF1002
+            var cuantas = await bd.Database
+                .SqlQueryRaw<long>($@"SELECT count(*) AS ""Value"" FROM ""{c.Esquema}"".""{c.Tabla}"" WHERE {condicion}")
+                .SingleAsync();
+#pragma warning restore EF1002
+
+            if (cuantas > 0)
+            {
+                apariciones.Add($"{c.Esquema}.{c.Tabla}.{c.Columna} ({cuantas})");
+            }
+        }
+
+        return apariciones;
+    }
+
+    private sealed record ColumnaDeLaBase(string Esquema, string Tabla, string Columna, string Tipo);
+
+    [Fact]
+    public async Task Borrar_un_contacto_no_deja_ni_un_rastro_suyo_en_ninguna_tabla()
+    {
+        // **La prueba que faltaba, y el fallo que encontró.** La supresión borraba contacto, actividades,
+        // oportunidades, tareas, señales, puntuaciones, envíos de formulario y consentimientos… y dejaba
+        // en la base los **correos** que se le habían mandado, con su dirección, su asunto y su texto
+        // completo. También su fila en cada campaña, las ejecuciones de reglas sobre él, los cuerpos de
+        // webhook con su identificador y sus preguntas aparcadas.
+        //
+        // No fue un descuido de una tabla: fue que cada módulo nuevo añadía datos de personas y nadie
+        // volvía a la lista de la supresión. Así que esta prueba no lleva lista: recorre las columnas de
+        // la base tal como están hoy.
+        var cliente = await EnEmpresaAsync("Ribera Sin Rastro");
+        var contacto = await ContactoAsync(cliente, "Borrable Pérez");
+
+        // Se le deja rastro por todos los sitios que lo pueden guardar.
+        await cliente.PostAsJsonAsync($"/contactos/{contacto}/notas", new { cuerpo = "Una nota." });
+        await cliente.PostAsJsonAsync("/oportunidades", new { contactoId = contacto, titulo = "Tarima", importe = 3200m });
+        await cliente.PostAsJsonAsync("/tareas", new { titulo = "Llamar", contactoId = contacto });
+
+        // Un webhook, para que su identificador acabe dentro de un cuerpo JSON.
+        await cliente.PostAsJsonAsync("/webhooks", new
+        {
+            url = "https://ejemplo.invalid/gancho",
+            eventos = new[] { "lead.creado", "oportunidad.ganada" },
+        });
+
+        // Una regla, para que quede una ejecución con él como sujeto.
+        await cliente.PostAsJsonAsync("/reglas", new
+        {
+            nombre = "Llamar a los nuevos",
+            cuando = "lead.creado",
+            condiciones = Array.Empty<object>(),
+            acciones = new[] { new { tipo = 1, texto = "Llamar al lead nuevo", referencia = (Guid?)null, numero = 0 } },
+        });
+
+        // Un correo, que es lo más personal de todo: su dirección y el texto que se le escribió.
+        await cliente.PostAsJsonAsync($"/cumplimiento/contactos/{contacto}/consentimientos", new
+        {
+            finalidad = 1, @base = 2, canal = "alta manual",
+        });
+        var plantilla = (await LeerAsync(await cliente.PostAsJsonAsync("/plantillas", new
+        {
+            nombre = $"Seguimiento {Guid.NewGuid():N}",
+            asunto = "Sobre lo que hablamos",
+            cuerpo = "Hola {{nombre}}, te llamo mañana.",
+            paraQue = 1,
+        }))).GetProperty("id").GetGuid();
+        (await cliente.PostAsJsonAsync("/correo/enviar", new { contactoId = contacto, plantillaId = plantilla }))
+            .IsSuccessStatusCode.Should().BeTrue();
+
+        // Una pregunta del repaso aparcada, cuya clave lleva su identificador dentro.
+        await cliente.PostAsJsonAsync("/repaso/responder", new
+        {
+            clave = $"silencio-caliente:{contacto}",
+            respuesta = 12, // Déjalo estar
+        });
+
+        // Antes de borrar, tiene que aparecer en varios sitios: si no, la prueba pasaría por no haber
+        // creado nada y no por haber borrado bien.
+        var antes = await DondeApareceAsync(contacto);
+        antes.Should().HaveCountGreaterThan(4, "hay que dejar rastro antes de comprobar que se limpia");
+        antes.Should().Contain(x => x.StartsWith("correo.mensaje", StringComparison.Ordinal),
+            "el correo enviado es el rastro que más importa");
+
+        var r = await cliente.DeleteAsync(new Uri($"/cumplimiento/contactos/{contacto}", UriKind.Relative));
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Esta es la afirmación que importa, y va primero para que sea la que falle: el recuento puede
+        // cuadrar y quedar datos, pero si no queda nada el recuento es un detalle.
+        var despues = await DondeApareceAsync(contacto);
+        despues.Should().BeEmpty(
+            "borrar es borrar: no puede quedar el identificador de esta persona en ninguna columna de "
+            + "ninguna tabla. Si esto falla nombrando una tabla nueva, la supresión se ha quedado atrás.");
+
+        // Y se cuenta lo que se borró, porque es lo que se le contesta a quien ejerció el derecho.
+        var recuento = await LeerAsync(r);
+        recuento.GetProperty("correos").GetInt32().Should().Be(1, "el correo se cuenta, no se borra a escondidas");
+    }
+
+    [Fact]
+    public async Task La_exportacion_incluye_los_correos_que_se_le_mandaron()
+    {
+        // También son datos suyos, y probablemente los que más le interese ver a quien ejerce el derecho
+        // de acceso: no «se le escribió una vez», sino qué decía ese correo. Faltaban.
+        var cliente = await EnEmpresaAsync("Ribera Acceso Correos");
+        var contacto = await ContactoAsync(cliente, "Lectora Martí");
+
+        await cliente.PostAsJsonAsync($"/cumplimiento/contactos/{contacto}/consentimientos", new
+        {
+            finalidad = 1, @base = 2, canal = "alta manual",
+        });
+        var plantilla = (await LeerAsync(await cliente.PostAsJsonAsync("/plantillas", new
+        {
+            nombre = $"Seguimiento {Guid.NewGuid():N}",
+            asunto = "Tu presupuesto",
+            cuerpo = "Hola {{nombre}}, te adjunto el presupuesto.",
+            paraQue = 1,
+        }))).GetProperty("id").GetGuid();
+        await cliente.PostAsJsonAsync("/correo/enviar", new { contactoId = contacto, plantillaId = plantilla });
+
+        var datos = await LeerAsync(await cliente.GetAsync(
+            new Uri($"/cumplimiento/contactos/{contacto}/exportar", UriKind.Relative)));
+
+        var correos = datos.GetProperty("correos").EnumerateArray().ToList();
+        correos.Should().ContainSingle();
+        correos[0].GetProperty("asunto").GetString().Should().Be("Tu presupuesto");
+        correos[0].GetProperty("cuerpo").GetString().Should().Contain("presupuesto",
+            "el texto exacto que se le mandó es el dato que pide el derecho de acceso");
+    }
+
     [Fact]
     public async Task La_copia_de_la_empresa_incluye_sus_contactos_y_sus_ajustes()
     {

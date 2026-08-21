@@ -73,17 +73,53 @@ pulsa dos veces el enlace no ve un error, porque pidió una cosa y esa cosa est�
 | Derecho | Cómo |
 | --- | --- |
 | Acceso y portabilidad | `GET /cumplimiento/contactos/{id}/exportar` → JSON con **todo**. |
-| Supresión | `DELETE /cumplimiento/contactos/{id}` → borra filas de nueve tablas. |
+| Supresión | `DELETE /cumplimiento/contactos/{id}` → borra filas de **trece** tablas. |
 | Portabilidad de la empresa | `GET /cumplimiento/empresa/exportar`. |
 | Cierre de cuenta | `POST /cumplimiento/empresa/borrar`, escribiendo el nombre exacto. |
 
 La exportación incluye las cosas que uno preferiría no mostrar: la puntuación Match que le hemos
-puesto, los motivos con los que se calculó y las notas internas del comercial. Son sus datos; que
-resulten incómodos no los convierte en nuestros.
+puesto, los motivos con los que se calculó, las notas internas del comercial y **el texto completo de
+cada correo que se le mandó**. Son sus datos; que resulten incómodos no los convierte en nuestros.
 
 El borrado de un contacto **elimina el envío de formulario entero**, no le quita el `contacto_id`.
 Dentro lleva el nombre, el correo y el mensaje que escribió la persona: desvincularlo dejaría el dato
 personal donde estaba y solo habría escondido a quién pertenece.
+
+### La supresión se quedó incompleta durante cinco módulos
+
+Merece su propio apartado porque es el fallo más grave que ha tenido este producto, y porque la forma de
+evitarlo otra vez es más interesante que el arreglo.
+
+Al principio la supresión cubría las nueve tablas que existían. Después llegaron correo, automatización,
+webhooks, campañas y objetivos, y **cada módulo nuevo añadió datos de personas sin que nadie volviera
+aquí**. Lo que quedaba en la base después de ejercer el artículo 17:
+
+- **`correo.mensaje`**: su dirección, el asunto y el **texto completo** de cada correo que se le mandó.
+  Es lo más personal que guarda el sistema de alguien, y era lo único que no se borraba.
+- `campania.envio`: su fila en cada campaña. Sin nombre ni correo —eso se decidió así— pero con su
+  identificador, y una lista de identificadores de gente borrada sigue siendo una lista.
+- `automatizacion.ejecucion`: las reglas que actuaron sobre él. Filtrando solo por `contacto_id` se
+  quedaba la mitad: en las reglas de contacto el **sujeto** también es él.
+- `webhooks.entrega`: los cuerpos JSON que llevaban su identificador dentro. Aquí no hay columna por la
+  que filtrar, así que se busca por texto —un recorrido de tabla—. Una supresión ocurre una vez por
+  persona; dejar ahí sus datos, no se acepta. Lo que ya salió hacia el sistema de terceros no se puede
+  recoger, pero nuestra copia sí, y es nuestra.
+- `repaso.pospuesta`: sus preguntas aparcadas, cuya clave es «tipo:identificador».
+
+Y `POST /cumplimiento/empresa/borrar` dejaba las tablas de esos cinco módulos enteras: invisibles por la
+RLS —nadie vuelve a entrar en esa empresa— pero ahí, que es exactamente lo que se prometió que no
+pasaría.
+
+**Cómo se evita la próxima vez.** No con una lista mejor: con una prueba sin lista.
+`Borrar_un_contacto_no_deja_ni_un_rastro_suyo_en_ninguna_tabla` deja rastro del contacto por todos los
+sitios que lo pueden guardar —nota, oportunidad, tarea, correo, webhook, regla, pregunta aparcada—, lo
+borra, y después **recorre todas las columnas `uuid` y de texto de la base** leyendo
+`information_schema`, buscando su identificador. El día que alguien añada una tabla con un `contacto_id`
+y se olvide de la supresión, la prueba falla nombrando la tabla.
+
+La única exclusión es `auditoria.registro`, y está razonada: es append-only por diseño, no guarda datos
+personales en el detalle, y su identificador de entidad es lo único que permite demostrar después que la
+supresión se hizo. Borrar la prueba de que se borró sería absurdo.
 
 Cerrar la cuenta pide **teclear el nombre de la empresa**. Es la única operación del sistema que no
 tiene vuelta, y un «¿seguro?» con un botón se pulsa sin leerlo. El apunte de auditoría se escribe

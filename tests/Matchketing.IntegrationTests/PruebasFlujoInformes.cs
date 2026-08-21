@@ -154,9 +154,9 @@ public sealed class PruebasFlujoInformes(ApiDePrueba api)
         var i = await LeerAsync(await cliente.GetAsync(new Uri("/informes/embudo", UriKind.Relative)));
         var etapas = i.GetProperty("etapas");
 
-        etapas[0].GetProperty("hanPasado").GetInt32().Should().Be(3, "las tres nacieron en Nuevo");
-        etapas[1].GetProperty("hanPasado").GetInt32().Should().Be(2);
-        etapas[2].GetProperty("hanPasado").GetInt32().Should().Be(1);
+        etapas[0].GetProperty("hanLlegado").GetInt32().Should().Be(3, "las tres nacieron en Nuevo");
+        etapas[1].GetProperty("hanLlegado").GetInt32().Should().Be(2);
+        etapas[2].GetProperty("hanLlegado").GetInt32().Should().Be(1);
 
         etapas[0].GetProperty("conversionALaSiguiente").GetDecimal().Should().Be(66.7m, "2 de 3");
         etapas[1].GetProperty("conversionALaSiguiente").GetDecimal().Should().Be(50.0m, "1 de 2");
@@ -176,9 +176,72 @@ public sealed class PruebasFlujoInformes(ApiDePrueba api)
 
         var etapas = (await LeerAsync(await cliente.GetAsync(new Uri("/informes/embudo", UriKind.Relative)))).GetProperty("etapas");
 
-        etapas[0].GetProperty("hanPasado").GetInt32().Should().Be(1);
-        etapas[1].GetProperty("hanPasado").GetInt32().Should().Be(0);
+        etapas[0].GetProperty("hanLlegado").GetInt32().Should().Be(1);
+        etapas[1].GetProperty("hanLlegado").GetInt32().Should().Be(0);
         etapas[0].GetProperty("conversionALaSiguiente").GetDecimal().Should().Be(0m, "se cayó en Nuevo");
+    }
+
+    [Fact]
+    public async Task Saltarse_una_etapa_no_hace_que_la_conversion_pase_del_cien_por_cien()
+    {
+        // El fallo que se veía en la pantalla: «↓ 200 % pasa a propuesta».
+        //
+        // El tablero deja arrastrar una oportunidad de «Nuevo» a «Propuesta» sin pasar por
+        // «Contactado», y eso es correcto: a veces una venta se salta un paso. Lo que estaba mal era
+        // contar «cuántas estuvieron en esta etapa», porque entonces una etapa de más adelante podía
+        // tener más oportunidades que la de antes y el porcentaje se salía de la escala.
+        //
+        // Un embudo con una conversión por encima del 100 % no es un dato raro, es un dato falso: quien
+        // lo lee una vez deja de creerse el informe entero.
+        var cliente = await EnEmpresaAsync("Ribera Salto");
+        var contacto = await ContactoAsync(cliente);
+
+        var tablero = await LeerAsync(await cliente.GetAsync(new Uri("/embudo/tablero", UriKind.Relative)));
+        var contactado = tablero.GetProperty("columnas")[1].GetProperty("etapaId").GetGuid();
+        var propuesta = tablero.GetProperty("columnas")[2].GetProperty("etapaId").GetGuid();
+
+        // Tres nacen en «Nuevo». Una se queda en «Contactado» y **dos saltan directas a «Propuesta»**
+        // sin pisar «Contactado». Es exactamente la forma que producía el «200 %»: contando quién
+        // estuvo en cada etapa salían 1 en Contactado y 2 en Propuesta, y 2 de 1 es el 200 %.
+        var quieta = await OportunidadAsync(cliente, contacto, 1000m);
+        (await cliente.PostAsJsonAsync($"/oportunidades/{quieta}/mover", new { etapaId = contactado }))
+            .IsSuccessStatusCode.Should().BeTrue();
+
+        foreach (var _ in new[] { 1, 2 })
+        {
+            var id = await OportunidadAsync(cliente, contacto, 1000m);
+            (await cliente.PostAsJsonAsync($"/oportunidades/{id}/mover", new { etapaId = propuesta }))
+                .IsSuccessStatusCode.Should().BeTrue();
+        }
+
+        var etapas = (await LeerAsync(await cliente.GetAsync(
+            new Uri("/informes/embudo", UriKind.Relative)))).GetProperty("etapas");
+
+        // «Han llegado» es decreciente por construcción: quien llegó a Propuesta la dejó atrás,
+        // pasando o no por Contactado.
+        etapas[0].GetProperty("hanLlegado").GetInt32().Should().Be(3);
+        etapas[1].GetProperty("hanLlegado").GetInt32().Should().Be(3, "se saltaron Contactado, pero lo dejaron atrás");
+        etapas[2].GetProperty("hanLlegado").GetInt32().Should().Be(2);
+        etapas[3].GetProperty("hanLlegado").GetInt32().Should().Be(0);
+
+        // Ninguna conversión pasa del 100 %, que es la afirmación que importa, y la serie no crece.
+        var anterior = int.MaxValue;
+        foreach (var e in etapas.EnumerateArray())
+        {
+            e.GetProperty("hanLlegado").GetInt32().Should().BeLessThanOrEqualTo(anterior,
+                "un embudo no puede ensanchar por el camino");
+            anterior = e.GetProperty("hanLlegado").GetInt32();
+
+            if (e.GetProperty("conversionALaSiguiente").ValueKind != JsonValueKind.Null)
+            {
+                e.GetProperty("conversionALaSiguiente").GetDecimal()
+                    .Should().BeLessThanOrEqualTo(100m);
+            }
+        }
+
+        etapas[0].GetProperty("conversionALaSiguiente").GetDecimal().Should().Be(100.0m);
+        etapas[1].GetProperty("conversionALaSiguiente").GetDecimal().Should().Be(66.7m, "2 de 3");
+        etapas[2].GetProperty("conversionALaSiguiente").GetDecimal().Should().Be(0m, "nadie llegó a Negociación");
     }
 
     [Fact]

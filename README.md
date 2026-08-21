@@ -115,7 +115,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 903 pruebas: 602 unitarias + 301 de integración
+dotnet test                                  # 904 pruebas: 602 unitarias + 302 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

@@ -20,7 +20,7 @@ public sealed class ServicioInformes(IConsultaInformes consulta)
     {
         var i = await EmbudoAsync(periodo, ct).ConfigureAwait(false);
         var sb = new StringBuilder();
-        sb.AppendLine("Etapa;Probabilidad;Abiertas;Importe abierto;Han pasado;Conversión a la siguiente");
+        sb.AppendLine("Etapa;Probabilidad;Abiertas;Importe abierto;Han llegado;Conversión a la siguiente");
 
         foreach (var e in i.Etapas)
         {
@@ -28,7 +28,7 @@ public sealed class ServicioInformes(IConsultaInformes consulta)
               .Append(e.Probabilidad.ToString(CultureInfo.InvariantCulture)).Append(';')
               .Append(e.Abiertas.ToString(CultureInfo.InvariantCulture)).Append(';')
               .Append(Numero(e.ImporteAbierto)).Append(';')
-              .Append(e.HanPasado.ToString(CultureInfo.InvariantCulture)).Append(';')
+              .Append(e.HanLlegado.ToString(CultureInfo.InvariantCulture)).Append(';')
               .Append(e.ConversionALaSiguiente is { } c ? Numero(c) : string.Empty)
               .AppendLine();
         }

@@ -121,6 +121,11 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **`min-width` le gana a `width: 0`.** La barra de una etapa vacía seguía pintando un tope de color
   porque la hoja tenía `min-width: 2px` y el guion le ponía `width: 0`. El suelo para que un importe
   pequeño se vea lo pone el guion, y solo cuando hay algo.
+- **Un embudo no puede ensanchar por el camino.** La conversión entre etapas se calcula sobre «cuántas
+  **llegaron hasta aquí o más allá**», nunca sobre «cuántas estuvieron en esta etapa»: el tablero deja
+  saltarse etapas, así que lo segundo daba etapas de más adelante con más oportunidades que las de
+  antes y el informe enseñaba «↓ 200 % pasa a propuesta». Contando el punto más lejano alcanzado, la
+  serie es decreciente por construcción. Ver [`docs/modulos/informes.md`](docs/modulos/informes.md).
 - **Un envío desde un trabajo de fondo no tiene sesión.** `ServicioCorreo.DireccionAsync` leía el
   usuario del contexto, así que al encolar desde el trabajo de campañas devolvía nulo y el correo se
   rechazaba con «ese contacto no tiene una dirección válida». El contacto sí la tenía; faltaba la

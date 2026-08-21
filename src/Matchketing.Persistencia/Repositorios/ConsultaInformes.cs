@@ -33,33 +33,50 @@ public sealed class ConsultaInformes(ContextoMatchketing bd) : IConsultaInformes
         var ganadas = cerradas.Where(o => o.Ganada).ToList();
         var perdidas = cerradas.Where(o => !o.Ganada).ToList();
 
-        // «Han pasado» sale del histórico real de movimientos (`paso_etapa`), no de una suposición:
-        // cuántas oportunidades **estuvieron** en esa etapa, hayan seguido adelante o se hayan
-        // caído allí. Es lo único con lo que un porcentaje de conversión significa algo.
-        var pasosPorEtapa = await bd.PasosEtapa
+        // Cuántas **llegaron hasta aquí**, no cuántas «estuvieron aquí». Sale del histórico real de
+        // movimientos (`paso_etapa`), no de una suposición.
+        //
+        // La diferencia entre las dos frases era un fallo, y se veía: el tablero deja arrastrar una
+        // oportunidad de «Nuevo» a «Propuesta» saltándose «Contactado», así que contando quién estuvo
+        // en cada etapa había etapas de más adelante con más oportunidades que las de antes, y el
+        // informe llegó a enseñar «↓ 200 % pasa a propuesta». Un embudo con una conversión por encima
+        // del 100 % no es un dato raro: es un dato falso, y quien lo lee deja de creerse el informe.
+        //
+        // Contando el punto **más lejano** al que llegó cada oportunidad, la serie es decreciente por
+        // construcción —quien llegó a la etapa 3 llegó también a la 1 y a la 2, se las saltara o no— y
+        // el porcentaje no puede pasar del 100 % haga lo que haga el comercial con el ratón.
+        var ordenDeEtapa = etapas.ToDictionary(e => e.Id, e => e.Orden);
+
+        var pasos = await bd.PasosEtapa
             .Where(p => bd.Oportunidades.Any(o => o.Id == p.OportunidadId))
-            .GroupBy(p => p.EtapaId)
-            .Select(g => new { EtapaId = g.Key, Cuantas = g.Select(x => x.OportunidadId).Distinct().Count() })
+            .Select(p => new { p.OportunidadId, p.EtapaId })
             .ToListAsync(ct).ConfigureAwait(false);
 
+        // Una etapa borrada del embudo deja pasos que ya no se pueden situar. No cuentan: colocarlos
+        // «al principio» inventaría un recorrido que nadie hizo, y colocarlos al final inflaría el
+        // final del embudo, que es justo el número que se mira.
+        var masLejos = pasos
+            .Where(p => ordenDeEtapa.ContainsKey(p.EtapaId))
+            .GroupBy(p => p.OportunidadId)
+            .Select(g => g.Max(x => ordenDeEtapa[x.EtapaId]))
+            .ToList();
+
         var filas = new List<EtapaEmbudo>(etapas.Count);
-        var pasadas = etapas
-            .Select(e => pasosPorEtapa.FirstOrDefault(p => p.EtapaId == e.Id)?.Cuantas ?? 0)
-            .ToArray();
+        var llegaron = etapas.Select(e => masLejos.Count(orden => orden >= e.Orden)).ToArray();
 
         for (var i = 0; i < etapas.Count; i++)
         {
             var e = etapas[i];
             var suyas = abiertas.Where(o => o.EtapaId == e.Id).ToList();
 
-            decimal? conversion = i < etapas.Count - 1 && pasadas[i] > 0
-                ? decimal.Round(pasadas[i + 1] * 100m / pasadas[i], 1)
+            decimal? conversion = i < etapas.Count - 1 && llegaron[i] > 0
+                ? decimal.Round(llegaron[i + 1] * 100m / llegaron[i], 1)
                 : null;
 
             filas.Add(new EtapaEmbudo(
                 e.Nombre, e.Orden, e.Probabilidad,
                 suyas.Count, suyas.Sum(o => o.Importe),
-                pasadas[i], conversion));
+                llegaron[i], conversion));
         }
 
         var prevision = etapas.Sum(e =>

@@ -5,8 +5,8 @@ pierde. Con periodo, con exportación a CSV, y sin un solo número inventado.
 
 ## Embudo
 
-Por etapa: cuántas hay abiertas, cuánto importe, y **cuántas han pasado alguna vez por ahí**. De ese
-último dato sale la conversión de una etapa a la siguiente.
+Por etapa: cuántas hay abiertas, cuánto importe, y **cuántas han llegado hasta ahí o más allá**. De
+ese último dato sale la conversión de una etapa a la siguiente.
 
 Arriba, cinco indicadores: abiertas, importe en juego, **previsión ponderada** (`Σ importe × prob.`),
 tasa de cierre y ticket medio. Debajo, el balance del periodo: ganado, perdido y **días medios para
@@ -15,18 +15,40 @@ cerrar** las ganadas.
 ### La conversión sale del histórico real
 
 `paso_etapa` anota cada vez que una oportunidad entra en una etapa —al crearse y en cada
-movimiento—, y es **append-only**. «Han pasado» cuenta oportunidades distintas que estuvieron ahí,
-hayan seguido adelante o se hayan caído allí mismo.
+movimiento—, y es **append-only**.
 
-> **Esto empezó mal y se corrigió.** La primera versión no guardaba el histórico y calculaba «han
-> pasado» suponiendo que toda oportunidad cerrada había recorrido todas las etapas. El informe
-> enseñaba **«100 % pasa a propuesta»** sin que nada se hubiera movido. Un porcentaje inventado en un
-> informe es peor que no tenerlo: el gerente lo lee como un embudo perfecto y decide con eso. Hay dos
-> pruebas de integración que fijan el comportamiento correcto, una de ellas con una oportunidad que
-> se cae en «Nuevo» y **no** infla nada.
+«Han llegado» cuenta las oportunidades cuyo **punto más lejano** alcanzado es esa etapa o una
+posterior. No es lo mismo que «estuvieron ahí», y la diferencia se veía en la pantalla:
+
+> **Esto ha estado mal dos veces.**
+>
+> **La primera**, no se guardaba el histórico y «han pasado» se calculaba suponiendo que toda
+> oportunidad cerrada había recorrido todas las etapas. El informe enseñaba **«100 % pasa a
+> propuesta»** sin que nada se hubiera movido.
+>
+> **La segunda**, con el histórico ya guardado, se contaba «cuántas estuvieron en esta etapa». Y el
+> tablero deja arrastrar una oportunidad de «Nuevo» a «Propuesta» saltándose «Contactado» —lo cual es
+> correcto: a veces una venta se salta un paso—. Con una oportunidad parada en «Contactado» y dos que
+> saltaron directas a «Propuesta», los recuentos eran 1 y 2, y el informe enseñaba **«↓ 200 % pasa a
+> propuesta»**.
+>
+> Un porcentaje inventado en un informe es peor que no tenerlo: el gerente lo lee como un embudo
+> perfecto y decide con eso. Y una conversión por encima del 100 % no es un dato raro, es un dato
+> falso; quien lo ve una vez deja de creerse el informe entero.
+>
+> Contando el punto más lejano alcanzado, la serie es **decreciente por construcción** —quien llegó a
+> la etapa 3 dejó atrás la 1 y la 2, se las saltara o no— y el porcentaje no puede pasar del 100 %
+> haga lo que haga el comercial con el ratón. Hay tres pruebas de integración que lo fijan: una con
+> una oportunidad que se cae en «Nuevo» y no infla nada, otra con el recorrido completo, y una tercera
+> que reproduce exactamente la forma del 200 % y comprueba además que la serie no crece en ningún
+> punto.
 >
 > La migración rellena una anotación por oportunidad viva con su etapa actual. El histórico anterior
 > no se puede reconstruir —no se guardaba— y eso es preferible a inventárselo.
+
+Una etapa borrada del embudo deja anotaciones que ya no se pueden situar en ningún orden. **No
+cuentan**: colocarlas «al principio» inventaría un recorrido que nadie hizo, y colocarlas al final
+inflaría el final del embudo, que es justo el número que se mira.
 
 ## Motivos de pérdida
 

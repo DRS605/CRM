@@ -20,14 +20,20 @@ public sealed record Periodo(DateOnly? Desde, DateOnly? Hasta)
     };
 }
 
-/// <summary>Una etapa del embudo con lo que tiene dentro y cuánto pasa de ella a la siguiente.</summary>
+/// <summary>
+/// Una etapa del embudo con lo que tiene dentro y cuánto pasa de ella a la siguiente.
+///
+/// <paramref name="HanLlegado"/> es «cuántas llegaron hasta aquí **o más allá**», y no «cuántas
+/// estuvieron aquí». Se llamaba `HanPasado` y contaba lo segundo, que con etapas que se pueden saltar
+/// daba conversiones por encima del 100 %. Ver la nota de `ConsultaInformes`.
+/// </summary>
 public sealed record EtapaEmbudo(
     string Nombre,
     int Orden,
     int Probabilidad,
     int Abiertas,
     decimal ImporteAbierto,
-    int HanPasado,
+    int HanLlegado,
     decimal? ConversionALaSiguiente);
 
 public sealed record InformeEmbudo(

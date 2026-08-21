@@ -43,6 +43,23 @@ public enum TipoPregunta
     /// propio y no cuenta como respuesta.
     /// </summary>
     CorreoSinRespuesta = 7,
+
+    /// <summary>
+    /// Le llegó una campaña, **la abrió**, y no ha contestado.
+    ///
+    /// Es la pregunta que convierte una campaña en dinero, y la que explica por qué las campañas viven
+    /// dentro del CRM y no en una herramienta aparte: en una plataforma de envío, «80 aperturas» es un
+    /// número en un panel que alguien mira el lunes. Aquí es una fila en la pila de alguien, con nombre
+    /// y teléfono, el mismo día.
+    ///
+    /// Va **la última** del enum, que es el orden de prioridad: una campaña abierta interesa, pero
+    /// menos que una promesa incumplida o que una venta con dinero encima.
+    ///
+    /// Y solo entra quien **abrió**. Un correo de campaña sin abrir no es una señal: es lo que le pasa a
+    /// la mayoría de un envío, y preguntar por cada uno convertiría el repaso en la lista completa de la
+    /// campaña. Silencio tras un correo masivo es el caso normal; abrirlo y no contestar, no.
+    /// </summary>
+    AbrioLaCampania = 8,
 }
 
 /// <summary>
@@ -144,6 +161,16 @@ public static class Opciones
             // «Le llamo» va primero y no «vuelvo a escribirle» a propósito: si el primer correo no ha
             // funcionado, el segundo correo casi nunca funciona. Lo que cambia el resultado es el
             // teléfono, y el repaso está para proponer lo que funciona, no lo que es más cómodo.
+            new(Respuesta.LlamarHoy, "Le llamo hoy", Principal: true),
+            new(Respuesta.YaContesto, "Ya me contestó"),
+            new(Respuesta.DejarloEstar, "Déjalo estar"),
+        ],
+
+        // Las mismas tres, y por el mismo motivo: aquí hay incluso menos duda de que el teléfono es lo
+        // que toca, porque abrir un correo comercial y no contestarlo es exactamente el estado en el que
+        // una llamada de treinta segundos decide la venta.
+        TipoPregunta.AbrioLaCampania =>
+        [
             new(Respuesta.LlamarHoy, "Le llamo hoy", Principal: true),
             new(Respuesta.YaContesto, "Ya me contestó"),
             new(Respuesta.DejarloEstar, "Déjalo estar"),

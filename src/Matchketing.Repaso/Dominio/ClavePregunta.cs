@@ -25,6 +25,7 @@ public readonly record struct ClavePregunta(TipoPregunta Tipo, Guid ReferenciaId
         (TipoPregunta.SilencioCaliente, "silencio-caliente"),
         (TipoPregunta.ClienteSinSiguientePaso, "cliente-sin-siguiente-paso"),
         (TipoPregunta.CorreoSinRespuesta, "correo-sin-respuesta"),
+        (TipoPregunta.AbrioLaCampania, "abrio-campania"),
     ];
 
     /// <summary>Longitud del texto más largo que puede producir <see cref="ToString"/>.</summary>

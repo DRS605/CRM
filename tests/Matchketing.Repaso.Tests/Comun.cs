@@ -74,8 +74,14 @@ public sealed class AccionesDePrueba : IAccionesRepaso
     public Task<bool> DescartarContactoAsync(Guid contactoId, CancellationToken ct = default) =>
         Apuntar($"descartar-contacto:{contactoId}");
 
-    public Task<bool> CrearTareaAsync(Guid contactoId, string titulo, DateOnly venceEl, CancellationToken ct = default) =>
-        Apuntar($"tarea:{contactoId}:{venceEl:yyyy-MM-dd}");
+    /// <summary>Los títulos de las tareas creadas. El apunte no los lleva, y hay pruebas que los miran.</summary>
+    public List<string> Titulos { get; } = [];
+
+    public Task<bool> CrearTareaAsync(Guid contactoId, string titulo, DateOnly venceEl, CancellationToken ct = default)
+    {
+        Titulos.Add(titulo);
+        return Apuntar($"tarea:{contactoId}:{venceEl:yyyy-MM-dd}");
+    }
 
     public Task<bool> RegistrarRespuestaAsync(Guid contactoId, CancellationToken ct = default) =>
         Apuntar($"respuesta:{contactoId}");

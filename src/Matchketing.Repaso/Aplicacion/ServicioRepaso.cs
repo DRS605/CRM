@@ -132,6 +132,13 @@ public sealed class ServicioRepaso(
             // reenvía el correo desde aquí: mandar un correo es una decisión con texto, y el repaso es
             // de un toque.
             TipoPregunta.CorreoSinRespuesta => await SobreCorreoAsync(pregunta.ReferenciaId, respuesta, ct).ConfigureAwait(false),
+
+            // Misma mecánica y **misma función**: lo que hay que hacer con alguien que abrió una campaña
+            // y no contestó es exactamente lo que hay que hacer con alguien que no contestó un correo
+            // personal —llamarle—. Lo único que cambia es el texto de la tarea, y eso lo decide la
+            // función mirando el tipo.
+            TipoPregunta.AbrioLaCampania => await SobreCorreoAsync(
+                pregunta.ReferenciaId, respuesta, ct, deCampania: true).ConfigureAwait(false),
             _ => Resultado.Fallo<string>(Error.Validacion("repaso.tipo_desconocido", "Esa pregunta no existe.")),
         };
     }
@@ -233,11 +240,14 @@ public sealed class ServicioRepaso(
             : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
     }
 
-    private async Task<Resultado<string>> SobreCorreoAsync(Guid contactoId, Respuesta respuesta, CancellationToken ct)
+    private async Task<Resultado<string>> SobreCorreoAsync(
+        Guid contactoId, Respuesta respuesta, CancellationToken ct, bool deCampania = false)
     {
         if (respuesta == Respuesta.DejarloEstar)
         {
-            return Resultado.Ok("Vale. No volveremos a sacarlo en dos semanas.");
+            return Resultado.Ok(deCampania
+                ? "Vale. No volveremos a sacarlo en un mes."
+                : "Vale. No volveremos a sacarlo en dos semanas.");
         }
 
         if (respuesta == Respuesta.YaContesto)
@@ -249,7 +259,14 @@ public sealed class ServicioRepaso(
                 : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
         }
 
-        return await acciones.CrearTareaAsync(contactoId, "Llamar: le escribí y no contestó", Hoy(), ct).ConfigureAwait(false)
+        // El texto de la tarea dice de dónde viene, porque mañana el comercial la lee sin acordarse de
+        // esta pantalla y «le escribí y no contestó» sobre alguien a quien no escribió él sería
+        // desconcertante: lo que pasó es que abrió un envío.
+        var titulo = deCampania
+            ? "Llamar: abrió la campaña y no contestó"
+            : "Llamar: le escribí y no contestó";
+
+        return await acciones.CrearTareaAsync(contactoId, titulo, Hoy(), ct).ConfigureAwait(false)
             ? Resultado.Ok("Está en tu lista de hoy.")
             : Resultado.Fallo<string>(Error.NoEncontrado("contacto.no_encontrado", "Ese contacto ya no existe."));
     }
@@ -324,6 +341,16 @@ public sealed class ServicioRepaso(
                 h.Match is int aperturas && aperturas > 0
                     ? $"Le escribiste hace {Dias(h.Dias)}. Lo ha abierto {(aperturas == 1 ? "una vez" : aperturas + " veces")} y no ha contestado."
                     : $"Le escribiste hace {Dias(h.Dias)} y no ha contestado."),
+
+            // Se nombra la campaña. Sin el nombre, la frase sería «abrió un correo» y el comercial no
+            // sabría de qué le van a hablar cuando llame; con él, la llamada empieza sabiendo el tema.
+            TipoPregunta.AbrioLaCampania => (
+                quien,
+                (string.IsNullOrWhiteSpace(h.Titulo)
+                    ? "Abrió la campaña"
+                    : $"Abrió «{h.Titulo}»")
+                + (h.Match is int veces && veces > 1 ? $" {veces} veces" : string.Empty)
+                + $" hace {Dias(h.Dias)} y no ha contestado."),
 
             _ => (quien, string.Empty),
         };

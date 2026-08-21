@@ -36,6 +36,12 @@ public sealed class ConsultaRepaso(ContextoMatchketing bd, IContextoEmpresa cont
     /// </summary>
     private const int DiasSinContestar = 4;
 
+    /// <summary>
+    /// Cuánto sigue valiendo una apertura de campaña como señal. Sesenta días: pasado eso, «abrió tu
+    /// correo» ya no explica una llamada de hoy, y sacarlo sería inventarse una urgencia.
+    /// </summary>
+    private const int DiasDeAperturaUtil = 60;
+
     public async Task<IReadOnlyList<Hallazgo>> HallazgosAsync(CancellationToken ct = default)
     {
         var hoy = DateOnly.FromDateTime(reloj.AhoraUtc.UtcDateTime);
@@ -198,6 +204,15 @@ public sealed class ConsultaRepaso(ContextoMatchketing bd, IContextoEmpresa cont
             where m.EnviadoEn != null && m.EnviadoEn < sinContestar
             where c.Activo && c.Estado != EstadoContacto.Baja
 
+            // **Los correos de campaña no entran aquí.** Es la corrección más importante que trajo el
+            // módulo de campañas, y sin ella habría roto el repaso: quien lanzase una campaña a
+            // cuatrocientas personas se encontraría cuatro días después con cuatrocientas preguntas
+            // diciendo «le escribiste y no ha contestado». Y las dos mitades de esa frase serían falsas:
+            // no le escribió él, y el silencio tras un envío masivo es el caso normal, no una señal.
+            //
+            // Lo que sí es una señal —que lo **abriera** y no contestara— tiene su propia pregunta, la 8.
+            where !bd.EnviosCampania.Any(e => e.CorreoId == m.Id)
+
             // El último correo enviado a esa persona, no cualquiera: si se le escribió tres veces, la
             // pregunta es sobre el último, y una sola vez.
             where !bd.Mensajes.Any(otro =>
@@ -222,6 +237,55 @@ public sealed class ConsultaRepaso(ContextoMatchketing bd, IContextoEmpresa cont
         hallazgos.AddRange(correos.Select(c => new Hallazgo(
             TipoPregunta.CorreoSinRespuesta, c.ContactoId, c.ContactoId, c.Nombre, c.Telefono,
             null, null, null, null, c.Aperturas, (int)(ahora - c.EnviadoEn!.Value).TotalDays, null)));
+
+        // 8. Abrió una campaña y no ha contestado. Es el paso que convierte una campaña en dinero: en
+        //    una plataforma de envío, «80 aperturas» es un número que alguien mira el lunes; aquí es una
+        //    fila con nombre y teléfono en la pila de quien tiene que llamar, el mismo día.
+        //
+        //    Tres decisiones dentro de esta consulta:
+        //
+        //    · **Solo quien abrió.** Un envío sin abrir no es una señal, es lo que le pasa a la mayoría
+        //      de una campaña. Esto es lo que convierte cuatrocientos destinatarios en los ocho que
+        //      merecen una llamada.
+        //    · **La pregunta va al dueño del contacto**, no a quien lanzó la campaña. Una campaña genera
+        //      trabajo para el equipo, y quien va a llamar es quien lleva a esa persona. Solo cae en
+        //      quien la lanzó cuando el contacto no tiene dueño.
+        //    · **Con plazo.** Una apertura de hace cinco meses no es una señal caliente; sacarla hoy
+        //      sería inventarse una urgencia.
+        var abiertoDesde = ahora.AddDays(-DiasDeAperturaUtil);
+        var abiertos = await (
+            from e in bd.EnviosCampania
+            join m in bd.Mensajes on e.CorreoId equals m.Id
+            join ca in bd.Campanias on e.CampaniaId equals ca.Id
+            join c in bd.Contactos on m.ContactoId equals c.Id
+            where m.Estado == EstadoCorreo.Enviado && m.PrimeraAperturaEn != null
+            where m.PrimeraAperturaEn > abiertoDesde
+            where c.Activo && c.Estado != EstadoContacto.Baja
+            where c.PropietarioId == mio || (c.PropietarioId == null && ca.LanzadaPor == mio)
+
+            // Ninguna actividad entrante después de la apertura. Y la apertura misma no cuenta, porque
+            // tiene su propio tipo: abrir no es contestar.
+            where !bd.Actividades.Any(a =>
+                a.ContactoId == m.ContactoId && a.Sentido == SentidoActividad.Entrante &&
+                a.Tipo != TipoActividad.AperturaCorreo && a.OcurridaEn > m.PrimeraAperturaEn)
+
+            // Si ya hay una tarea pendiente con esa persona, la decisión está tomada.
+            where !bd.Tareas.Any(t => t.ContactoId == m.ContactoId && t.Estado == EstadoTarea.Pendiente)
+
+            select new { m.ContactoId, c.Nombre, c.Telefono, Campania = ca.Nombre, m.PrimeraAperturaEn, m.Aperturas })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        // Una persona, una pregunta, aunque haya abierto tres campañas: la más reciente. Sin esto, un
+        // contacto que abre todo lo que le llega saldría tres veces en la misma pila y el comercial
+        // llamaría una vez y contestaría tres.
+        hallazgos.AddRange(abiertos
+            .GroupBy(a => a.ContactoId)
+            .Select(g => g.OrderByDescending(a => a.PrimeraAperturaEn).First())
+            .Select(a => new Hallazgo(
+                TipoPregunta.AbrioLaCampania, a.ContactoId, a.ContactoId, a.Nombre, a.Telefono,
+                null, null, a.Campania, null, a.Aperturas,
+                (int)(ahora - a.PrimeraAperturaEn!.Value).TotalDays, null)));
 
         return hallazgos;
     }

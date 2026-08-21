@@ -134,6 +134,21 @@ comercial nuevo, nadie pensó que le estaba dando eso.
 Un comercial ve las campañas porque le hace falta: si a su cliente le llegó un correo de campaña, tiene
 que saberlo antes de llamarle, o llama a ciegas.
 
+## La campaña vuelve al embudo
+
+Esto es lo que separa «tener campañas» de «tener campañas dentro del CRM», y es el motivo por el que
+el módulo existe aquí y no en una herramienta aparte.
+
+En una plataforma de envío, «80 aperturas» es un número en un panel que alguien mira el lunes. Aquí,
+quien abre un correo de campaña y no contesta aparece **al día siguiente en la pila de repaso de quien
+tiene que llamarle**, con su nombre, su teléfono y el nombre de la campaña escrito para que la llamada
+empiece sabiendo el tema. Es la pregunta `AbrioLaCampania` del módulo de repaso.
+
+Y por el camino hubo que arreglar algo que este módulo estuvo a punto de romper: `CorreoSinRespuesta`
+preguntaba por **cualquier** correo enviado hace más de cuatro días, y los de campaña van a la misma
+tabla. Sin excluirlos, una campaña a cuatrocientas personas habría llenado el repaso de cuatrocientas
+tarjetas falsas. Está contado en [`docs/modulos/repaso.md`](repaso.md).
+
 ## Lo que este módulo tocó de otros
 
 - **`ServicioCorreo.EnviarEnNombreDeAsync`** (nuevo). Una campaña la lanza una persona y los correos

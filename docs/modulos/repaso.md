@@ -20,7 +20,7 @@ Escribir una nota son cuarenta segundos y nadie tiene cuarenta segundos veinte v
 lo que **ya tiene en la base**, deduce qué debería haber pasado y pregunta, con la respuesta probable
 ya puesta delante. Contestar son tres segundos.
 
-Seis preguntas, todas derivadas y ninguna pidiendo un dato nuevo:
+Ocho preguntas, todas derivadas y ninguna pidiendo un dato nuevo:
 
 | Tipo | Sale cuando | Se contesta con |
 | --- | --- | --- |
@@ -30,6 +30,35 @@ Seis preguntas, todas derivadas y ninguna pidiendo un dato nuevo:
 | `OportunidadEstancada` | Más días en la etapa de los que esa etapa tolera | Sigue viva · Ganada · Perdida |
 | `SilencioCaliente` | Match ≥ 65 y 21 días sin actividad | Le llamo hoy · Déjalo estar |
 | `ClienteSinSiguientePaso` | Le vendiste hace 45 días y no hay nada previsto | Le llamo hoy · Déjalo estar |
+| `CorreoSinRespuesta` | Le escribiste **tú** hace 4 días y no hay respuesta | Le llamo hoy · Ya me contestó · Déjalo estar |
+| `AbrioLaCampania` | Le llegó una campaña, **la abrió** y no ha contestado | Le llamo hoy · Ya me contestó · Déjalo estar |
+
+### Las campañas casi rompieron esta pantalla
+
+Merece su propio apartado porque es el fallo más grande que ha estado a punto de entrar aquí.
+
+`CorreoSinRespuesta` mira `correo.mensaje` y pregunta por cualquier correo enviado hace más de cuatro
+días sin respuesta. Los correos de campaña van a **la misma tabla**. Sin excluirlos, quien lanzara una
+campaña a cuatrocientas personas se habría encontrado el lunes con cuatrocientas tarjetas diciendo «le
+escribiste hace seis días y no ha contestado» —y las dos mitades de la frase serían falsas: no le
+escribió él, y el silencio tras un envío masivo es el caso normal, no una señal—. El repaso vale
+porque se acaba en dos minutos; con eso habría dejado de valer, y con él la razón de volver mañana.
+
+Así que los correos de campaña **no entran** en `CorreoSinRespuesta`. Lo que sí es una señal —que lo
+**abriera** y no contestara— tiene su propia pregunta, `AbrioLaCampania`, con tres diferencias
+deliberadas:
+
+- **Solo quien abrió.** Es lo que convierte cuatrocientos destinatarios en los ocho que merecen una
+  llamada hoy.
+- **Va al dueño del contacto**, no a quien lanzó la campaña. Una campaña genera trabajo para el
+  equipo, y quien va a llamar es quien lleva a esa persona. Solo cae en quien la lanzó cuando el
+  contacto no tiene dueño.
+- **Caduca a los 60 días.** «Abrió tu correo» no explica una llamada de hoy si fue en marzo, y el
+  repaso pierde su valor en cuanto propone algo que no tiene sentido hacer.
+
+Depende de que la empresa tenga la **medición de aperturas encendida**, que viene apagada por defecto
+(ver `docs/modulos/correo.md`). Sin ella no hay aperturas que mirar y esta pregunta nunca sale: es
+honesto, no un fallo, pero conviene saberlo antes de esperarla.
 
 El orden es el del enum, y no es arbitrario: primero lo que **rompe una promesa** (dijiste que lo
 harías), después lo que tiene dinero encima, y al final los avisos. Si lo primero que ves es «este

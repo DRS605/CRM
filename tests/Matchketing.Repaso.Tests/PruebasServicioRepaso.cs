@@ -303,6 +303,78 @@ public sealed class PruebasServicioRepaso
     // ---- El resumen ----------------------------------------------------------------------
 
     [Fact]
+    public async Task Abrir_una_campania_y_no_contestar_es_una_pregunta_propia()
+    {
+        // La pregunta que convierte una campaña en dinero. Lo que se comprueba aquí es que se **nombra la
+        // campaña**: sin el nombre, la frase sería «abrió un correo» y quien llame no sabría de qué le
+        // van a hablar.
+        consulta.Hallazgos.Add(Hallazgo(TipoPregunta.AbrioLaCampania, dias: 2, match: 3));
+
+        var pila = await Servicio().PilaAsync();
+
+        var pregunta = pila.Preguntas.Should().ContainSingle().Subject;
+        pregunta.Clave.Should().StartWith("abrio-campania:");
+        pregunta.Detalle.Should().Contain("Instalación de cocina", "hay que decir qué campaña abrió");
+        pregunta.Detalle.Should().Contain("3 veces");
+        pregunta.Detalle.Should().Contain("no ha contestado");
+    }
+
+    [Fact]
+    public async Task Una_campania_abierta_una_sola_vez_no_dice_el_numero()
+    {
+        // «Abrió «Oferta» 1 veces» es la marca de que el texto lo escribió una plantilla, y esto lo lee
+        // el comercial todas las semanas.
+        consulta.Hallazgos.Add(Hallazgo(TipoPregunta.AbrioLaCampania, dias: 1, match: 1));
+
+        var pila = await Servicio().PilaAsync();
+
+        pila.Preguntas[0].Detalle.Should().NotContain("1 veces");
+        pila.Preguntas[0].Detalle.Should().Contain("hace un día");
+    }
+
+    [Fact]
+    public async Task La_tarea_de_una_campania_abierta_no_dice_que_le_escribiste_tu()
+    {
+        // Mañana el comercial lee la tarea sin acordarse de esta pantalla. «Le escribí y no contestó»
+        // sobre alguien a quien no escribió él sería desconcertante: lo que pasó es que abrió un envío.
+        var id = Guid.NewGuid();
+
+        await Servicio().ResponderAsync($"abrio-campania:{id}", Respuesta.LlamarHoy);
+
+        acciones.Hechas.Should().ContainSingle().Which.Should().Be($"tarea:{id}:2026-08-18");
+        acciones.Titulos.Should().ContainSingle().Which.Should().Be("Llamar: abrió la campaña y no contestó");
+    }
+
+    [Fact]
+    public async Task Aparcar_una_campania_abierta_la_calla_un_mes_y_no_dos_semanas()
+    {
+        // Más que un correo personal sin contestar: aquí no hay una conversación empezada que se pueda
+        // enfriar —él abrió un envío, no escribió—, y volver a sacarlo a los catorce días es ruido.
+        var id = Guid.NewGuid();
+
+        await Servicio().ResponderAsync($"abrio-campania:{id}", Respuesta.DejarloEstar);
+
+        acciones.Hechas.Should().BeEmpty();
+        pospuestas.Todas.Single().Hasta.Should().Be(new DateOnly(2026, 9, 17));
+    }
+
+    [Fact]
+    public async Task Una_campania_abierta_se_pregunta_despues_de_todo_lo_demas()
+    {
+        // El orden del enum es el orden de prioridad, y esta va última a propósito: una campaña abierta
+        // interesa, pero menos que una promesa incumplida o que una venta con dinero encima. Importa
+        // porque la pila se corta en treinta: si esto fuera primero, una campaña con ochenta aperturas
+        // dejaría fuera la tarea que vencía ayer.
+        consulta.Hallazgos.Add(Hallazgo(TipoPregunta.AbrioLaCampania, dias: 90));
+        consulta.Hallazgos.Add(Hallazgo(TipoPregunta.TareaVencida, dias: 1));
+
+        var pila = await Servicio().PilaAsync();
+
+        pila.Preguntas[0].Tipo.Should().Be(TipoPregunta.TareaVencida);
+        pila.Preguntas[1].Tipo.Should().Be(TipoPregunta.AbrioLaCampania);
+    }
+
+    [Fact]
     public async Task El_resumen_habla_de_ventas_cuando_hay_ventas()
     {
         consulta.Resumen = new ResumenSemana(7, 14, 9, 3, 4, 2, 12400m, 1, 11, 18);

@@ -477,6 +477,221 @@ public sealed class PruebasFlujoCampanias(ApiDePrueba api)
             .EnumerateArray().Should().ContainSingle();
     }
 
+    // ---------- La campaña vuelve al embudo ----------
+
+    /// <summary>
+    /// Marca un correo como enviado y, opcionalmente, como abierto.
+    ///
+    /// Se hace con SQL porque el camino real pasa por un servidor SMTP y por el navegador de otra
+    /// persona pidiendo un píxel, y ninguna de las dos cosas existe en una prueba. Lo que se prueba es
+    /// lo de después: qué hace el repaso con esa fila.
+    /// </summary>
+    private async Task MarcarEnviadoAsync(Guid contactoId, bool abierto, int haceDias)
+    {
+        using var alcance = api.Services.CreateScope();
+        var bd = alcance.ServiceProvider.GetRequiredService<ContextoMatchketing>();
+        var cuando = DateTimeOffset.UtcNow.AddDays(-haceDias);
+
+        var afectadas = await bd.Database.ExecuteSqlRawAsync(
+            """
+            UPDATE correo.mensaje
+               SET estado = 2, enviado_en = {0},
+                   primera_apertura_en = CASE WHEN {1} THEN {0} ELSE NULL END,
+                   aperturas = CASE WHEN {1} THEN 2 ELSE 0 END
+             WHERE contacto_id = {2}
+            """,
+            cuando, abierto, contactoId);
+
+        afectadas.Should().BeGreaterThan(0, "sin correo que marcar la prueba no comprobaría nada");
+    }
+
+    private async Task<JsonElement> RepasoAsync(HttpClient cliente) =>
+        await LeerAsync(await cliente.GetAsync(new Uri("/repaso", UriKind.Relative)));
+
+    [Fact]
+    public async Task Una_campania_no_inunda_el_repaso_con_una_pregunta_por_destinatario()
+    {
+        // **La corrección más importante que trajo este módulo.** El repaso ya preguntaba «le escribiste
+        // y no ha contestado» sobre cualquier correo enviado hace más de cuatro días. Los correos de
+        // campaña van a la misma tabla, así que sin excluirlos, quien lanzara una campaña a
+        // cuatrocientas personas se encontraría el lunes con cuatrocientas preguntas —y las dos mitades
+        // de esa frase serían falsas: no le escribió él, y el silencio tras un envío masivo es lo
+        // normal—. El repaso vale porque se acaba en dos minutos; con eso dejaría de valer.
+        var cliente = await EnEmpresaAsync("Ribera Repaso Uno");
+        var contactos = new List<Guid>();
+        for (var i = 0; i < 3; i++)
+        {
+            var c = await ContactoAsync(cliente, "Contacto " + i);
+            await PermitirComercialAsync(cliente, c);
+            contactos.Add(c);
+        }
+
+        var campania = await CampaniaAsync(
+            cliente,
+            await SegmentoAsync(cliente, new { nombre = "Leads", estado = 1 }),
+            await PlantillaAsync(cliente));
+
+        await cliente.PostAsync(new Uri($"/campanias/{campania}/lanzar", UriKind.Relative), null);
+        (await PasadaAsync(campania)).Encolados.Should().Be(3);
+
+        // Salieron hace seis días y **nadie los abrió**. Es el caso normal de una campaña.
+        foreach (var c in contactos)
+        {
+            await MarcarEnviadoAsync(c, abierto: false, haceDias: 6);
+        }
+
+        var pila = await RepasoAsync(cliente);
+
+        pila.GetProperty("preguntas").EnumerateArray()
+            .Should().NotContain(p => p.GetProperty("clave").GetString()!.StartsWith("correo-sin-respuesta", StringComparison.Ordinal),
+                "un correo de campaña no es un correo que escribiste tú");
+
+        pila.GetProperty("preguntas").EnumerateArray()
+            .Should().NotContain(p => p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal),
+                "sin abrir no hay señal: es lo que le pasa a la mayoría de un envío");
+    }
+
+    [Fact]
+    public async Task Quien_abre_la_campania_y_no_contesta_aparece_manana_con_su_motivo()
+    {
+        // El paso que convierte una campaña en dinero. En una plataforma de envío, «una apertura» es un
+        // número en un panel; aquí es una fila con nombre y teléfono en la pila de quien tiene que
+        // llamar, y con el nombre de la campaña escrito para que sepa de qué le van a hablar.
+        var cliente = await EnEmpresaAsync("Ribera Repaso Dos");
+
+        var abre = await ContactoAsync(cliente, "Amparo Sanchis");
+        var noAbre = await ContactoAsync(cliente, "Consuelo Beltrán");
+        await PermitirComercialAsync(cliente, abre);
+        await PermitirComercialAsync(cliente, noAbre);
+
+        var campania = await CampaniaAsync(
+            cliente,
+            await SegmentoAsync(cliente, new { nombre = "Leads", estado = 1 }),
+            await PlantillaAsync(cliente));
+
+        await cliente.PostAsync(new Uri($"/campanias/{campania}/lanzar", UriKind.Relative), null);
+        await PasadaAsync(campania);
+
+        await MarcarEnviadoAsync(abre, abierto: true, haceDias: 2);
+        await MarcarEnviadoAsync(noAbre, abierto: false, haceDias: 2);
+
+        var preguntas = (await RepasoAsync(cliente)).GetProperty("preguntas").EnumerateArray().ToList();
+
+        var suya = preguntas.Should().ContainSingle(p =>
+            p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal)).Subject;
+
+        suya.GetProperty("nombreContacto").GetString().Should().Be("Amparo Sanchis");
+        suya.GetProperty("detalle").GetString().Should().Contain("Oferta de primavera", "hay que decir qué campaña abrió");
+        suya.GetProperty("detalle").GetString().Should().Contain("no ha contestado");
+
+        // Y la opción principal es llamar, no volver a escribirle: si el correo no funcionó, el segundo
+        // correo casi nunca funciona.
+        suya.GetProperty("opciones").EnumerateArray().First()
+            .GetProperty("respuesta").GetInt32().Should().Be(11, "«Le llamo hoy»");
+    }
+
+    [Fact]
+    public async Task Contestar_a_la_apertura_deja_la_llamada_en_la_lista_de_hoy()
+    {
+        var cliente = await EnEmpresaAsync("Ribera Repaso Tres");
+        var contacto = await ContactoAsync(cliente, "Amparo Sanchis");
+        await PermitirComercialAsync(cliente, contacto);
+
+        var campania = await CampaniaAsync(
+            cliente,
+            await SegmentoAsync(cliente, new { nombre = "Leads", estado = 1 }),
+            await PlantillaAsync(cliente));
+
+        await cliente.PostAsync(new Uri($"/campanias/{campania}/lanzar", UriKind.Relative), null);
+        await PasadaAsync(campania);
+        await MarcarEnviadoAsync(contacto, abierto: true, haceDias: 1);
+
+        var clave = (await RepasoAsync(cliente)).GetProperty("preguntas").EnumerateArray()
+            .First(p => p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal))
+            .GetProperty("clave").GetString();
+
+        var r = await cliente.PostAsJsonAsync("/repaso/responder", new { clave, respuesta = 11 });
+        r.IsSuccessStatusCode.Should().BeTrue();
+
+        var hoy = await LeerAsync(await cliente.GetAsync(new Uri("/hoy", UriKind.Relative)));
+        hoy.GetProperty("tarjetas").EnumerateArray()
+            .Should().Contain(t => t.GetProperty("titulo").GetString() == "Llamar: abrió la campaña y no contestó");
+
+        // Y la pregunta desaparece de la pila: ya hay una tarea pendiente con esa persona, así que la
+        // decisión está tomada. Preguntar otra vez es el «al ratón y al gato» que el repaso no hace.
+        (await RepasoAsync(cliente)).GetProperty("preguntas").EnumerateArray()
+            .Should().NotContain(p => p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task La_pregunta_de_la_apertura_va_al_dueno_del_contacto_y_no_a_quien_lanzo()
+    {
+        // Una campaña genera trabajo para el equipo, no para quien pulsó el botón. Quien va a llamar es
+        // quien lleva a esa persona, y es en su pila donde tiene que aparecer.
+        var propietario = await EnEmpresaAsync("Ribera Reparto");
+
+        var invitacion = await LeerAsync(await propietario.PostAsJsonAsync("/equipo/invitaciones", new
+        {
+            email = $"vicent{Guid.NewGuid():N}@ribera.es",
+            rol = 2, // comercial
+        }));
+
+        var comercial = api.CreateClient();
+        var sesion = await LeerAsync(await comercial.PostAsJsonAsync(
+            $"/invitaciones/{invitacion.GetProperty("token").GetString()}",
+            new { nombre = "Vicent Ferrer", contrasena = "Levante2026" }));
+        comercial.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", sesion.GetProperty("token").GetString());
+        var comercialId = sesion.GetProperty("usuario").GetProperty("id").GetGuid();
+
+        var contacto = await ContactoAsync(propietario, "Amparo Sanchis");
+        await PermitirComercialAsync(propietario, contacto);
+        (await propietario.PutAsJsonAsync($"/contactos/{contacto}", new
+        {
+            nombre = "Amparo Sanchis",
+            email = $"a{Guid.NewGuid():N}@sanchis.es",
+            propietarioId = comercialId,
+        })).IsSuccessStatusCode.Should().BeTrue();
+
+        var campania = await CampaniaAsync(
+            propietario,
+            await SegmentoAsync(propietario, new { nombre = "Leads", estado = 1 }),
+            await PlantillaAsync(propietario));
+
+        await propietario.PostAsync(new Uri($"/campanias/{campania}/lanzar", UriKind.Relative), null);
+        await PasadaAsync(campania);
+        await MarcarEnviadoAsync(contacto, abierto: true, haceDias: 2);
+
+        // La lanzó el propietario, pero el contacto es del comercial: la pregunta es del comercial.
+        (await RepasoAsync(comercial)).GetProperty("preguntas").EnumerateArray()
+            .Should().Contain(p => p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal));
+
+        (await RepasoAsync(propietario)).GetProperty("preguntas").EnumerateArray()
+            .Should().NotContain(p => p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Una_apertura_de_hace_meses_ya_no_es_una_senal()
+    {
+        // «Abrió tu correo» no explica una llamada de hoy si fue en marzo. Sacarlo sería inventarse una
+        // urgencia, y el repaso pierde su valor en cuanto propone algo que no tiene sentido hacer.
+        var cliente = await EnEmpresaAsync("Ribera Repaso Viejo");
+        var contacto = await ContactoAsync(cliente, "Amparo Sanchis");
+        await PermitirComercialAsync(cliente, contacto);
+
+        var campania = await CampaniaAsync(
+            cliente,
+            await SegmentoAsync(cliente, new { nombre = "Leads", estado = 1 }),
+            await PlantillaAsync(cliente));
+
+        await cliente.PostAsync(new Uri($"/campanias/{campania}/lanzar", UriKind.Relative), null);
+        await PasadaAsync(campania);
+        await MarcarEnviadoAsync(contacto, abierto: true, haceDias: 200);
+
+        (await RepasoAsync(cliente)).GetProperty("preguntas").EnumerateArray()
+            .Should().NotContain(p => p.GetProperty("clave").GetString()!.StartsWith("abrio-campania", StringComparison.Ordinal));
+    }
+
     // ---------- Permisos ----------
 
     [Fact]

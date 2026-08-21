@@ -67,6 +67,12 @@ public sealed class Pospuesta : RaizAgregadoEmpresa<Guid>
         // reaparezca por un desfase de reloj entre el apunte y la siguiente pila.
         (TipoPregunta.CorreoSinRespuesta, Respuesta.YaContesto) => 1,
 
+        // Una campaña abierta y aparcada: treinta días. Más que un correo personal sin contestar,
+        // porque aquí no hay una conversación empezada que se pueda enfriar —él abrió un envío, no
+        // escribió—, y volver a sacarlo a los catorce días con el mismo motivo es ruido.
+        (TipoPregunta.AbrioLaCampania, Respuesta.DejarloEstar) => 30,
+        (TipoPregunta.AbrioLaCampania, Respuesta.YaContesto) => 1,
+
         // Revisada y sigue igual: una semana, que es cada cuánto se repasa.
         (_, Respuesta.SigueViva) => 7,
 

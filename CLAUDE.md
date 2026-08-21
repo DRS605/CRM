@@ -114,7 +114,18 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   interfaz no lo usaba. Si añades una reclamación estándar, busca por las dos formas.
 - **Un color tampoco puede ir sin motivo.** El magenta significa «aquí está la acción». Usarlo para
   decir «esta es la última columna» (`:last-child`) hacía que la etapa vacía se llevara la mirada y la
-  que tenía 71.800 € quedara apagada. Si algo se pinta, tiene que estar diciendo un dato.
+  que tenía 71.800 € quedara apagada. Si algo se pinta, tiene que estar diciendo un dato. El corolario:
+  el color de una etapa sale de su **probabilidad**, nunca de su índice —así dos empresas con embudos
+  de distinto tamaño pintan igual lo que vale igual—, y lo decide una sola función (`banda`) que usan
+  el tablero, los informes y el match. Ver [`docs/interfaz.md`](docs/interfaz.md).
+- **`min-width` le gana a `width: 0`.** La barra de una etapa vacía seguía pintando un tope de color
+  porque la hoja tenía `min-width: 2px` y el guion le ponía `width: 0`. El suelo para que un importe
+  pequeño se vea lo pone el guion, y solo cuando hay algo.
+- **Las tipografías van en el repositorio, nunca en un CDN.** Un `<link>` a Google Fonts le manda a un
+  tercero la IP de cada comercial que abre la aplicación, en una herramienta que se vende diciendo que
+  los datos son tuyos. Y al meterlas en el armazón del trabajador de servicio hay que acordarse de que
+  la raíz solo vale como respuesta de emergencia para una **navegación**: devolver `index.html` para un
+  woff2 es peor que fallar.
 - **El trabajador de servicio decide por lista blanca, no por lista negra.** Antes tenía una expresión
   con los prefijos de la API y guardaba en caché todo lo que no encajara. Al añadir `/webhooks`, su ruta
   no estaba en la lista y el trabajador **servía datos de la API desde la caché**: se creaba un webhook

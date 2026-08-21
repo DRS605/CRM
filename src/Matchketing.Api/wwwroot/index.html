@@ -20,6 +20,47 @@
 <!-- El punto de la marca, también en la pestaña del navegador. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%235C2340'/%3E%3C/svg%3E" />
 <style>
+  /* Las fuentes se sirven **desde aquí**, no desde un CDN. Dos motivos, y el segundo es el que manda:
+     este proyecto no tiene ni una dependencia externa en tiempo de ejecución, y un `<link>` a Google
+     Fonts le manda la IP de cada comercial que abre la aplicación a un tercero, en una herramienta que
+     se vende diciendo que los datos son tuyos. Son 95 KB en cinco ficheros.
+
+     Instrument Sans + Instrument Serif: son una pareja diseñada para ir junta, así que el salto entre
+     el titular y el texto no es un choque. `swap` para que el texto se lea desde el primer momento con
+     la fuente del sistema y cambie al cargar. */
+  @font-face {
+    font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/instrument-sans-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+      U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/instrument-sans-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+      U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+      U+2C60-2C7F, U+A720-A7FF;
+  }
+  @font-face {
+    font-family: 'Instrument Sans'; font-style: italic; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/instrument-sans-italic-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+      U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/tipos/instrument-serif-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+      U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; font-display: swap;
+    src: url('/tipos/instrument-serif-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+      U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+      U+2C60-2C7F, U+A720-A7FF;
+  }
+
   :root {
     /* Ciruela, no magenta. El magenta plano y saturado en bloques grandes es lo que hacía que esto
        pareciera un juguete: un color de mucha energía repartido a partes iguales por toda la pantalla.
@@ -29,14 +70,27 @@
     --sobre-magenta:#FFFFFF;
     --tinta:#191316; --grafito:#6E6167; --papel:#F7F4F2; --superficie:#FFFFFF; --elevado:#FFFFFF;
     --trazo:#E2D9DA; --trazo-suave:#EDE6E7;
-    --turquesa:#2E5F66; --verde:#3E6249; --ambar:#8A5A16;
+    --turquesa:#2E5F66; --verde:#3E6249; --ambar:#8A5A16; --rojo:#9B2C2C;
+
+    /* **Escala de avance.** El color de una etapa lo pone su *probabilidad*, no su posición en el
+       tablero. Dos motivos:
+         - Las etapas se configuran por empresa. Un embudo de tres y otro de siete pintarían escalas
+           distintas para lo mismo si el color fuese el índice; con la probabilidad, «casi firmado»
+           es del mismo color en las dos empresas.
+         - Si mañana alguien baja «Propuesta» del 60 % al 25 %, la etapa cambia de color porque ha
+           cambiado el dato. Un color que no se mueve cuando el dato se mueve es decoración.
+       Va de frío a verde porque el verde ya es el color de *ganado* en el resto de la aplicación: la
+       última etapa se parece al final, y eso es exactamente lo que quiere decir.
+       El mismo color se usa en el tablero del embudo y en las barras de Informes, así que se aprende
+       una vez y sirve en las dos pantallas. */
+    --av-1:#3F5E86; --av-2:#5B4A86; --av-3:#7A3355; --av-4:#8A5A16; --av-5:#3E6249;
 
     /* Sin sombras. El papel se separa con líneas de un píxel, que es lo que hace un impreso bien
        hecho; una sombra blanda debajo de cada tarjeta es lo que hace una aplicación de móvil de 2014. */
     --sombra:none;
     --sombra-alta:0 20px 60px -30px rgba(25,19,22,.45);
-    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
-    --sans: "Helvetica Neue", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --serif: "Instrument Serif", Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: "Instrument Sans", "Helvetica Neue", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   }
   @media (prefers-color-scheme: dark) {
@@ -45,7 +99,8 @@
       --sobre-magenta:#150F12;
       --tinta:#F2ECEE; --grafito:#9C8F95; --papel:#0C0809; --superficie:#131011; --elevado:#1A1517;
       --trazo:#282022; --trazo-suave:#1E1819;
-      --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A;
+      --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A; --rojo:#E08B8B;
+      --av-1:#8FAED6; --av-2:#AF9FD8; --av-3:#D08CAB; --av-4:#D9AE6A; --av-5:#8AB395;
       --sombra:none;
       --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
     }
@@ -55,7 +110,8 @@
     --sobre-magenta:#150F12;
     --tinta:#F2ECEE; --grafito:#9C8F95; --papel:#0C0809; --superficie:#131011; --elevado:#1A1517;
     --trazo:#282022; --trazo-suave:#1E1819;
-    --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A;
+    --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A; --rojo:#E08B8B;
+    --av-1:#8FAED6; --av-2:#AF9FD8; --av-3:#D08CAB; --av-4:#D9AE6A; --av-5:#8AB395;
     --sombra:none;
     --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
   }
@@ -204,8 +260,8 @@
      rojo en un menú es una regañina permanente. */
   .cuantas {
     margin-left: auto; font-family: var(--mono); font-size: 10.5px;
-    background: var(--magenta-velo); color: var(--magenta);
-    border: 1px solid var(--magenta-borde); border-radius: 3px; padding: 1px 7px;
+    background: var(--magenta); color: var(--sobre-magenta);
+    border: 1px solid var(--magenta); border-radius: 3px; padding: 1px 7px;
   }
 
   /* La lista de etapas que abre «Mover». En columna y a ancho completo: son objetivos de dedo. */
@@ -295,7 +351,7 @@
      igual. */
   main > section > * { min-width: 0; }
   .titulo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .titulo h1 { font-family: var(--serif); font-size: 31px; font-weight: 400; letter-spacing: -.01em; margin: 0; }
+  .titulo h1 { font-family: var(--serif); font-size: 34px; font-weight: 400; letter-spacing: -.005em; margin: 0; }
   .titulo .sub { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
 
   .vacio-caja {
@@ -384,8 +440,14 @@
   .e-lead .pt { background: var(--magenta); }
   .e-cliente { color: var(--verde); background: color-mix(in srgb, var(--verde) 12%, transparent); border-color: var(--verde); }
   .e-cliente .pt { background: var(--verde); }
-  .e-perdido, .e-baja { color: var(--grafito); background: var(--trazo-suave); border-color: var(--trazo); }
-  .e-perdido .pt, .e-baja .pt { background: var(--grafito); }
+  .e-perdido { color: var(--grafito); background: var(--trazo-suave); border-color: var(--trazo); }
+  .e-perdido .pt { background: var(--grafito); }
+  /* Baja y perdido compartían el gris, y no son lo mismo: perdido es una venta que no salió y se
+     puede volver a intentar; baja es que retiró el consentimiento y **no se le puede escribir**. Lo
+     segundo es una regla que se incumple sin darse cuenta, así que se pinta como lo que es: un
+     aviso, no un estado apagado. */
+  .e-baja { color: var(--rojo); background: color-mix(in srgb, var(--rojo) 12%, transparent); border-color: var(--rojo); }
+  .e-baja .pt { background: var(--rojo); }
 
   /* ---- Ficha ---- */
   .ficha-cabecera { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
@@ -403,6 +465,17 @@
     width: 9px; height: 9px; border-radius: 50%; background: var(--magenta);
     margin-top: 6px; margin-left: 5px; z-index: 1; border: 2px solid var(--superficie); box-sizing: content-box;
   }
+  /* El punto no repite el tipo —eso ya lo pone la línea de al lado— sino **quién se movió**, que es
+     lo que no está escrito en ninguna parte y es lo que se busca al abrir una ficha:
+       ciruela  → te moviste tú (nota, llamada, correo, reunión)
+       turquesa → se movió el contacto (formulario, visita web, apertura)
+       rojo     → se rompió algo (rebote)
+       gris     → lo hizo la máquina
+     Una ficha con la columna en turquesa es un contacto caliente; una toda en ciruela es alguien a
+     quien persigues sin respuesta. Eso, antes, había que deducirlo leyendo nueve líneas. */
+  .hito.yo .punto-hito { background: var(--magenta); }
+  .hito.ellos .punto-hito { background: var(--turquesa); }
+  .hito.roto .punto-hito { background: var(--rojo); }
   .hito.sistema .punto-hito { background: var(--grafito); }
   .hito .contenido { display: flex; flex-direction: column; gap: 3px; }
   .hito .meta {
@@ -450,7 +523,8 @@
   .tablero { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(196px, 1fr); gap: 10px; min-width: 1000px; }
   .columna { display: flex; flex-direction: column; gap: 10px; }
   .columna-cab { display: flex; flex-direction: column; gap: 2px; padding: 0 2px 6px; }
-  .columna-cab .n { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
+  .columna-cab .n { font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; }
+  .columna-cab .n i { width: 8px; height: 8px; border-radius: 2px; flex: none; display: block; }
   .columna-cab .s {
     font-family: var(--mono); font-size: 11.5px; color: var(--grafito); font-variant-numeric: tabular-nums;
   }
@@ -460,12 +534,16 @@
      71.800 € quedaba apagada: color sin motivo, que en esta paleta es lo mismo que un número sin
      motivo. Mismo patrón que las barras de Informes, para que las dos vistas cuenten lo mismo. */
   .columna-pista { height: 2px; border-radius: 999px; background: var(--trazo); overflow: hidden; }
-  .columna-pista i { display: block; height: 100%; background: var(--magenta); border-radius: 999px; }
+  .columna-pista i { display: block; height: 100%; background: var(--av-3); border-radius: 999px; }
   .soltar { min-height: 60px; display: flex; flex-direction: column; gap: 9px; border-radius: 10px; padding: 2px; }
   .soltar.encima { background: var(--magenta-velo); outline: 1px dashed var(--magenta-borde); }
 
+  /* El canto izquierdo lleva el color de la etapa. En el tablero es redundante con la columna —y a
+     propósito: al arrastrar, la tarjeta viaja con su color y se ve de dónde sale— pero la misma
+     tarjeta aparece fuera del tablero, y ahí el color es la única pista de en qué punto está. */
   .oport {
     background: var(--superficie); border: 1px solid var(--trazo); border-radius: 9px;
+    border-left: 3px solid var(--av-3);
     padding: 12px 13px; display: flex; flex-direction: column; gap: 7px;
     box-shadow: var(--sombra); cursor: grab;
   }
@@ -488,7 +566,9 @@
   .motivos-lista { display: flex; flex-direction: column; gap: 10px; }
   .motivo-fila { display: grid; grid-template-columns: 128px 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
   .motivo-fila .barra-m { height: 8px; border-radius: 999px; background: var(--trazo-suave); overflow: hidden; }
-  .motivo-fila .barra-m i { display: block; height: 100%; background: var(--magenta); border-radius: 999px; }
+  /* Rojo, no ciruela. Estas barras miden lo único que se mide en negativo en toda la aplicación;
+     pintarlas del color de la casa las igualaba con las del embudo, que miden lo contrario. */
+  .motivo-fila .barra-m i { display: block; height: 100%; background: var(--rojo); border-radius: 999px; }
   .motivo-fila .cifra { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); font-variant-numeric: tabular-nums; }
 
 
@@ -498,9 +578,17 @@
     background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
     padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--sombra);
   }
-  /* La primera tarjeta se señala con una línea a la izquierda, no rodeándola de color: el borde de
-     color alrededor convertía «esta es la siguiente» en «esto está seleccionado». */
-  .tarjeta-hoy.primera { border-left: 2px solid var(--magenta); }
+  /* La línea de la izquierda dice **por qué** está la tarjeta en la pila, con el mismo color que su
+     etiqueta: rojo si va tarde, ciruela si es de hoy, ámbar si está parada, turquesa si no tiene
+     próximo paso. Se lee la pila de un barrido sin leer una palabra. La primera tarjeta la engorda
+     a 4 px en vez de cambiarle el color: sigue siendo «la siguiente», no «otra cosa».
+     Rodearla de color entero convertía «esta es la siguiente» en «esto está seleccionado». */
+  .tarjeta-hoy { border-left: 3px solid var(--trazo); }
+  .tarjeta-hoy.por-t-vencida { border-left-color: var(--rojo); }
+  .tarjeta-hoy.por-t-hoy { border-left-color: var(--magenta); }
+  .tarjeta-hoy.por-t-parada { border-left-color: var(--ambar); }
+  .tarjeta-hoy.por-t-sinpaso { border-left-color: var(--turquesa); }
+  .tarjeta-hoy.primera { border-left-width: 4px; }
   .tarjeta-hoy .cabeza { display: flex; align-items: flex-start; gap: 14px; }
   .tarjeta-hoy .quien-h { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .tarjeta-hoy .nom { font-size: 17px; font-weight: 600; letter-spacing: -.015em; }
@@ -519,10 +607,14 @@
     padding: 3px 10px 3px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap;
   }
   .chip-tipo .pt { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .t-vencida { color: var(--magenta); background: var(--magenta-velo); border-color: var(--magenta-borde); }
-  .t-vencida .pt { background: var(--magenta); }
-  .t-hoy { color: var(--grafito); background: var(--trazo-suave); border-color: var(--trazo); }
-  .t-hoy .pt { background: var(--grafito); }
+  /* Cuatro motivos, cuatro colores, y el orden importa: vencida en rojo porque es lo único que ya
+     va tarde; hoy en ciruela porque es el trabajo normal del día; parada en ámbar; sin próximo paso
+     en turquesa. Antes vencida y hoy compartían la escala de grises de la casa y las dos filas se
+     leían igual, que es justo lo que no puede pasar en la pantalla que ordena el día. */
+  .t-vencida { color: var(--rojo); background: color-mix(in srgb, var(--rojo) 12%, transparent); border-color: var(--rojo); }
+  .t-vencida .pt { background: var(--rojo); }
+  .t-hoy { color: var(--magenta); background: var(--magenta-velo); border-color: var(--magenta-borde); }
+  .t-hoy .pt { background: var(--magenta); }
   .t-parada { color: var(--ambar); background: color-mix(in srgb, var(--ambar) 12%, transparent); border-color: var(--ambar); }
   .t-parada .pt { background: var(--ambar); }
   .t-sinpaso { color: var(--turquesa); background: color-mix(in srgb, var(--turquesa) 12%, transparent); border-color: var(--turquesa); }
@@ -695,6 +787,11 @@
     color: var(--tinta); font-variant-numeric: tabular-nums;
   }
   .match-caja .cifra.mudo { color: var(--grafito); font-size: 22px; }
+  /* La cifra de match se pinta con la misma escala que las etapas: es una probabilidad, igual que
+     ellas, así que un 84 de match y una etapa al 84 % son del mismo color a propósito. */
+  .banda-1 { color: var(--av-1) !important; } .banda-2 { color: var(--av-2) !important; }
+  .banda-3 { color: var(--av-3) !important; } .banda-4 { color: var(--av-4) !important; }
+  .banda-5 { color: var(--av-5) !important; }
   .motivos-match { font-size: 13px; color: var(--grafito); line-height: 1.5; }
 
   .panel-match { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
@@ -761,9 +858,20 @@
   .escalones { display: flex; flex-direction: column; gap: 0; }
   .escalon { display: grid; grid-template-columns: 128px 1fr auto; gap: 14px; align-items: center; padding: 9px 0; }
   .escalon .et { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+  .escalon .et b { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; }
+  /* La leyenda se pone una sola vez, en Informes, que es donde alguien se para a mirar las etapas.
+     En el tablero no: quien arrastra tarjetas ya sabe lo que es «Cierre», y una leyenda ahí sería
+     una fila de adorno encima del trabajo. */
+  .leyenda-av {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--grafito);
+  }
+  .leyenda-av span { display: inline-flex; align-items: center; gap: 5px; }
+  .leyenda-av b { width: 8px; height: 8px; border-radius: 2px; display: block; }
   .escalon .et small { display: block; font-weight: 400; font-size: 11px; color: var(--grafito); font-family: var(--mono); }
   .escalon .pista-e { height: 20px; border-radius: 5px; background: var(--trazo-suave); overflow: hidden; }
-  .escalon .pista-e i { display: block; height: 100%; background: var(--magenta); border-radius: 5px; min-width: 2px; }
+  .escalon .pista-e i { display: block; height: 100%; background: var(--av-3); border-radius: 5px; }
   .escalon .cif { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .paso {
     grid-column: 2; font-family: var(--mono); font-size: 11px; color: var(--grafito);
@@ -776,7 +884,7 @@
   .balance .lado-b .k { font-family: var(--mono); font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: var(--grafito); }
   .balance .lado-b .v { font-family: var(--serif); font-size: 24px; font-weight: 400; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
   .balance .ganado .v { color: var(--verde); }
-  .balance .perdido .v { color: var(--grafito); }
+  .balance .perdido .v { color: var(--rojo); }
 
   footer.nota {
     font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase;
@@ -1360,6 +1468,12 @@
         <div class="panel" style="max-width:820px">
           <h2>Cronología</h2>
           <p class="explica">Append-only: una conversación es un hecho, no un campo. No se edita ni se borra.</p>
+          <p class="leyenda-av">El punto dice quién se movió
+            <span><b style="background:var(--magenta)"></b>Tú</span>
+            <span><b style="background:var(--turquesa)"></b>El contacto</span>
+            <span><b style="background:var(--rojo)"></b>Falló</span>
+            <span><b style="background:var(--grafito)"></b>El sistema</span>
+          </p>
           <div class="cronologia" id="fi-cronologia"></div>
         </div>
       </div>
@@ -1586,6 +1700,13 @@
         <h2>Embudo</h2>
         <p class="explica">Qué hay abierto por etapa y cuánto pasa de una a la siguiente. La barra es
           el importe; la flecha, la conversión.</p>
+        <p class="leyenda-av">El color va con la probabilidad de la etapa
+          <span><b style="background:var(--av-1)"></b>&lt;20&nbsp;%</span>
+          <span><b style="background:var(--av-2)"></b>20-39</span>
+          <span><b style="background:var(--av-3)"></b>40-59</span>
+          <span><b style="background:var(--av-4)"></b>60-79</span>
+          <span><b style="background:var(--av-5)"></b>80&nbsp;%+</span>
+        </p>
         <div class="kpis" id="inf-kpis"></div>
         <div class="escalones" id="inf-escalones" style="margin-top:8px"></div>
         <div class="acciones">
@@ -4673,6 +4794,15 @@
       ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
+  /// Quién provocó esta actividad. Los números son los de `TIPOS`; lo que no se reconozca cae en
+  /// «sistema», que es la lectura prudente: no se atribuye a nadie lo que no se sabe de quién es.
+  var MOVIO = {
+    1: 'yo', 2: 'yo', 3: 'yo', 4: 'yo',   // nota, llamada, correo, reunión
+    5: 'ellos', 6: 'ellos', 9: 'ellos',   // formulario, visita web, apertura
+    8: 'roto'                             // rebote
+  };
+  function quienSeMovio(tipo) { return MOVIO[tipo] || 'sistema'; }
+
   function chipEstado(estado) {
     var e = ESTADOS[estado] || ['—', 'e-perdido'];
     var span = document.createElement('span');
@@ -4747,7 +4877,7 @@
     }
     ficha.cronologia.forEach(function (a) {
       var hito = document.createElement('div');
-      hito.className = 'hito' + (a.tipo === 7 || a.tipo === 8 ? ' sistema' : '');
+      hito.className = 'hito ' + quienSeMovio(a.tipo) + (a.tipo === 7 || a.tipo === 8 ? ' sistema' : '');
       var pt = document.createElement('span');
       pt.className = 'punto-hito';
       var cuerpo = document.createElement('div');
@@ -4910,7 +5040,9 @@
 
     var cifra = $('mt-cifra');
     cifra.textContent = m.match === null || m.match === undefined ? '—' : m.match;
-    cifra.className = 'grande-num' + (m.match === null || m.match === undefined ? ' mudo' : '');
+    cifra.className = 'grande-num'
+      + (m.match === null || m.match === undefined ? ' mudo' : '')
+      + (banda(m.match) ? ' banda-' + banda(m.match) : '');
 
     $('mt-encaje-n').textContent = m.encaje + (m.sinHistorico ? ' (neutro)' : '');
     $('mt-momento-n').textContent = m.momento;
@@ -5230,19 +5362,46 @@
     }
   });
 
+  /// La banda de color de una probabilidad, de 1 (frío) a 5 (verde). Vive aquí arriba porque la usan
+  /// tres pantallas —Hoy, Embudo e Informes— y las tres tienen que dar el mismo color al mismo
+  /// número; si cada una se lo calculase por su cuenta, el día que se toque una escala las otras dos
+  /// mentirían. Un valor que no se sabe no tiene banda: devuelve cadena vacía, no la banda 1.
+  function banda(probabilidad) {
+    if (probabilidad === null || probabilidad === undefined) { return ''; }
+    var n = Number(probabilidad);
+    if (!isFinite(n)) { return ''; }
+    if (n < 20) { return '1'; }
+    if (n < 40) { return '2'; }
+    if (n < 60) { return '3'; }
+    if (n < 80) { return '4'; }
+    return '5';
+  }
+
+  /// El color de esa banda, ya listo para un `style`. Cadena vacía cuando no hay dato: quien lo use
+  /// deja el color que tuviera, que en la hoja es el gris del trazo.
+  function colorAvance(probabilidad) {
+    var b = banda(probabilidad);
+    return b === '' ? '' : 'var(--av-' + b + ')';
+  }
+
   // ---------- Hoy ----------
   var TIPO_TAREA = 1, TIPO_SIN_PASO = 2, TIPO_PARADA = 3;
 
-  function chipTipo(t) {
-    var clase, texto;
+  /// Por qué está esta tarjeta en la pila. Devuelve la clase y el texto juntos porque los dos salen
+  /// de la misma decisión: la etiqueta y el canto de color de la tarjeta no pueden discrepar.
+  function motivoTarjeta(t) {
     if (t.tipo === TIPO_TAREA) {
-      if (t.diasVencida > 0) { clase = 't-vencida'; texto = 'Vencida ' + t.diasVencida + ' d'; }
-      else { clase = 't-hoy'; texto = 'Hoy'; }
-    } else if (t.tipo === TIPO_PARADA) {
-      clase = 't-parada'; texto = 'Parada';
-    } else {
-      clase = 't-sinpaso'; texto = 'Sin próximo paso';
+      return t.diasVencida > 0
+        ? { clase: 't-vencida', texto: 'Vencida ' + t.diasVencida + ' d' }
+        : { clase: 't-hoy', texto: 'Hoy' };
     }
+    if (t.tipo === TIPO_PARADA) { return { clase: 't-parada', texto: 'Parada' }; }
+    return { clase: 't-sinpaso', texto: 'Sin próximo paso' };
+  }
+
+  function chipTipo(t) {
+    var m = motivoTarjeta(t);
+    var clase = m.clase, texto = m.texto;
     var span = document.createElement('span');
     span.className = 'chip-tipo ' + clase;
     var pt = document.createElement('span');
@@ -5292,7 +5451,7 @@
 
     pila.tarjetas.forEach(function (t, i) {
       var caja = document.createElement('article');
-      caja.className = 'tarjeta-hoy' + (i === 0 ? ' primera' : '');
+      caja.className = 'tarjeta-hoy por-' + motivoTarjeta(t).clase + (i === 0 ? ' primera' : '');
 
       var cabeza = document.createElement('div');
       cabeza.className = 'cabeza';
@@ -5328,7 +5487,7 @@
         rot.className = 'rot';
         rot.textContent = 'Match';
         var num = document.createElement('span');
-        num.className = 'cifra';
+        num.className = 'cifra' + (banda(t.match) ? ' banda-' + banda(t.match) : '');
         num.textContent = t.match;
         mc.appendChild(rot);
         mc.appendChild(num);
@@ -5475,7 +5634,10 @@
 
       var et = document.createElement('div');
       et.className = 'et';
-      et.textContent = e.nombre;
+      var punto = document.createElement('b');
+      punto.style.background = colorAvance(e.probabilidad) || 'var(--trazo)';
+      et.appendChild(punto);
+      et.appendChild(document.createTextNode(e.nombre));
       var pr = document.createElement('small');
       pr.textContent = e.probabilidad + ' % prob.';
       et.appendChild(pr);
@@ -5489,6 +5651,8 @@
       relleno.style.width = e.importeAbierto === 0
         ? '0'
         : Math.max(2, Math.round(e.importeAbierto / maximo * 100)) + '%';
+      var colorEtapa = colorAvance(e.probabilidad);
+      if (colorEtapa) { relleno.style.background = colorEtapa; }
       pista.appendChild(relleno);
 
       var cif = document.createElement('span');
@@ -5652,7 +5816,10 @@
       cab.className = 'columna-cab';
       var n = document.createElement('span');
       n.className = 'n';
-      n.textContent = col.nombre;
+      var punto = document.createElement('i');
+      punto.style.background = colorAvance(col.probabilidad) || 'var(--trazo)';
+      n.appendChild(punto);
+      n.appendChild(document.createTextNode(col.nombre));
       var sub = document.createElement('span');
       sub.className = 's';
       sub.textContent = col.cuantas + ' · ' + euros(col.importe) + ' · ' + col.probabilidad + ' %';
@@ -5666,6 +5833,8 @@
       pista.className = 'columna-pista';
       var relleno = document.createElement('i');
       relleno.style.width = col.importe === 0 ? '0' : Math.max(2, Math.round(col.importe / mayor * 100)) + '%';
+      var color = colorAvance(col.probabilidad);
+      if (color) { relleno.style.background = color; }
       pista.appendChild(relleno);
       c.appendChild(pista);
 
@@ -5686,6 +5855,8 @@
       col.oportunidades.forEach(function (o) {
         var tarj = document.createElement('div');
         tarj.className = 'oport' + (o.estancada ? ' parada' : '');
+        var colorTarj = colorAvance(col.probabilidad);
+        if (colorTarj) { tarj.style.borderLeftColor = colorTarj; }
         tarj.draggable = true;
         tarj.addEventListener('dragstart', function (ev) { ev.dataTransfer.setData('text/plain', o.id); });
 

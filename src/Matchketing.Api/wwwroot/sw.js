@@ -20,7 +20,7 @@
 
 // Al cambiar de versión se descarta la caché anterior entera. Es más barato que invalidar por fichero
 // y no deja nunca una mezcla de dos versiones, que es de lo más difícil de depurar que hay.
-const CACHE = 'matchketing-v20';
+const CACHE = 'matchketing-v21';
 
 const ARMAZON = [
   '/',
@@ -68,7 +68,8 @@ self.addEventListener('fetch', evento => {
   const esArmazon = ruta === '/'
     || ruta === '/index.html'
     || ruta === '/manifiesto.webmanifest'
-    || ruta.startsWith('/iconos/');
+    || ruta.startsWith('/iconos/')
+    || ruta.startsWith('/tipos/');
 
   if (!esArmazon) {
     return;
@@ -87,7 +88,11 @@ self.addEventListener('fetch', evento => {
           }
           return respuesta;
         })
-        .catch(() => guardada || caches.match('/'));
+        // Sin red y sin copia: la raíz solo vale como respuesta para una navegación (es una
+        // aplicación de una sola página). Para un tipo de letra o un icono devolver el HTML de la
+        // raíz sería peor que fallar: el navegador intentaría interpretar index.html como woff2.
+        // Al fallar, `font-display: swap` deja la letra del sistema, que es exactamente lo que toca.
+        .catch(() => guardada || (peticion.mode === 'navigate' ? caches.match('/') : Promise.reject(new Error('sin red'))));
 
       return guardada || desdeRed;
     }));

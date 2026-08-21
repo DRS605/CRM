@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Xunit;
 
@@ -446,6 +447,21 @@ public sealed class PruebasMovil(ApiDePrueba api)
         html.IndexOf("id=\"panel-equipo\"", StringComparison.Ordinal).Should().BeLessThan(desde);
     }
 
+    /// <summary>
+    /// El trozo de la página entre dos marcas, para afirmar sobre una función concreta del guion sin
+    /// que la afirmación se dé por buena porque la cadena aparece en cualquier otro sitio del fichero.
+    /// Las dos marcas tienen que existir y en ese orden, o la prueba falla en vez de mirar un trozo
+    /// vacío —que es la forma silenciosa de que una prueba deje de comprobar nada—.
+    /// </summary>
+    private static string Entre(string html, string desdeMarca, string hastaMarca)
+    {
+        var desde = html.IndexOf(desdeMarca, StringComparison.Ordinal);
+        desde.Should().BeGreaterThan(-1, $"la marca «{desdeMarca}» tiene que existir");
+        var hasta = html.IndexOf(hastaMarca, desde + desdeMarca.Length, StringComparison.Ordinal);
+        hasta.Should().BeGreaterThan(desde, $"«{hastaMarca}» tiene que venir después de «{desdeMarca}»");
+        return html[desde..hasta];
+    }
+
     /// <summary>El cuerpo de una regla CSS de la hoja incrustada, para poder afirmar sobre ella.</summary>
     private static string Regla(string html, string selector)
     {
@@ -470,6 +486,131 @@ public sealed class PruebasMovil(ApiDePrueba api)
 
         carpeta.Should().NotBeNull("no se ha encontrado la raíz del repositorio desde " + AppContext.BaseDirectory);
         return File.ReadAllText(Path.Combine(carpeta!.FullName, relativo));
+    }
+
+    [Fact]
+    public async Task Las_letras_son_del_propio_servidor_y_no_de_un_tercero()
+    {
+        var cliente = api.CreateClient();
+        var html = await cliente.GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // La razón no es el rendimiento, es la privacidad. Un `<link>` a Google Fonts hace que el
+        // navegador de cada comercial pida el fichero a un servidor de Google, y eso le manda su IP
+        // y la página que está mirando. En una herramienta que se vende diciendo «tus datos son
+        // tuyos», eso es una contradicción, y encima invisible: nadie mira de dónde salen las letras.
+        html.Should().NotContain("fonts.googleapis.com");
+        html.Should().NotContain("fonts.gstatic.com");
+        html.Should().NotContain("use.typekit");
+
+        // Y no vale con no enlazarlas: hay que tenerlas. Cada `url()` del estilo tiene que existir y
+        // servirse de verdad, o la página se cae a la letra del sistema sin decir nada.
+        var pedidas = Regex.Matches(html, @"url\('(/tipos/[^']+)'\)")
+            .Select(m => m.Groups[1].Value)
+            .Distinct()
+            .ToList();
+
+        pedidas.Should().NotBeEmpty("el estilo declara las letras con @font-face y url('/tipos/…')");
+
+        foreach (var ruta in pedidas)
+        {
+            var r = await cliente.GetAsync(new Uri(ruta, UriKind.Relative));
+            r.StatusCode.Should().Be(HttpStatusCode.OK, ruta + " está declarada en el estilo pero no se sirve");
+            r.Content.Headers.ContentType!.MediaType.Should().Be("font/woff2",
+                ruta + " con otro tipo puede no cargar y además no se comprime bien");
+        }
+    }
+
+    [Fact]
+    public async Task Las_letras_se_guardan_para_cuando_no_haya_cobertura()
+    {
+        var js = await api.CreateClient().GetStringAsync(new Uri("/sw.js", UriKind.Relative));
+
+        // Las letras son armazón, igual que los iconos: sin ellas la aplicación abre, pero abre con
+        // otra cara. Y por la lista blanca, lo que no se añade a mano **no se guarda** —falla cerrado,
+        // que es lo que se quiere, pero hay que acordarse—. Esta prueba es ese recordatorio.
+        js.Should().Contain("/tipos/", "sin esto las letras se piden a la red en cada arranque sin cobertura");
+
+        // Y cuando no hay red ni copia, a un fichero que no es una navegación no se le puede dar el
+        // HTML de la raíz: el navegador intentaría leer index.html como si fuera un woff2.
+        js.Should().Contain("peticion.mode === 'navigate'",
+            "la raíz solo vale como respuesta de emergencia para una navegación");
+    }
+
+    [Fact]
+    public async Task El_color_de_una_etapa_sale_de_su_probabilidad_y_es_el_mismo_en_las_dos_pantallas()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // La regla de la casa es que si algo se pinta, tiene que estar diciendo un dato. El color de
+        // una etapa lo dice su probabilidad, no su posición: así dos empresas con embudos de distinto
+        // tamaño pintan igual lo que vale igual, y una etapa que se reconfigura cambia de color.
+        html.Should().Contain("function banda(probabilidad)");
+        html.Should().Contain("function colorAvance(probabilidad)");
+
+        // Y hay **una sola** función que lo decide. Si el tablero y los informes se lo calculasen
+        // cada uno por su cuenta, el día que se toque una escala una de las dos pantallas mentiría.
+        Regex.Matches(html, @"function banda\(").Count.Should().Be(1);
+
+        // El tablero del embudo y las barras de Informes tienen que usarla los dos.
+        var tablero = Entre(html, "var tab = $('emb-tablero');", "cargarEmbudo");
+        var informes = Entre(html, "var cont = $('inf-escalones');", "inf-ganado");
+        // Dos usos en cada pantalla, y hay que exigir los dos por separado: el punto que va junto al
+        // nombre de la etapa y el relleno de la barra. Con una sola afirmación, quitarle el color a la
+        // barra pasaba desapercibido porque el punto ya cumplía la condición.
+        tablero.Should().Contain("punto.style.background = colorAvance(col.probabilidad)");
+        tablero.Should().Contain("var color = colorAvance(col.probabilidad)");
+        informes.Should().Contain("punto.style.background = colorAvance(e.probabilidad)");
+        informes.Should().Contain("var colorEtapa = colorAvance(e.probabilidad)");
+
+        // Un valor que no se sabe no tiene color: devuelve cadena vacía, no la banda más baja, que
+        // sería pintar «poco probable» donde en realidad dice «no se sabe».
+        html.Should().Contain("if (probabilidad === null || probabilidad === undefined) { return ''; }");
+    }
+
+    [Fact]
+    public async Task Una_etapa_a_cero_no_pinta_nada()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // El suelo del 2 % está para que un importe pequeño se siga viendo. Pero la barra llevaba
+        // además `min-width: 2px` en la hoja de estilo, y eso **gana** a un `width: 0`: una etapa sin
+        // nada abierto seguía dejando un tope de color. Un color donde no hay dato es justo lo que
+        // esta interfaz dice que no hace.
+        var barra = Regla(html, ".escalon .pista-e i");
+        barra.Should().NotContain("min-width",
+            "con min-width la etapa vacía pinta un tope de color y miente");
+
+        html.Should().Contain("Math.max(2, Math.round(e.importeAbierto / maximo * 100))",
+            "el suelo del 2 % lo pone el guion, y solo cuando hay algo que enseñar");
+    }
+
+    [Fact]
+    public async Task Cada_color_de_la_pantalla_dice_algo_distinto()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // Baja y perdido compartían el gris. No son lo mismo: perdido es una venta que no salió y se
+        // puede reintentar; baja es que retiró el consentimiento y no se le puede escribir. Igualar
+        // los dos en un gris apagado es la clase de detalle con la que se manda un correo ilegal.
+        Regla(html, ".e-baja").Should().Contain("--rojo");
+        Regla(html, ".e-perdido").Should().Contain("--grafito");
+
+        // Lo que ya va tarde se pinta en rojo, y es el único sitio donde el rojo significa urgencia.
+        Regla(html, ".t-vencida").Should().Contain("--rojo");
+
+        // La tarjeta de Hoy lleva en el canto el color de su motivo, y la etiqueta y el canto salen
+        // de la misma decisión, así que no pueden discrepar.
+        html.Should().Contain("function motivoTarjeta(t)");
+        html.Should().Contain("'tarjeta-hoy por-' + motivoTarjeta(t).clase");
+        html.Should().Contain(".tarjeta-hoy.por-t-vencida");
+
+        // Y en la cronología el punto dice quién se movió, que es lo que no está escrito en ninguna
+        // parte: una ficha entera en turquesa es un contacto caliente; toda en ciruela, alguien a
+        // quien persigues sin respuesta.
+        html.Should().Contain("function quienSeMovio(tipo)");
+        html.Should().Contain("return MOVIO[tipo] || 'sistema'",
+            "un tipo que no se reconoce no se le atribuye a nadie");
+        html.Should().Contain(".hito.ellos .punto-hito");
     }
 
     [Fact]

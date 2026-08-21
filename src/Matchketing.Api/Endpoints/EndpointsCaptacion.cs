@@ -264,11 +264,11 @@ public static class EndpointsCaptacion
                     '.mk-formulario{display:flex;flex-direction:column;gap:10px;max-width:420px;font:inherit}' +
                     '.mk-formulario input[type=text],.mk-formulario input[type=email],' +
                     '.mk-formulario input[type=tel],.mk-formulario textarea{font:inherit;padding:10px 12px;' +
-                    'border:1px solid #ccc;border-radius:8px;width:100%;box-sizing:border-box}' +
+                    'border:1px solid #ccc;border-radius:3px;width:100%;box-sizing:border-box}' +
                     '.mk-formulario button{font:inherit;font-weight:600;padding:11px 18px;border:0;' +
-                    'border-radius:8px;background:#D4006E;color:#fff;cursor:pointer}' +
+                    'border-radius:3px;background:#191316;color:#fff;cursor:pointer}' +
                     '.mk-consent{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4}' +
-                    '.mk-aviso{font-size:13px;color:#A66A00;margin:0}';
+                    '.mk-aviso{font-size:13px;color:#8A5A16;margin:0}';
 
                   (actual && actual.parentNode ? actual.parentNode : document.body).insertBefore(estilo, actual);
                   (actual && actual.parentNode ? actual.parentNode : document.body).insertBefore(caja, actual);

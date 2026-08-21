@@ -15,46 +15,58 @@
 <meta name="apple-mobile-web-app-title" content="match.keting" />
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- El color de la barra del sistema, en cada tema. -->
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF8F9" />
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#120810" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F7F4F2" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C0809" />
 <!-- El punto de la marca, también en la pestaña del navegador. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%23D4006E'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%235C2340'/%3E%3C/svg%3E" />
 <style>
   :root {
-    --magenta:#D4006E; --magenta-hover:#9B0050; --magenta-velo:#FCEEF4; --magenta-borde:#F3D3E1;
+    /* Ciruela, no magenta. El magenta plano y saturado en bloques grandes es lo que hacía que esto
+       pareciera un juguete: un color de mucha energía repartido a partes iguales por toda la pantalla.
+       La ciruela es el mismo lado del círculo y dos tonos más grave, y sobre todo **se usa menos**: la
+       acción va en tinta y el acento se guarda para señalar. */
+    --magenta:#5C2340; --magenta-hover:#3F1730; --magenta-velo:#F4EFF1; --magenta-borde:#DFD2D8;
     --sobre-magenta:#FFFFFF;
-    --tinta:#170B12; --grafito:#6B5A63; --papel:#FBF8F9; --superficie:#FFFFFF; --elevado:#FFFFFF;
-    --trazo:#E9DDE3; --trazo-suave:#F1E7EC;
-    --turquesa:#00767F; --verde:#0E7C5A; --ambar:#A66A00;
-    --sombra:0 1px 2px rgba(23,11,18,.05), 0 8px 24px -12px rgba(23,11,18,.16);
-    --sombra-alta:0 2px 4px rgba(23,11,18,.06), 0 24px 48px -20px rgba(23,11,18,.28);
+    --tinta:#191316; --grafito:#6E6167; --papel:#F7F4F2; --superficie:#FFFFFF; --elevado:#FFFFFF;
+    --trazo:#E2D9DA; --trazo-suave:#EDE6E7;
+    --turquesa:#2E5F66; --verde:#3E6249; --ambar:#8A5A16;
+
+    /* Sin sombras. El papel se separa con líneas de un píxel, que es lo que hace un impreso bien
+       hecho; una sombra blanda debajo de cada tarjeta es lo que hace una aplicación de móvil de 2014. */
+    --sombra:none;
+    --sombra-alta:0 20px 60px -30px rgba(25,19,22,.45);
     --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
     --sans: "Helvetica Neue", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --magenta:#FF4D9B; --magenta-hover:#FF7DB6; --magenta-velo:#2E1220; --magenta-borde:#4A1E33;
-      --sobre-magenta:#1C1018;
-      --tinta:#F7EFF3; --grafito:#B69EAA; --papel:#120810; --superficie:#1C1018; --elevado:#24151E;
-      --trazo:#3A2430; --trazo-suave:#2A1822;
-      --turquesa:#3ED0D8; --verde:#2BB98A; --ambar:#E0A83C;
-      --sombra:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
-      --sombra-alta:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.8);
+      --magenta:#C89BB4; --magenta-hover:#DEBACD; --magenta-velo:#211619; --magenta-borde:#38262D;
+      --sobre-magenta:#150F12;
+      --tinta:#F2ECEE; --grafito:#9C8F95; --papel:#0C0809; --superficie:#131011; --elevado:#1A1517;
+      --trazo:#282022; --trazo-suave:#1E1819;
+      --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A;
+      --sombra:none;
+      --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
     }
   }
   :root[data-theme="dark"] {
-    --magenta:#FF4D9B; --magenta-hover:#FF7DB6; --magenta-velo:#2E1220; --magenta-borde:#4A1E33;
-    --sobre-magenta:#1C1018;
-    --tinta:#F7EFF3; --grafito:#B69EAA; --papel:#120810; --superficie:#1C1018; --elevado:#24151E;
-    --trazo:#3A2430; --trazo-suave:#2A1822;
-    --turquesa:#3ED0D8; --verde:#2BB98A; --ambar:#E0A83C;
-    --sombra:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
-    --sombra-alta:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.8);
+    --magenta:#C89BB4; --magenta-hover:#DEBACD; --magenta-velo:#211619; --magenta-borde:#38262D;
+    --sobre-magenta:#150F12;
+    --tinta:#F2ECEE; --grafito:#9C8F95; --papel:#0C0809; --superficie:#131011; --elevado:#1A1517;
+    --trazo:#282022; --trazo-suave:#1E1819;
+    --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A;
+    --sombra:none;
+    --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
   }
 
   * { box-sizing: border-box; }
   html, body { height: 100%; }
+
+  /* Los párrafos llevaban el margen que pone el navegador —un `em` arriba y otro abajo— y eso es
+     espacio que **nadie eligió**: sumado al `gap` de cada tarjeta dejaba huecos de treinta píxeles en
+     medio del contenido. Una interfaz se ve compuesta cuando el aire está puesto a mano. */
+  p { margin: 0; }
   body {
     margin: 0; background: var(--papel); color: var(--tinta);
     font-family: var(--sans); font-size: 15px; line-height: 1.55;
@@ -63,7 +75,10 @@
   :focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: 4px; }
   [hidden] { display: none !important; }
 
-  .marca { font-weight: 800; letter-spacing: -.045em; }
+  /* Ocho de negrita en todo es lo que hace que una interfaz parezca de plástico. La escala de pesos
+     sube de 400 a 600 y el 800 desaparece; el contraste lo pone la **serifa** en titulares y cifras,
+     que es la mitad de la sensación de calidad y ya estaba declarada en `--serif`. */
+  .marca { font-weight: 600; letter-spacing: -.025em; }
   .punto { color: var(--magenta); }
   .bolita { width: 8px; height: 8px; border-radius: 50%; background: var(--magenta); flex: none; display: inline-block; }
 
@@ -76,16 +91,16 @@
     margin: 0; max-width: 30ch;
   }
   .tarjeta {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 12px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
     padding: 26px; box-shadow: var(--sombra); display: flex; flex-direction: column; gap: 18px;
   }
   .pestanas { display: flex; gap: 4px; }
   .pestana {
     font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-    padding: 7px 14px; border-radius: 999px; border: 1px solid transparent;
+    padding: 7px 14px; border-radius: 3px; border: 1px solid transparent;
     background: none; color: var(--grafito);
   }
-  .pestana.on { background: var(--magenta-velo); color: var(--magenta); }
+  .pestana.on { background: transparent; color: var(--tinta); box-shadow: inset 0 -2px 0 var(--magenta); }
 
   .campo { display: flex; flex-direction: column; gap: 6px; }
   .campo label {
@@ -93,7 +108,7 @@
     text-transform: uppercase; color: var(--grafito);
   }
   .campo input {
-    font: inherit; font-size: 15px; padding: 10px 13px; border-radius: 9px;
+    font: inherit; font-size: 15px; padding: 10px 13px; border-radius: 3px;
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .campo input:focus { border-color: var(--magenta); }
@@ -107,14 +122,18 @@
   }
 
   .btn {
-    font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
-    padding: 10px 18px; border-radius: 9px;
+    font: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer;
+    padding: 10px 18px; border-radius: 3px;
     border: 1px solid var(--trazo); background: var(--superficie); color: var(--tinta);
     transition: background .14s ease, border-color .14s ease;
   }
   .btn:hover { border-color: var(--grafito); }
-  .btn.pri { background: var(--magenta); border-color: var(--magenta); color: var(--sobre-magenta); }
-  .btn.pri:hover { background: var(--magenta-hover); border-color: var(--magenta-hover); }
+  /* La acción principal va en **tinta**, no en el color de marca. Un bloque saturado de 120 px es lo
+     primero que hace que una pantalla parezca de juguete, y además gastaba el acento en el sitio donde
+     menos hace falta: el botón ya se ve por su forma y su posición. El acento aparece al pasar por
+     encima, que es cuando dice algo. */
+  .btn.pri { background: var(--tinta); border-color: var(--tinta); color: var(--papel); font-weight: 600; }
+  .btn.pri:hover { background: var(--magenta); border-color: var(--magenta); color: var(--sobre-magenta); }
   .btn.fantasma { border-color: transparent; color: var(--grafito); }
   .btn.fantasma:hover { border-color: var(--trazo); }
   /* Un botón deshabilitado tiene que **parecerlo**. Con solo bajar la opacidad, un botón principal
@@ -136,7 +155,7 @@
   /* Estado de privacidad en una línea. El color lo pone la bolita: verde se puede, ámbar ojo. */
   .semaforo {
     display: flex; gap: 10px; align-items: baseline; font-size: 14px;
-    padding: 12px 14px; border-radius: 10px;
+    padding: 12px 14px; border-radius: 4px;
     border: 1px solid var(--trazo); background: var(--papel);
   }
   .semaforo .bolita { background: var(--ambar); position: relative; top: 4px; }
@@ -186,7 +205,7 @@
   .cuantas {
     margin-left: auto; font-family: var(--mono); font-size: 10.5px;
     background: var(--magenta-velo); color: var(--magenta);
-    border: 1px solid var(--magenta-borde); border-radius: 20px; padding: 1px 7px;
+    border: 1px solid var(--magenta-borde); border-radius: 3px; padding: 1px 7px;
   }
 
   /* La lista de etapas que abre «Mover». En columna y a ancho completo: son objetivos de dedo. */
@@ -218,7 +237,7 @@
   .permiso .retirado { color: var(--grafito); text-decoration: line-through; }
 
   .aviso {
-    font-size: 13.5px; padding: 10px 13px; border-radius: 9px;
+    font-size: 13.5px; padding: 10px 13px; border-radius: 3px;
     border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
     color: var(--ambar);
   }
@@ -236,11 +255,13 @@
   .item {
     font: inherit; font-size: 14.5px; text-align: left; cursor: pointer;
     display: flex; align-items: center; gap: 10px;
-    padding: 9px 10px; border-radius: 8px; border: 0; background: none; color: var(--tinta);
+    padding: 9px 10px; border-radius: 3px; border: 0; background: none; color: var(--tinta);
   }
   .item:hover { background: var(--trazo-suave); }
-  .item.on { background: var(--magenta-velo); color: var(--magenta); font-weight: 700; }
-  .item .marcador { width: 8px; height: 8px; border-radius: 50%; background: transparent; flex: none; }
+  /* El elemento activo se marca con una **línea**, no con una pastilla de color de fondo. Una pastilla
+     rosa detrás del texto es la diferencia entre una herramienta y una aplicación de colorear. */
+  .item.on { background: transparent; color: var(--tinta); font-weight: 600; }
+  .item .marcador { width: 2px; height: 15px; border-radius: 0; background: transparent; flex: none; }
   .item.on .marcador { background: var(--magenta); }
   .item .pendiente {
     margin-left: auto; font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em;
@@ -274,28 +295,28 @@
      igual. */
   main > section > * { min-width: 0; }
   .titulo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .titulo h1 { font-size: 27px; font-weight: 800; letter-spacing: -.03em; margin: 0; }
+  .titulo h1 { font-family: var(--serif); font-size: 31px; font-weight: 400; letter-spacing: -.01em; margin: 0; }
   .titulo .sub { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
 
   .vacio-caja {
-    border: 1px dashed var(--trazo); border-radius: 12px; background: var(--superficie);
+    border: 1px dashed var(--trazo); border-radius: 4px; background: var(--superficie);
     padding: 56px 32px; display: flex; flex-direction: column; align-items: center;
     gap: 12px; text-align: center;
   }
-  .vacio-caja .grande { font-size: 24px; font-weight: 800; letter-spacing: -.03em; }
+  .vacio-caja .grande { font-family: var(--serif); font-size: 25px; font-weight: 400; letter-spacing: -.01em; }
   .vacio-caja p { margin: 0; color: var(--grafito); max-width: 46ch; font-size: 14.5px; }
   .etiqueta-modulo {
     font-family: var(--mono); font-size: 10.5px; letter-spacing: .11em; text-transform: uppercase;
     color: var(--magenta); background: var(--magenta-velo); border: 1px solid var(--magenta-borde);
-    border-radius: 999px; padding: 4px 11px;
+    border-radius: 3px; padding: 4px 11px;
   }
 
   .panel {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 12px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
     padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 660px;
     box-shadow: var(--sombra);
   }
-  .panel h2 { font-size: 16px; font-weight: 700; letter-spacing: -.015em; margin: 0; }
+  .panel h2 { font-family: var(--serif); font-size: 18px; font-weight: 400; letter-spacing: -.005em; margin: 0; }
   .panel .explica { font-size: 13.5px; color: var(--grafito); margin: 0; }
   .filas { display: flex; flex-direction: column; gap: 14px; }
   .fila-dato { display: flex; justify-content: space-between; gap: 16px; font-size: 14.5px; padding-bottom: 12px; border-bottom: 1px solid var(--trazo-suave); }
@@ -326,7 +347,7 @@
      es adorno: aquí el magenta significa «esto lo has tocado tú». */
   input[type="checkbox"], input[type="radio"] { accent-color: var(--magenta); }
   input[type="number"] {
-    font: inherit; font-size: 15px; padding: 9px 12px; border-radius: 9px; width: 110px;
+    font: inherit; font-size: 15px; padding: 9px 12px; border-radius: 3px; width: 110px;
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .acciones { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
@@ -335,12 +356,12 @@
   /* ---- Contactos ---- */
   .herramientas { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
   .buscador {
-    font: inherit; font-size: 14px; padding: 9px 13px; border-radius: 9px; flex: 1 1 260px; min-width: 0;
+    font: inherit; font-size: 14px; padding: 9px 13px; border-radius: 3px; flex: 1 1 260px; min-width: 0;
     border: 1px solid var(--trazo); background: var(--superficie); color: var(--tinta);
   }
   .contador { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
 
-  .tabla-caja { border: 1px solid var(--trazo); border-radius: 12px; background: var(--superficie); overflow-x: auto; }
+  .tabla-caja { border: 1px solid var(--trazo); border-radius: 4px; background: var(--superficie); overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 680px; }
   thead th {
     text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
@@ -356,7 +377,7 @@
 
   .chip {
     display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-    padding: 3px 10px 3px 8px; border-radius: 999px; border: 1px solid;
+    padding: 3px 10px 3px 8px; border-radius: 3px; border: 1px solid;
   }
   .chip .pt { width: 6px; height: 6px; border-radius: 50%; flex: none; }
   .e-lead { color: var(--magenta); background: var(--magenta-velo); border-color: var(--magenta-borde); }
@@ -369,7 +390,7 @@
   /* ---- Ficha ---- */
   .ficha-cabecera { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
   .ficha-cabecera .quien-ficha { display: flex; flex-direction: column; gap: 4px; }
-  .ficha-cabecera h2 { font-size: 22px; font-weight: 800; letter-spacing: -.03em; margin: 0; }
+  .ficha-cabecera h2 { font-family: var(--serif); font-size: 25px; font-weight: 400; letter-spacing: -.01em; margin: 0; }
   .ficha-cabecera .medios { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); }
   .ficha-cabecera .derecha { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
@@ -391,11 +412,11 @@
 
   .rejilla-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
   textarea {
-    font: inherit; font-size: 14px; padding: 10px 13px; border-radius: 9px; resize: vertical;
+    font: inherit; font-size: 14px; padding: 10px 13px; border-radius: 3px; resize: vertical;
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta); width: 100%;
   }
   select {
-    font: inherit; font-size: 14.5px; padding: 9px 12px; border-radius: 9px;
+    font: inherit; font-size: 14.5px; padding: 9px 12px; border-radius: 3px;
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .par-duplicado { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid var(--trazo-suave); }
@@ -405,14 +426,14 @@
   .par-duplicado .lado .d { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
   .par-duplicado .motivo {
     font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
-    color: var(--ambar); border: 1px solid var(--ambar); border-radius: 999px; padding: 3px 10px;
+    color: var(--ambar); border: 1px solid var(--ambar); border-radius: 3px; padding: 3px 10px;
   }
 
 
   /* ---- Embudo ---- */
   .resumen-embudo { display: flex; gap: 10px; flex-wrap: wrap; }
   .tarjeta-dato {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 10px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
     padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 128px;
   }
   .tarjeta-dato .k {
@@ -420,7 +441,7 @@
     text-transform: uppercase; color: var(--grafito);
   }
   .tarjeta-dato .v {
-    font-size: 21px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+    font-family: var(--serif); font-size: 23px; font-weight: 400; letter-spacing: -.01em; font-variant-numeric: tabular-nums;
   }
   .tarjeta-dato.aviso-dato { border-color: var(--ambar); }
   .tarjeta-dato.aviso-dato .v { color: var(--ambar); }
@@ -474,13 +495,15 @@
   /* ---- Hoy ---- */
   .pila { display: flex; flex-direction: column; gap: 12px; max-width: 780px; }
   .tarjeta-hoy {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 11px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
     padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--sombra);
   }
-  .tarjeta-hoy.primera { border-color: var(--magenta-borde); }
+  /* La primera tarjeta se señala con una línea a la izquierda, no rodeándola de color: el borde de
+     color alrededor convertía «esta es la siguiente» en «esto está seleccionado». */
+  .tarjeta-hoy.primera { border-left: 2px solid var(--magenta); }
   .tarjeta-hoy .cabeza { display: flex; align-items: flex-start; gap: 14px; }
   .tarjeta-hoy .quien-h { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .tarjeta-hoy .nom { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+  .tarjeta-hoy .nom { font-size: 17px; font-weight: 600; letter-spacing: -.015em; }
   .tarjeta-hoy .sub { font-size: 12.5px; color: var(--grafito); font-family: var(--mono); }
   .tarjeta-hoy .derecha-h { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
   .tarjeta-hoy .importe-h {
@@ -510,7 +533,7 @@
     padding: 56px 32px; display: flex; flex-direction: column; align-items: center; gap: 12px;
     text-align: center; max-width: 780px;
   }
-  .hecho-caja .grande { font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+  .hecho-caja .grande { font-family: var(--serif); font-size: 27px; font-weight: 400; letter-spacing: -.01em; }
   .hecho-caja p { margin: 0; color: var(--grafito); max-width: 46ch; font-size: 14.5px; }
   .bolita.ambar { background: var(--ambar); }
 
@@ -665,17 +688,19 @@
     font-family: var(--mono); font-size: 9.5px; letter-spacing: .13em;
     text-transform: uppercase; color: var(--grafito);
   }
+  /* La cifra, en serifa y en tinta. En magenta de 30 px y negrita 800 competía con el titular y con el
+     botón: tres cosas gritando a la vez es lo que se lee como «juguete». El dato no necesita grito. */
   .match-caja .cifra {
-    font-size: 30px; font-weight: 800; letter-spacing: -.05em; line-height: 1;
-    color: var(--magenta); font-variant-numeric: tabular-nums;
+    font-family: var(--serif); font-size: 32px; font-weight: 400; letter-spacing: -.02em; line-height: 1;
+    color: var(--tinta); font-variant-numeric: tabular-nums;
   }
   .match-caja .cifra.mudo { color: var(--grafito); font-size: 22px; }
   .motivos-match { font-size: 13px; color: var(--grafito); line-height: 1.5; }
 
   .panel-match { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
   .panel-match .grande-num {
-    font-size: 54px; font-weight: 800; letter-spacing: -.05em; line-height: 1;
-    color: var(--magenta); font-variant-numeric: tabular-nums;
+    font-family: var(--serif); font-size: 58px; font-weight: 400; letter-spacing: -.02em; line-height: 1;
+    color: var(--tinta); font-variant-numeric: tabular-nums;
   }
   .panel-match .grande-num.mudo { color: var(--grafito); font-size: 34px; }
   .factores { flex: 1 1 260px; display: flex; flex-direction: column; gap: 12px; min-width: 220px; }
@@ -749,7 +774,7 @@
   .balance { display: flex; gap: 28px; flex-wrap: wrap; }
   .balance .lado-b { display: flex; flex-direction: column; gap: 2px; }
   .balance .lado-b .k { font-family: var(--mono); font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: var(--grafito); }
-  .balance .lado-b .v { font-size: 22px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .balance .lado-b .v { font-family: var(--serif); font-size: 24px; font-weight: 400; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
   .balance .ganado .v { color: var(--verde); }
   .balance .perdido .v { color: var(--grafito); }
 

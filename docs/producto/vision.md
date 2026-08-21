@@ -391,13 +391,22 @@ siguiente acción. Los grises llevan un sesgo de ciruela para convivir con él s
 
 | Token | Claro | Oscuro | Uso |
 |---|---|---|---|
-| `--magenta` | `#D4006E` | `#FF4D9B` | Acción principal, el punto, la cifra de Match. 5,2:1 sobre blanco |
-| `--magenta-hover` | `#9B0050` | `#FF7DB6` | *Hover* y pulsado |
-| `--magenta-velo` | `#FCEEF4` | `#2E1220` | Fondo teñido: fila seleccionada, pestaña activa |
-| `--tinta` | `#170B12` | `#F7EFF3` | Texto y logotipo (negro con sesgo ciruela) |
-| `--grafito` | `#6B5A63` | `#B69EAA` | Texto secundario y estado «perdida» |
-| `--papel` | `#FBF8F9` | `#120810` | Fondo de página |
-| `--superficie` | `#FFFFFF` | `#1C1018` | Tarjetas |
+| `--magenta` | `#5C2340` | `#C89BB4` | El punto, la línea del elemento activo, lo que avisa. **No** el fondo de los botones |
+| `--magenta-hover` | `#3F1730` | `#DEBACD` | *Hover* y pulsado |
+| `--magenta-velo` | `#F4EFF1` | `#211619` | Fondo teñido, muy de vez en cuando |
+| `--tinta` | `#191316` | `#F2ECEE` | Texto, logotipo **y la acción principal** |
+| `--grafito` | `#6E6167` | `#9C8F95` | Texto secundario y estado «perdida» |
+| `--papel` | `#F7F4F2` | `#0C0809` | Fondo de página |
+| `--superficie` | `#FFFFFF` | `#131011` | Tarjetas |
+
+> **El magenta se cambió por ciruela, y el token conserva el nombre.** El tono anterior (`#D4006E`) era
+> correcto en contraste y equivocado en registro: saturado, plano y repartido a partes iguales por toda
+> la pantalla —botones rellenos, pastillas de fondo, cifras enormes— hacía que una herramienta de trabajo
+> pareciera una aplicación de colorear. Lo que se arregló no fue el tono: fue **cuánto se usa**. El
+> acento pasó de rellenar bloques a señalar, la acción principal se fue a tinta, los radios bajaron de
+> 9–12 px a 3–4 px, las pastillas de 999 px desaparecieron y los titulares y las cifras pasaron a la
+> serifa que ya estaba declarada. Renombrar el token a `--ciruela` habría tocado doscientas referencias
+> para no cambiar nada.
 | `--trazo` | `#E9DDE3` | `#3A2430` | Filetes y bordes |
 | `--turquesa` | `#00767F` | `#3ED0D8` | **Uso único**: el factor *Momento* del Match |
 | `--verde` | `#0E7C5A` | `#2BB98A` | Ganada, cobrado |

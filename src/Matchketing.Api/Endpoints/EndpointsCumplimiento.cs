@@ -336,12 +336,12 @@ public static class EndpointsCumplimiento
               <title>Darse de baja · match.keting</title>
               <style>
                 :root {
-                  --magenta: #D4006E; --tinta: #241820; --suave: #6B5B64;
-                  --fondo: #FBF7F9; --tarjeta: #FFFFFF; --borde: #EADFE5; --ambar: #A66A00;
+                  --magenta: #5C2340; --tinta: #191316; --suave: #6E6167;
+                  --fondo: #F7F4F2; --tarjeta: #FFFFFF; --borde: #E2D9DA; --ambar: #8A5A16;
                 }
                 @media (prefers-color-scheme: dark) {
                   :root {
-                    --magenta: #FF4D9B; --tinta: #F6EEF2; --suave: #B9A6B0;
+                    --magenta: #C89BB4; --tinta: #F2ECEE; --suave: #9C8F95;
                     --fondo: #171114; --tarjeta: #211A1E; --borde: #372B32; --ambar: #E0A33A;
                   }
                 }

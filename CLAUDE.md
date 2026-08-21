@@ -233,9 +233,20 @@ Si añades un tipo de acción a las reglas, mira antes
 ## Interfaz
 
 Es un **único fichero**, `src/Matchketing.Api/wwwroot/index.html`: tokens, estilos, vistas y
-JavaScript. Sin dependencias externas ni paso de compilación. Paleta magenta (`--magenta: #D4006E`),
-claro y oscuro mediante `:root` + `prefers-color-scheme` + `[data-theme]`. **No hay rojo** en el
-sistema: lo que en otras herramientas sería rojo aquí va en ámbar.
+JavaScript. Sin dependencias externas ni paso de compilación. Paleta **ciruela**
+(`--magenta: #5C2340`; el token conserva el nombre viejo para no tocar doscientas referencias), claro y
+oscuro mediante `:root` + `prefers-color-scheme` + `[data-theme]`. **No hay rojo** en el sistema: lo
+que en otras herramientas sería rojo aquí va en ámbar.
+
+Y tres reglas de acabado, que son las que separan «herramienta» de «juguete»:
+
+1. **El acento no rellena bloques.** La acción principal va en tinta; el color de marca aparece al
+   pasar por encima, en la línea del elemento activo y en lo que de verdad avisa. Un bloque saturado de
+   120 px es lo primero que hace que una pantalla parezca de plástico.
+2. **Radios de 3–4 px, y ninguna pastilla de 999 px.** Lo redondo es simpático; esto no va de ser
+   simpático.
+3. **Serifa en titulares y cifras, pesos de 400 a 600.** El contraste tipográfico hace el trabajo que
+   antes se le pedía al color, y `font-weight: 800` en todo era la mitad del problema.
 
 Cuando cambies algo de la interfaz, **míralo**. Casi todos los defectos de este proyecto —CORS que
 faltaba, conversiones inventadas, Match clavado en 100, JSON crudo en pantalla, el menú que no existía

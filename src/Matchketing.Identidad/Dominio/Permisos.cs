@@ -12,6 +12,15 @@ public static class Permisos
     public const string FormularioGestionar = "formulario.gestionar";
     public const string InformeLeer = "informe.leer";
     public const string DatosExportar = "datos.exportar";
+    public const string CampaniaLeer = "campania.leer";
+
+    /// <summary>
+    /// Crear y lanzar campañas. Tiene permiso propio y **no cae dentro de `contacto.gestionar`**: una
+    /// cosa es escribirle a un cliente y otra es escribirle a cuatrocientos en nombre de la empresa. El
+    /// día que se dio de alta a un comercial nuevo, nadie pensó que le estaba dando eso.
+    /// </summary>
+    public const string CampaniaGestionar = "campania.gestionar";
+
     public const string EmpresaAjustes = "empresa.ajustes";
     public const string UsuarioGestionar = "usuario.gestionar";
 
@@ -21,6 +30,7 @@ public static class Permisos
         OportunidadLeer, OportunidadGestionar,
         TareaLeer, TareaGestionar,
         FormularioGestionar, InformeLeer, DatosExportar,
+        CampaniaLeer, CampaniaGestionar,
         EmpresaAjustes, UsuarioGestionar,
     ];
 }
@@ -49,11 +59,16 @@ public static class PermisosDeRol
             Permisos.OportunidadLeer, Permisos.OportunidadGestionar,
             Permisos.TareaLeer, Permisos.TareaGestionar,
             Permisos.InformeLeer,
+
+            // Ve las campañas y no las lanza. Ver una le hace falta: si a su cliente le llegó un correo
+            // de una campaña, tiene que poder saberlo antes de llamarle, o llama a ciegas.
+            Permisos.CampaniaLeer,
         ],
         Rol.SoloLectura =>
         [
             Permisos.ContactoLeer, Permisos.OportunidadLeer,
             Permisos.TareaLeer, Permisos.InformeLeer, Permisos.DatosExportar,
+            Permisos.CampaniaLeer,
         ],
         _ => [],
     };

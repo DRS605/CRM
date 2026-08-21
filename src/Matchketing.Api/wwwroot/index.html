@@ -745,6 +745,19 @@
   .eq-cabeza { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .eq-cabeza .quien { font-weight: 600; font-size: 14.5px; }
   .eq-cabeza .correo { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); word-break: break-all; }
+
+  /* Campañas. Misma fila que la del equipo —una línea de arriba, un párrafo y sus acciones— porque son
+     la misma forma: una cosa con nombre, un estado y dos o tres botones. Copiar la clase habría dejado
+     dos sitios que hay que tocar a la vez cada vez que se ajusta un margen. */
+  .cp-item {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 14px 0; border-bottom: 1px solid var(--trazo-suave);
+  }
+  .cp-item:last-child { border-bottom: 0; }
+  .cp-cabeza { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .cp-cabeza .quien { font-weight: 600; font-size: 14.5px; }
+  .cp-item .kpis { margin-top: 2px; }
+  .cp-item .motivos-lista { margin-top: 2px; }
   .eq-mandos { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
   .eq-mandos .campo { flex: 1 1 170px; }
   .eq-dato { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
@@ -1117,11 +1130,12 @@
       <button class="item" type="button" data-vista="cuentas" data-secundario><span class="marcador"></span>Cuentas</button>
       <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo</button>
       <button class="item" type="button" data-vista="tareas" data-secundario><span class="marcador"></span>Tareas</button>
+      <button class="item" type="button" data-vista="campanias" data-secundario data-permiso="campania.leer"><span class="marcador"></span>Campañas</button>
       <button class="item" type="button" data-vista="informes" data-secundario><span class="marcador"></span>Informes</button>
       <button class="item" type="button" data-vista="equipo" data-secundario><span class="marcador"></span>Equipo</button>
       <button class="item" type="button" data-vista="ajustes" data-secundario><span class="marcador"></span>Ajustes</button>
 
-      <!-- En un teléfono no caben nueve. Cuatro y «Más», que es lo que hace cualquier aplicación con
+      <!-- En un teléfono no caben diez. Cuatro y «Más», que es lo que hace cualquier aplicación con
            más secciones que dedos. En escritorio este botón no existe. -->
       <button class="item solo-movil" type="button" id="mas"><span class="marcador"></span>Más</button>
     </nav>
@@ -1683,6 +1697,110 @@
 
     </section>
 
+    <section id="vista-campanias" hidden>
+      <div class="titulo"><h1>Campañas</h1><span class="sub" id="sub-campanias"></span></div>
+
+      <!-- Dos paneles y en este orden a propósito: primero a quién, después qué. Al revés es como se
+           acaba mandando un correo bien escrito a la gente equivocada. -->
+      <div class="panel" style="max-width:860px">
+        <h2>Segmentos</h2>
+        <p class="explica">A quién. Un segmento no es una lista: son condiciones, y se vuelven a
+          resolver cada vez que se usa. Por eso el número de al lado es el de hoy y no el del día que lo
+          guardaste, y por eso quien pide que le borren sus datos desaparece de todos sin que nadie tenga
+          que acordarse. <strong>Nunca entra quien está de baja ni quien no tiene correo.</strong></p>
+
+        <div class="filas" id="cp-segmentos"></div>
+
+        <div class="vacio-caja" id="cp-seg-vacio" hidden>
+          <span class="grande">Todavía no hay ningún segmento</span>
+          <p class="explica">Empieza por uno fácil: «clientes». Luego ya lo afinas.</p>
+        </div>
+
+        <div class="rejilla-form" data-permiso="campania.gestionar">
+          <div class="campo">
+            <label for="cp-seg-nombre">Cómo lo llamas</label>
+            <input id="cp-seg-nombre" type="text" placeholder="Clientes de Valencia" maxlength="60" />
+          </div>
+          <div class="campo">
+            <label for="cp-seg-estado">Estado</label>
+            <select id="cp-seg-estado">
+              <option value="">Cualquiera</option>
+              <option value="1">Lead</option>
+              <option value="2">Cliente</option>
+              <option value="3">Perdido</option>
+            </select>
+            <!-- No hay «baja» en la lista, y no es un olvido. Ver la nota de `EstadoBuscado`. -->
+            <span class="pista">Quien se dio de baja no está en ninguna opción.</span>
+          </div>
+          <div class="campo">
+            <label for="cp-seg-provincia">Provincia</label>
+            <input id="cp-seg-provincia" type="text" placeholder="Valencia" maxlength="60" />
+            <span class="pista">Sale de la cuenta, así que un particular sin empresa no entra.</span>
+          </div>
+          <div class="campo">
+            <label for="cp-seg-origen">Origen</label>
+            <input id="cp-seg-origen" type="text" placeholder="formulario web" maxlength="60" />
+          </div>
+          <div class="campo">
+            <label for="cp-seg-match">Match mínimo</label>
+            <input id="cp-seg-match" type="number" min="1" max="100" placeholder="60" />
+            <span class="pista">De 1 a 100. Quien no tiene match todavía no entra.</span>
+          </div>
+          <div class="campo">
+            <label for="cp-seg-dias">Sin actividad desde (días)</label>
+            <input id="cp-seg-dias" type="number" min="1" max="3650" placeholder="90" />
+          </div>
+          <div class="campo">
+            <label for="cp-seg-etapa">Con oportunidad abierta en</label>
+            <select id="cp-seg-etapa"><option value="">Cualquier etapa</option></select>
+          </div>
+        </div>
+
+        <div class="aviso" id="cp-seg-aviso" hidden></div>
+        <div class="acciones" data-permiso="campania.gestionar">
+          <button class="btn" type="button" id="cp-seg-guardar">Guardar segmento</button>
+          <button class="btn fantasma" type="button" id="cp-seg-cancelar" hidden>Cancelar</button>
+        </div>
+      </div>
+
+      <div class="panel" style="max-width:860px">
+        <h2>Campañas</h2>
+        <p class="explica">Qué se manda. El permiso se comprueba <strong>persona a persona</strong> en el
+          momento de encolar cada correo, no una vez para todo el grupo: quien no lo tenga se queda fuera
+          y aquí abajo pone por qué. Los correos salen por lotes y firmados por quien lanza la campaña.</p>
+
+        <div class="filas" id="cp-lista"></div>
+
+        <div class="vacio-caja" id="cp-vacio" hidden>
+          <span class="grande">Ninguna campaña todavía</span>
+          <p class="explica">Hace falta un segmento y una plantilla comercial.</p>
+        </div>
+
+        <div class="rejilla-form" data-permiso="campania.gestionar">
+          <div class="campo">
+            <label for="cp-nombre">Nombre de la campaña</label>
+            <input id="cp-nombre" type="text" placeholder="Oferta de primavera" maxlength="80" />
+          </div>
+          <div class="campo">
+            <label for="cp-segmento">A quién</label>
+            <select id="cp-segmento"></select>
+          </div>
+          <div class="campo">
+            <label for="cp-plantilla">Qué se le manda</label>
+            <select id="cp-plantilla"></select>
+            <!-- Solo salen las comerciales. Mandar a quinientas personas una plantilla escrita para
+                 contestar a una es mentir sobre la base legal del envío. -->
+            <span class="pista" id="cp-plantilla-pista">Solo las plantillas comerciales.</span>
+          </div>
+        </div>
+
+        <div class="aviso" id="cp-aviso" hidden></div>
+        <div class="acciones" data-permiso="campania.gestionar">
+          <button class="btn" type="button" id="cp-crear">Crear en borrador</button>
+        </div>
+      </div>
+    </section>
+
     <section id="vista-informes" hidden>
       <div class="titulo">
         <h1>Informes</h1>
@@ -2079,7 +2197,7 @@
 
       <!-- El número lo comprueba `PruebasMovil.El_pie_dice_cuantos_modulos_hay_de_verdad` contra la
            tabla del README: se quedó en «ocho» durante cinco módulos porque nadie lo miraba. -->
-      <footer class="nota"><span class="bolita"></span> 14 módulos terminados</footer>
+      <footer class="nota"><span class="bolita"></span> 15 módulos terminados</footer>
     </section>
   </main>
 </div>
@@ -3692,6 +3810,397 @@
     }
   });
 
+  // ---------- Campañas ----------
+  //
+  // La pantalla que hace que esto sea un CRM con campañas y no una herramienta de mailing con un CRM
+  // pegado. Dos cosas la separan de lo segundo, y las dos se ven aquí:
+  //
+  // 1. El número de un segmento **es el de ahora**. Se pide al servidor cada vez que se abre la
+  //    pantalla; no hay ningún contador guardado que se pueda quedar desfasado.
+  // 2. La ficha de una campaña enseña a cuántos **no** llegó, agrupado por motivo. Ese es el número
+  //    que ninguna plataforma de envío pone junto al de entregas, porque no le conviene.
+  var segmentoEditando = null;
+  var etapasCampanias = [];
+
+  var CAMPOS_SEGMENTO = ['cp-seg-nombre', 'cp-seg-estado', 'cp-seg-provincia', 'cp-seg-origen',
+    'cp-seg-match', 'cp-seg-dias', 'cp-seg-etapa'];
+
+  function limpiarFormularioSegmento() {
+    CAMPOS_SEGMENTO.forEach(function (id) { $(id).value = ''; });
+    segmentoEditando = null;
+    $('cp-seg-guardar').textContent = 'Guardar segmento';
+    $('cp-seg-cancelar').hidden = true;
+    mostrarAviso($('cp-seg-aviso'), '');
+  }
+
+  function criteriosDelFormulario() {
+    var entero = function (id) {
+      var v = $(id).value.trim();
+      return v === '' ? null : Number(v);
+    };
+    return {
+      nombre: $('cp-seg-nombre').value,
+      estado: $('cp-seg-estado').value === '' ? null : Number($('cp-seg-estado').value),
+      provincia: $('cp-seg-provincia').value.trim() || null,
+      origen: $('cp-seg-origen').value.trim() || null,
+      matchMinimo: entero('cp-seg-match'),
+      sinActividadDias: entero('cp-seg-dias'),
+      etapaId: $('cp-seg-etapa').value || null
+    };
+  }
+
+  async function cargarCampanias() {
+    // Las etapas hacen falta para el desplegable de «con oportunidad abierta en». Se piden una sola vez:
+    // no cambian entre dos visitas a la pantalla, y si cambian, se recarga la aplicación.
+    if (etapasCampanias.length === 0) {
+      try {
+        var emb = await api('/embudo');
+        etapasCampanias = (emb.columnas || []).map(function (c) {
+          return { id: c.etapaId, nombre: c.nombre };
+        });
+      } catch (e) {
+        etapasCampanias = [];
+      }
+    }
+
+    var sel = $('cp-seg-etapa');
+    if (sel.options.length <= 1) {
+      etapasCampanias.forEach(function (e) {
+        var o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.nombre;
+        sel.appendChild(o);
+      });
+    }
+
+    var segmentos = await api('/segmentos');
+    pintarSegmentos(segmentos);
+
+    // Solo las comerciales. La API lo rechaza igual si llega otra, pero enseñar en el desplegable algo
+    // que va a dar error es hacerle perder el tiempo a quien lo elija.
+    var plantillas = (await api('/plantillas')).filter(function (p) { return p.paraQue === 'comercial'; });
+    pintarOpcionesCampania(segmentos, plantillas);
+
+    var campanias = await api('/campanias');
+    await pintarCampanias(campanias);
+
+    $('sub-campanias').textContent = campanias.length === 1
+      ? '1 campaña'
+      : campanias.length + ' campañas';
+  }
+
+  function pintarSegmentos(lista) {
+    var caja = $('cp-segmentos');
+    caja.textContent = '';
+    $('cp-seg-vacio').hidden = lista.length > 0;
+
+    lista.forEach(function (s) {
+      var fila = document.createElement('div');
+      fila.className = 'cp-item';
+
+      var cabeza = document.createElement('div');
+      cabeza.className = 'cp-cabeza';
+      var nombre = document.createElement('span');
+      nombre.className = 'quien';
+      nombre.textContent = s.nombre;
+      cabeza.appendChild(nombre);
+
+      // El número, y en presente. Es el argumento entero del módulo dicho en tres palabras.
+      var cuantos = document.createElement('span');
+      cuantos.className = 'chip ' + (s.cuantos === 0 ? 'e-perdido' : 'e-lead');
+      var pt = document.createElement('span');
+      pt.className = 'pt';
+      cuantos.appendChild(pt);
+      cuantos.appendChild(document.createTextNode(
+        s.cuantos === 1 ? '1 contacto hoy' : s.cuantos + ' contactos hoy'));
+      cabeza.appendChild(cuantos);
+      fila.appendChild(cabeza);
+
+      var frase = document.createElement('p');
+      frase.className = 'explica';
+      frase.textContent = s.frase;
+      fila.appendChild(frase);
+
+      var acciones = document.createElement('div');
+      acciones.className = 'acciones-op';
+      acciones.dataset.permiso = 'campania.gestionar';
+
+      acciones.appendChild(botonMini('Ver a quién', '', async function () {
+        var previa = await api('/segmentos/' + s.id + '/previa');
+        var nombres = previa.muestra.map(function (m) { return m.nombre; }).join(', ');
+        mostrarAviso($('cp-seg-aviso'),
+          previa.cuantos === 0
+            ? 'Ahora mismo no hay nadie en «' + s.nombre + '».'
+            : previa.cuantos + ' en total. Los primeros: ' + nombres + (previa.cuantos > previa.muestra.length ? '…' : ''),
+          true);
+      }));
+
+      acciones.appendChild(botonMini('Editar', '', function () {
+        segmentoEditando = s.id;
+        $('cp-seg-nombre').value = s.nombre;
+        $('cp-seg-estado').value = s.estado === null || s.estado === undefined ? '' : s.estado;
+        $('cp-seg-provincia').value = s.provincia || '';
+        $('cp-seg-origen').value = s.origen || '';
+        $('cp-seg-match').value = s.matchMinimo === null || s.matchMinimo === undefined ? '' : s.matchMinimo;
+        $('cp-seg-dias').value = s.sinActividadDias === null || s.sinActividadDias === undefined ? '' : s.sinActividadDias;
+        $('cp-seg-etapa').value = s.etapaId || '';
+        $('cp-seg-guardar').textContent = 'Guardar cambios';
+        $('cp-seg-cancelar').hidden = false;
+        $('cp-seg-nombre').focus();
+      }));
+
+      // Un segmento con campañas detrás no se puede borrar, así que ni se ofrece: un botón que siempre
+      // contesta que no es peor que no tener el botón.
+      if (!s.enUso) {
+        acciones.appendChild(botonMini('Borrar', 'perder', async function () {
+          try {
+            await api('/segmentos/' + s.id, { metodo: 'DELETE' });
+            await cargarCampanias();
+          } catch (e) {
+            mostrarAviso($('cp-seg-aviso'), motivoDe(e, 'No se ha podido borrar.'));
+          }
+        }));
+      }
+
+      fila.appendChild(acciones);
+      caja.appendChild(fila);
+    });
+
+    aplicarPermisos(caja);
+  }
+
+  function pintarOpcionesCampania(segmentos, plantillas) {
+    var s = $('cp-segmento');
+    s.textContent = '';
+    segmentos.forEach(function (x) {
+      var o = document.createElement('option');
+      o.value = x.id;
+      o.textContent = x.nombre + ' (' + x.cuantos + ')';
+      s.appendChild(o);
+    });
+
+    var p = $('cp-plantilla');
+    p.textContent = '';
+    plantillas.forEach(function (x) {
+      var o = document.createElement('option');
+      o.value = x.id;
+      o.textContent = x.nombre;
+      p.appendChild(o);
+    });
+
+    $('cp-plantilla-pista').textContent = plantillas.length === 0
+      ? 'No hay ninguna plantilla comercial. Se crean en Ajustes → Correo, marcando «comercial».'
+      : 'Solo las plantillas comerciales: son las que exigen consentimiento.';
+    $('cp-crear').disabled = segmentos.length === 0 || plantillas.length === 0;
+  }
+
+  async function pintarCampanias(lista) {
+    var caja = $('cp-lista');
+    caja.textContent = '';
+    $('cp-vacio').hidden = lista.length > 0;
+
+    for (var i = 0; i < lista.length; i++) {
+      caja.appendChild(await filaCampania(lista[i]));
+    }
+
+    aplicarPermisos(caja);
+  }
+
+  var CHIP_CAMPANIA = { borrador: 'e-perdido', enviando: 'e-lead', enviada: 'e-cliente', detenida: 'e-baja' };
+
+  async function filaCampania(c) {
+    var fila = document.createElement('div');
+    fila.className = 'cp-item';
+
+    var cabeza = document.createElement('div');
+    cabeza.className = 'cp-cabeza';
+    var nombre = document.createElement('span');
+    nombre.className = 'quien';
+    nombre.textContent = c.nombre;
+    cabeza.appendChild(nombre);
+
+    var chip = document.createElement('span');
+    chip.className = 'chip ' + (CHIP_CAMPANIA[c.estado] || 'e-perdido');
+    var pt = document.createElement('span');
+    pt.className = 'pt';
+    chip.appendChild(pt);
+    chip.appendChild(document.createTextNode(c.estado));
+    cabeza.appendChild(chip);
+    fila.appendChild(cabeza);
+
+    var sub = document.createElement('p');
+    sub.className = 'explica';
+    sub.textContent = (c.segmentoNombre || 'segmento borrado') + ' · ' + (c.plantillaNombre || 'plantilla borrada')
+      + (c.lanzadaEn ? ' · lanzada el ' + fecha(c.lanzadaEn) : '');
+    fila.appendChild(sub);
+
+    if (c.estado === 'borrador') {
+      var acc = document.createElement('div');
+      acc.className = 'acciones-op';
+      acc.dataset.permiso = 'campania.gestionar';
+      acc.appendChild(botonMini('Lanzar', 'ganar', function () { lanzar(c); }));
+      acc.appendChild(botonMini('Borrar', 'perder', async function () {
+        await api('/campanias/' + c.id, { metodo: 'DELETE' });
+        await cargarCampanias();
+      }));
+      fila.appendChild(acc);
+      return fila;
+    }
+
+    // Lanzada: los números. Y los dos juntos, el de los que llegaron y el de los que no.
+    var detalle = await api('/campanias/' + c.id);
+    var kpis = document.createElement('div');
+    kpis.className = 'kpis';
+    kpis.appendChild(tarjetaKpi('En el segmento', String(c.destinatarios)));
+    kpis.appendChild(tarjetaKpi('Se les mandó', String(c.encolados)));
+    kpis.appendChild(tarjetaKpi('Se quedaron fuera', String(c.excluidos), c.excluidos > 0));
+    if (detalle.correos.enviados > 0 || detalle.correos.abiertos > 0) {
+      kpis.appendChild(tarjetaKpi('Salidos', String(detalle.correos.enviados)));
+      kpis.appendChild(tarjetaKpi('Abiertos', String(detalle.correos.abiertos)));
+    }
+    if (c.pendientes > 0) {
+      kpis.appendChild(tarjetaKpi('Aún por mandar', String(c.pendientes)));
+    }
+    fila.appendChild(kpis);
+
+    if (detalle.segmentoAlLanzar) {
+      var alLanzar = document.createElement('p');
+      alLanzar.className = 'pista';
+      alLanzar.textContent = 'A quién apuntaba el día que salió: ' + detalle.segmentoAlLanzar;
+      fila.appendChild(alLanzar);
+    }
+
+    // **La pantalla que no tiene ninguna herramienta de mailing.** No un número de «no válidos»: los
+    // motivos, en castellano, ordenados de más a menos. Es lo que hay que arreglar antes de la siguiente.
+    if (detalle.porQueNoLlego.length > 0) {
+      var titulo = document.createElement('span');
+      titulo.className = 'rp-porque';
+      titulo.textContent = 'Por qué no les llegó';
+      fila.appendChild(titulo);
+
+      var mayor = detalle.porQueNoLlego[0].cuantos || 1;
+      var motivos = document.createElement('div');
+      motivos.className = 'motivos-lista';
+      detalle.porQueNoLlego.forEach(function (m) {
+        var f = document.createElement('div');
+        f.className = 'motivo-fila';
+        var q = document.createElement('span');
+        q.textContent = m.motivo;
+        var barra = document.createElement('div');
+        barra.className = 'barra-m';
+        var relleno = document.createElement('i');
+        relleno.style.width = Math.max(2, Math.round(m.cuantos / mayor * 100)) + '%';
+        barra.appendChild(relleno);
+        var cifra = document.createElement('span');
+        cifra.className = 'cifra';
+        cifra.textContent = String(m.cuantos);
+        f.appendChild(q);
+        f.appendChild(barra);
+        f.appendChild(cifra);
+        motivos.appendChild(f);
+      });
+      fila.appendChild(motivos);
+    }
+
+    if (c.estado === 'enviando') {
+      var acc2 = document.createElement('div');
+      acc2.className = 'acciones-op';
+      acc2.dataset.permiso = 'campania.gestionar';
+      acc2.appendChild(botonMini('Detener', 'perder', async function () {
+        await api('/campanias/' + c.id + '/detener', { metodo: 'POST' });
+        await cargarCampanias();
+      }));
+      fila.appendChild(acc2);
+    }
+
+    return fila;
+  }
+
+  /// Lanzar es irreversible, así que antes se enseña a cuánta gente y se pide que lo confirme.
+  ///
+  /// La confirmación **dice el número**, no «¿seguro?». Un «¿seguro?» se contesta sin leerlo; «se le va
+  /// a escribir a 412 personas» se lee, y a veces se cancela, que es justo para lo que está.
+  async function lanzar(c) {
+    var previa = await api('/segmentos/' + c.segmentoId + '/previa');
+    var cuantos = previa.cuantos;
+
+    if (cuantos === 0) {
+      mostrarAviso($('cp-aviso'), 'Ahora mismo no hay nadie en ese segmento. Revisa los criterios.');
+      return;
+    }
+
+    var texto = 'Se va a escribir a ' + cuantos + (cuantos === 1 ? ' persona' : ' personas')
+      + ' de «' + previa.nombre + '», firmado por ti.\n\n'
+      + 'Se comprobará el permiso de cada una antes de mandarle nada, así que a algunas no les llegará. '
+      + 'Lo que salga no se puede recoger.';
+
+    if (!window.confirm(texto)) { return; }
+
+    try {
+      var r = await api('/campanias/' + c.id + '/lanzar', { metodo: 'POST' });
+      mostrarAviso($('cp-aviso'),
+        'Campaña lanzada a ' + r.destinatarios + '. Los correos van saliendo por lotes.', true);
+      await cargarCampanias();
+    } catch (e) {
+      mostrarAviso($('cp-aviso'), motivoDe(e, 'No se ha podido lanzar.'));
+    }
+  }
+
+  function botonMini(texto, clase, alPulsar) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mini' + (clase ? ' ' + clase : '');
+    b.textContent = texto;
+    b.addEventListener('click', async function () {
+      b.disabled = true;
+      try { await alPulsar(); } finally { b.disabled = false; }
+    });
+    return b;
+  }
+
+  $('cp-seg-cancelar').addEventListener('click', limpiarFormularioSegmento);
+
+  $('cp-seg-guardar').addEventListener('click', async function () {
+    var b = $('cp-seg-guardar');
+    b.disabled = true;
+    try {
+      var cuerpo = criteriosDelFormulario();
+      if (segmentoEditando) {
+        await api('/segmentos/' + segmentoEditando, { metodo: 'PUT', cuerpo: cuerpo });
+      } else {
+        await api('/segmentos', { metodo: 'POST', cuerpo: cuerpo });
+      }
+      limpiarFormularioSegmento();
+      await cargarCampanias();
+    } catch (e) {
+      mostrarAviso($('cp-seg-aviso'), motivoDe(e, 'No se ha podido guardar el segmento.'));
+    } finally {
+      b.disabled = false;
+    }
+  });
+
+  $('cp-crear').addEventListener('click', async function () {
+    var b = $('cp-crear');
+    b.disabled = true;
+    try {
+      await api('/campanias', {
+        metodo: 'POST',
+        cuerpo: {
+          nombre: $('cp-nombre').value,
+          segmentoId: $('cp-segmento').value,
+          plantillaId: $('cp-plantilla').value
+        }
+      });
+      $('cp-nombre').value = '';
+      mostrarAviso($('cp-aviso'), '');
+      await cargarCampanias();
+    } catch (e) {
+      mostrarAviso($('cp-aviso'), motivoDe(e, 'No se ha podido crear la campaña.'));
+    } finally {
+      b.disabled = false;
+    }
+  });
+
   // ---------- Equipo ----------
   //
   // Aquí es donde una empresa deja de ser de una sola persona. La pantalla se pinta entera desde la
@@ -4706,6 +5215,7 @@
     cuentas: function () { subVistaCuentas('cta-lista'); cargarVistaCuentas(); },
     embudo: function () { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); },
     tareas: function () { cargarVistaTareas(); },
+    campanias: function () { cargarCampanias(); },
     informes: function () { cargarInformes(); },
     equipo: function () { cargarEquipo(); },
     ajustes: function () { abrirAjustes(); },

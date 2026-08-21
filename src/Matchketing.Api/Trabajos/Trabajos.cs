@@ -9,6 +9,7 @@ using Matchketing.Organizacion.Aplicacion;
 using Matchketing.Persistencia;
 using Matchketing.Webhooks.Aplicacion;
 using Matchketing.Correo.Aplicacion;
+using Matchketing.Campanias.Aplicacion;
 
 namespace Matchketing.Api.Trabajos;
 
@@ -309,5 +310,53 @@ public sealed class TrabajoEnvioCorreos(IServiceProvider servicios, ILogger<Trab
             (r.Reintentar > 0 ? $", {r.Reintentar} para reintentar" : string.Empty) +
             (r.Fallidos > 0 ? $", {r.Fallidos} fallidos" : string.Empty) +
             (r.Cancelados > 0 ? $", {r.Cancelados} cancelados por falta de permiso" : string.Empty) + ".";
+    }
+}
+
+
+/// <summary>
+/// Encola el siguiente lote de cada campaña en marcha.
+///
+/// Va **separado** del trabajo que envía los correos, aunque los dos corran cada minuto, y no es por
+/// orden: son dos ritmos distintos que se van a querer tocar por separado. Este limita cuánta gente
+/// entra en el buzón de salida —cincuenta por minuto, por el límite por hora del SMTP del cliente— y el
+/// otro limita cuántos se intentan entregar. Juntarlos habría atado el ritmo de las campañas al de los
+/// correos sueltos, que es justo lo que no se quiere: un correo escrito a mano tiene que salir ya, y una
+/// campaña puede tardar una hora sin que a nadie le importe.
+/// </summary>
+public sealed class TrabajoCampanias(IServiceProvider servicios, ILogger<TrabajoCampanias> logger)
+    : TrabajoPeriodico(servicios, logger)
+{
+    protected override string Nombre => "Campañas";
+
+    protected override TimeSpan Cada => TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Medio minuto después del arranque, y **antes** que el envío de correos: así lo que este encola en
+    /// una pasada lo recoge el otro en la siguiente, en vez de esperar un minuto entero de más.
+    /// </summary>
+    protected override TimeSpan Espera => TimeSpan.FromSeconds(10);
+
+    protected override async Task<string?> ParaEmpresaAsync(IServiceProvider ambito, Guid empresaId, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(ambito);
+
+        var campanias = ambito.GetRequiredService<ServicioCampanias>();
+        var unidad = ambito.GetRequiredService<IUnidadDeTrabajo>();
+
+        var r = await campanias.EncolarLoteAsync(ct).ConfigureAwait(false);
+        if (r.Campanias == 0)
+        {
+            return null;
+        }
+
+        // Guardar es obligatorio aunque no se haya encolado nada: las exclusiones también son un
+        // resultado, y sin guardarlas la pasada siguiente volvería a preguntar por la misma gente y a
+        // recibir la misma negativa, para siempre.
+        await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
+
+        return $"{r.Encolados} encolados" +
+            (r.Excluidos > 0 ? $", {r.Excluidos} excluidos por falta de permiso" : string.Empty) +
+            (r.Cerradas > 0 ? $", {r.Cerradas} campañas terminadas" : string.Empty) + ".";
     }
 }

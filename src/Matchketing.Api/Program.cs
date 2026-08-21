@@ -10,6 +10,7 @@ using Matchketing.Avisos.Dominio;
 using Matchketing.Webhooks.Aplicacion;
 using Matchketing.Correo.Aplicacion;
 using Matchketing.Automatizacion.Aplicacion;
+using Matchketing.Campanias.Aplicacion;
 using Matchketing.Contactos.Aplicacion;
 using Matchketing.Cumplimiento.Aplicacion;
 using Matchketing.Embudo.Aplicacion;
@@ -135,6 +136,17 @@ constructor.Services.AddScoped<IRepositorioReglas, RepositorioReglas>();
 constructor.Services.AddScoped<IConsultaHechos, ConsultaHechos>();
 constructor.Services.AddScoped<IAccionesAutomatizacion, AccionesAutomatizacion>();
 constructor.Services.AddScoped<ServicioAutomatizacion>();
+constructor.Services.AddScoped<IRepositorioCampanias, RepositorioCampanias>();
+constructor.Services.AddScoped<IBuscaContactosDelSegmento, ConsultaSegmentos>();
+constructor.Services.AddScoped<IConsultaEnviosDeCampania, ConsultaCampanias>();
+
+// El mismo objeto sirve los dos puertos: encolar un correo de campaña y leer si la plantilla es
+// comercial. Se registra una vez y se pide dos veces, para que las dos vistas del gancho con el módulo
+// de correo sean literalmente la misma instancia y no puedan discrepar.
+constructor.Services.AddScoped<AccionesCampanias>();
+constructor.Services.AddScoped<IEncolaCorreoDeCampania>(sp => sp.GetRequiredService<AccionesCampanias>());
+constructor.Services.AddScoped<IPlantillaDeCampania>(sp => sp.GetRequiredService<AccionesCampanias>());
+constructor.Services.AddScoped<ServicioCampanias>();
 
 // El servidor de correo. Si no está configurado, la aplicación arranca igual y los correos se quedan
 // como fallidos con el motivo escrito: caerse al arrancar por no poder mandar un correo sería peor que
@@ -197,13 +209,14 @@ constructor.Services
     .AddHttpClient<IEnviaWebhook, EnviaWebhook>(c => c.Timeout = EnviaWebhook.Espera)
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
-// Los seis trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
+// Los siete trabajos que hacen solos lo que nadie va a hacer a mano. Ver Trabajos/TrabajoPeriodico.cs.
 constructor.Services.AddHostedService<TrabajoBarridoMatch>();
 constructor.Services.AddHostedService<TrabajoReboteLeads>();
 constructor.Services.AddHostedService<TrabajoRetencion>();
 constructor.Services.AddHostedService<TrabajoAvisoRepaso>();
 constructor.Services.AddHostedService<TrabajoEntregaWebhooks>();
 constructor.Services.AddHostedService<TrabajoEnvioCorreos>();
+constructor.Services.AddHostedService<TrabajoCampanias>();
 
 // Límite de intentos en el acceso. Sin esto, la única defensa de una contraseña es su longitud, y
 // probar cien mil contraseñas contra un correo conocido no cuesta nada de dinero ni de tiempo.
@@ -345,6 +358,7 @@ app.MapearAvisos();
 app.MapearWebhooks();
 app.MapearCorreo();
 app.MapearAutomatizacion();
+app.MapearCampanias();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);

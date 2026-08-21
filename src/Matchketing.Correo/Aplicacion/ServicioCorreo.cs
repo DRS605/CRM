@@ -118,7 +118,7 @@ public sealed class ServicioCorreo(
             return Resultado.Fallo<Borrador>(redactado.Error!);
         }
 
-        var direccion = await DireccionAsync(contactoId, ct).ConfigureAwait(false);
+        var direccion = await DireccionAsync(contactoId, usuarioId, ct).ConfigureAwait(false);
         var puede = await permiso.PuedeEscribirAsync(contactoId, plantilla.ParaQue, ct).ConfigureAwait(false);
 
         return Resultado.Ok(new Borrador(
@@ -131,14 +131,54 @@ public sealed class ServicioCorreo(
     /// Encola el correo. La comprobación de permiso se hace aquí **y otra vez al enviar**: entre lo uno
     /// y lo otro pasan minutos, y en esos minutos alguien puede darse de baja.
     /// </summary>
-    public async Task<Resultado<Dominio.Correo>> EnviarAsync(
+    public Task<Resultado<Dominio.Correo>> EnviarAsync(
         Guid contactoId, Guid? plantillaId, string? asunto, string? cuerpo, ParaQue paraQue, CancellationToken ct = default)
     {
         if (contexto.EmpresaId is not { } empresaId || contexto.UsuarioId is not { } usuarioId)
         {
-            return Resultado.Fallo<Dominio.Correo>(Error.NoAutorizado("sesion.sin_usuario", "No hay sesión."));
+            return Task.FromResult(Resultado.Fallo<Dominio.Correo>(
+                Error.NoAutorizado("sesion.sin_usuario", "No hay sesión.")));
         }
 
+        return EncolarAsync(empresaId, usuarioId, contactoId, plantillaId, asunto, cuerpo, paraQue, ct);
+    }
+
+    /// <summary>
+    /// Lo mismo, pero firmado por alguien que **no es quien está haciendo la petición**.
+    ///
+    /// Existe por las campañas y solo por eso. Una campaña la lanza una persona y los correos salen por
+    /// lotes minutos u horas después, desde un trabajo de fondo donde no hay sesión de nadie. Sin esto,
+    /// el trabajo tendría que inventarse un remitente, y el hueco `{{comercial}}` saldría vacío o con el
+    /// nombre de la empresa: un correo comercial que no lo firma nadie es un correo al que no se puede
+    /// contestar.
+    ///
+    /// Quién firma es un **parámetro explícito** y no estado ambiente a propósito: es la diferencia entre
+    /// «el sistema mandó esto» y «esto lo mandó Marta», y esa diferencia tiene que estar escrita en la
+    /// llamada. Todo lo demás —el permiso, la plantilla, el buzón de salida— es idéntico: no hay un
+    /// camino rápido para campañas.
+    /// </summary>
+    public Task<Resultado<Dominio.Correo>> EnviarEnNombreDeAsync(
+        Guid usuarioId, Guid contactoId, Guid plantillaId, CancellationToken ct = default)
+    {
+        if (contexto.EmpresaId is not { } empresaId)
+        {
+            return Task.FromResult(Resultado.Fallo<Dominio.Correo>(
+                Error.Validacion("empresa.sin_seleccionar", "No hay empresa activa.")));
+        }
+
+        if (usuarioId == Guid.Empty)
+        {
+            return Task.FromResult(Resultado.Fallo<Dominio.Correo>(
+                Error.NoAutorizado("correo.sin_firma", "Un correo lo tiene que firmar alguien.")));
+        }
+
+        return EncolarAsync(empresaId, usuarioId, contactoId, plantillaId, null, null, ParaQue.Comercial, ct);
+    }
+
+    private async Task<Resultado<Dominio.Correo>> EncolarAsync(
+        Guid empresaId, Guid usuarioId, Guid contactoId, Guid? plantillaId,
+        string? asunto, string? cuerpo, ParaQue paraQue, CancellationToken ct)
+    {
         Plantilla? plantilla = null;
         if (plantillaId is { } id)
         {
@@ -179,7 +219,7 @@ public sealed class ServicioCorreo(
             return Resultado.Fallo<Dominio.Correo>(puede.Error!);
         }
 
-        var direccion = await DireccionAsync(contactoId, ct).ConfigureAwait(false);
+        var direccion = await DireccionAsync(contactoId, usuarioId, ct).ConfigureAwait(false);
 
         var correo = Dominio.Correo.Crear(
             empresaId, contactoId, usuarioId, direccion, asunto, cuerpo, paraQue, plantillaId, reloj);
@@ -290,13 +330,15 @@ public sealed class ServicioCorreo(
             .ToArray();
     }
 
-    private async Task<string?> DireccionAsync(Guid contactoId, CancellationToken ct)
+    /// <summary>
+    /// La dirección del contacto. <paramref name="usuarioId"/> **se pasa** y no se lee del contexto, y
+    /// esto ya rompió una vez: leyéndolo del contexto, un envío desde un trabajo de fondo —donde no hay
+    /// sesión— devolvía nulo, y el correo se rechazaba con «ese contacto no tiene una dirección válida».
+    /// El contacto sí la tenía; lo que faltaba era la sesión. Un mensaje de error que acusa al dato
+    /// equivocado cuesta más de encontrar que uno que no diga nada.
+    /// </summary>
+    private async Task<string?> DireccionAsync(Guid contactoId, Guid usuarioId, CancellationToken ct)
     {
-        if (contexto.UsuarioId is not { } usuarioId)
-        {
-            return null;
-        }
-
         var suyos = await datos.DeAsync(contactoId, usuarioId, ct).ConfigureAwait(false);
         return suyos?.Correo;
     }

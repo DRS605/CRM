@@ -21,5 +21,6 @@
     <ProjectReference Include="..\Matchketing.Webhooks\Matchketing.Webhooks.csproj" />
     <ProjectReference Include="..\Matchketing.Correo\Matchketing.Correo.csproj" />
     <ProjectReference Include="..\Matchketing.Automatizacion\Matchketing.Automatizacion.csproj" />
+    <ProjectReference Include="..\Matchketing.Campanias\Matchketing.Campanias.csproj" />
   </ItemGroup>
 </Project>

@@ -614,6 +614,66 @@ public sealed class PruebasMovil(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task La_pantalla_de_campanias_no_deja_elegir_a_quien_esta_de_baja()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // El desplegable de estado tiene tres opciones y ninguna es «baja». No es una comprobación de
+        // tiempo de ejecución: el valor no existe en el enumerado del dominio, así que no hay forma de
+        // escribir el filtro. Si algún día apareciera aquí, lo único que impediría el envío sería la
+        // comprobación del final, y una sola barrera para esto es una barrera de menos.
+        var estado = Entre(html, "id=\"cp-seg-estado\"", "</select>");
+        estado.Should().Contain("Lead").And.Contain("Cliente").And.Contain("Perdido");
+        estado.Should().NotContain("Baja");
+        estado.Should().NotContain("baja</option>");
+    }
+
+    [Fact]
+    public async Task Lanzar_una_campania_dice_a_cuanta_gente_antes_de_hacerlo()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // La confirmación **dice el número**, no «¿seguro?». Un «¿seguro?» se contesta sin leerlo; «se le
+        // va a escribir a 412 personas» se lee, y a veces se cancela, que es justo para lo que está. Y
+        // antes de preguntar se vuelve a resolver el segmento, porque el número de la lista puede llevar
+        // ahí un rato.
+        var lanzar = Entre(html, "async function lanzar(c)", "function botonMini");
+        lanzar.Should().Contain("api('/segmentos/' + c.segmentoId + '/previa')",
+            "el número de la confirmación se pide en ese momento, no se reutiliza el de la lista");
+        lanzar.Should().Contain("window.confirm");
+        lanzar.Should().Contain("Se va a escribir a ' + cuantos");
+        lanzar.Should().Contain("no se puede recoger", "hay que decir que es irreversible");
+    }
+
+    [Fact]
+    public async Task La_ficha_de_una_campania_ensena_a_cuantos_no_llego()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // Los dos números juntos, en la misma fila de tarjetas: a cuántos se llegó y a cuántos no. Es lo
+        // que ninguna plataforma de envío pone junto, y quitarlo convertiría esta pantalla en otra
+        // pantalla de entregas más.
+        var fila = Entre(html, "async function filaCampania(c)", "async function lanzar(c)");
+        fila.Should().Contain("tarjetaKpi('Se les mandó'");
+        fila.Should().Contain("tarjetaKpi('Se quedaron fuera'");
+        fila.Should().Contain("Por qué no les llegó");
+        fila.Should().Contain("detalle.porQueNoLlego");
+    }
+
+    [Fact]
+    public async Task El_desplegable_de_campanias_solo_ofrece_plantillas_comerciales()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        // La API rechaza igual una plantilla de atender solicitudes, pero enseñar en el desplegable algo
+        // que va a dar error es hacerle perder el tiempo a quien lo elija. Y si no hay ninguna, el texto
+        // de debajo dice dónde se crean en vez de dejar un desplegable vacío sin explicación.
+        var carga = Entre(html, "async function cargarCampanias()", "function pintarSegmentos");
+        carga.Should().Contain("p.paraQue === 'comercial'");
+        html.Should().Contain("No hay ninguna plantilla comercial");
+    }
+
+    [Fact]
     public async Task La_pagina_declara_lo_que_un_movil_necesita()
     {
         var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));

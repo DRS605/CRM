@@ -82,8 +82,9 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 12. Correo | ✅ Terminado |
 | 13. Automatización (F2) | ✅ Terminado |
 | 14. Equipo | ✅ Terminado |
+| 15. Campañas | ✅ Terminado |
 
-Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los cinco siguientes son los que hacen
+Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los siete siguientes son los que hacen
 que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto:
 
 - **[Repaso](docs/modulos/repaso.md)** reduce cerrar la semana a dos minutos.
@@ -98,6 +99,11 @@ que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto
 - **[Equipo](docs/modulos/equipo.md)** cierra un renglón del MVP que estaba a medias: una empresa ya
   puede tener dos personas. Los tres papeles y las zonas del reparto de leads existían desde el
   módulo 1 **sin ninguna forma de llegar a ellos**.
+- **[Campañas](docs/modulos/campanias.md)** es la pieza por la que hasta ahora había que contratar
+  además una herramienta de mailing. No la copia: los segmentos son condiciones sobre datos del CRM y
+  no listas que envejecen, el permiso se comprueba **persona a persona** al encolar cada correo, y la
+  ficha de la campaña dice a cuántos **no** llegó y por qué. Ese último número es el que una plataforma
+  de envío masivo no te enseña.
 
 Lo que se añadió después del octavo y no es un módulo —auditoría, trabajos en segundo plano, límite de
 intentos de acceso, sonda de salud real y el rol de base de datos sin superusuario— está en
@@ -109,7 +115,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 828 pruebas: 548 unitarias + 280 de integración
+dotnet test                                  # 903 pruebas: 602 unitarias + 301 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

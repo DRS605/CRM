@@ -69,6 +69,12 @@ public sealed class ContextoMatchketing(
 
     public DbSet<Automatizacion.Dominio.Ejecucion> Ejecuciones => Set<Automatizacion.Dominio.Ejecucion>();
 
+    public DbSet<Campanias.Dominio.Segmento> Segmentos => Set<Campanias.Dominio.Segmento>();
+
+    public DbSet<Campanias.Dominio.Campania> Campanias => Set<Campanias.Dominio.Campania>();
+
+    public DbSet<Campanias.Dominio.EnvioCampania> EnviosCampania => Set<Campanias.Dominio.EnvioCampania>();
+
     /// <summary>Empresa activa de la petición. La usan los filtros globales de los módulos de negocio.</summary>
     public Guid? EmpresaActual => contexto.EmpresaId;
 
@@ -181,6 +187,9 @@ public sealed class ContextoMatchketing(
         modelo.Entity<Correo.Dominio.Correo>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
         modelo.Entity<Automatizacion.Dominio.Regla>().HasQueryFilter(r => r.EmpresaId == EmpresaActual);
         modelo.Entity<Automatizacion.Dominio.Ejecucion>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
+        modelo.Entity<Campanias.Dominio.Segmento>().HasQueryFilter(s => s.EmpresaId == EmpresaActual);
+        modelo.Entity<Campanias.Dominio.Campania>().HasQueryFilter(c => c.EmpresaId == EmpresaActual);
+        modelo.Entity<Campanias.Dominio.EnvioCampania>().HasQueryFilter(e => e.EmpresaId == EmpresaActual);
 
         // La invitación **sí** lleva filtro, al contrario que la membresía: es un dato de una empresa
         // concreta. El endpoint público que la lee fija la empresa antes de consultar, sacándola del

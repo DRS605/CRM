@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Matchketing.Identidad.Dominio;
 using Xunit;
 
 namespace Matchketing.IntegrationTests;
@@ -86,7 +87,10 @@ public sealed class PruebasFlujoIdentidad(ApiDePrueba api)
         r.StatusCode.Should().Be(HttpStatusCode.Created);
         var cuerpo = await LeerAsync(r);
         cuerpo.GetProperty("nombreEmpresa").GetString().Should().Be("Instalaciones Ribera, S.L.");
-        cuerpo.GetProperty("permisos").GetArrayLength().Should().Be(11);
+        // Todos los que hay, sean los que sean hoy: el propietario es por definición quien los tiene
+        // todos, y esa es la afirmación. Un número escrito a mano habría dicho lo mismo hasta el día que
+        // se añade un permiso nuevo, y entonces habría fallado sin que el propietario hubiera cambiado.
+        cuerpo.GetProperty("permisos").GetArrayLength().Should().Be(Permisos.Todos.Count);
     }
 
     [Fact]

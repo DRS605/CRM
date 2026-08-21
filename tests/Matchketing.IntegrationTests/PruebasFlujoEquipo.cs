@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
+using Matchketing.Identidad.Dominio;
 using Xunit;
 
 namespace Matchketing.IntegrationTests;
@@ -62,9 +63,11 @@ public sealed class PruebasFlujoEquipo(ApiDePrueba api)
         sesion.GetProperty("nombreEmpresa").GetString().Should().Be("Instalaciones Ribera");
         sesion.GetProperty("usuario").GetProperty("email").GetString().Should().Be(email);
 
-        // Un comercial: siete permisos, y ninguno de los de administrar.
+        // Un comercial: exactamente los permisos de su rol, y ninguno de los de administrar. Se compara
+        // contra `PermisosDeRol` y no contra un número escrito a mano: un número se queda desfasado al
+        // añadir un permiso, y entonces la prueba falla por algo que no tiene nada que ver con el equipo.
         var permisos = sesion.GetProperty("permisos").EnumerateArray().Select(p => p.GetString()).ToList();
-        permisos.Should().HaveCount(7);
+        permisos.Should().BeEquivalentTo(PermisosDeRol.De(Rol.Comercial));
         permisos.Should().NotContain("usuario.gestionar");
         permisos.Should().NotContain("empresa.ajustes");
         permisos.Should().Contain("contacto.gestionar");

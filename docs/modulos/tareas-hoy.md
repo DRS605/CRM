@@ -90,6 +90,20 @@ Aplazar es un desplegable en lenguaje natural: *a mañana · al lunes · dos sem
 **Solo la primera tarjeta lleva el botón en magenta.** La pila se trabaja de arriba abajo, y cinco
 botones magenta apilados dejarían de señalar nada.
 
+## Y una lista de tareas, que llegó tarde
+
+Hoy contesta «¿qué hago ahora?»: una pila corta, ordenada, con una acción por tarjeta. Eso es
+deliberado y no cambia.
+
+Lo que faltaba es la otra pregunta: **«¿qué tengo pendiente?»**, la que se hace cuando alguien te
+pregunta por algo o cuando quieres ver si se te ha quedado algo atrás. La API estaba completa desde este
+módulo —listar, crear, completar, aplazar, descartar— y no había ninguna pantalla: las tareas solo se
+veían de una en una, dentro de Hoy, y las descartadas o hechas no se veían nunca.
+
+Ahora hay una sección **Tareas** con las pendientes y un filtro para verlas todas. Las vencidas se
+marcan en el color de la marca, se dice cuántas veces se aplazó cada una —aplazar tres veces es un dato,
+no un accidente— y si la creó el sistema.
+
 ## Tests
 
 - **Unitarios (15)**: sin fecha vence hoy, título obligatorio, completar y cerrar dos veces,

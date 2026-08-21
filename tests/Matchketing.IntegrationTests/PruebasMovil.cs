@@ -326,13 +326,18 @@ public sealed class PruebasMovil(ApiDePrueba api)
 
         html.Should().Contain("var PANELES_AJUSTES = [");
         html.Should().Contain("function abrirAjustes()");
-        html.Should().Contain("if (puede('formulario.gestionar')) { cargarFormularios(); }");
 
-        // Y ninguna carga de las que piden permiso se lanza a ciegas al abrir la pestaña.
-        var conmutador = html[html.IndexOf("b.dataset.vista === 'ajustes'", StringComparison.Ordinal)..];
-        conmutador = conmutador[..conmutador.IndexOf('}', StringComparison.Ordinal)];
-        conmutador.Should().Contain("abrirAjustes()");
-        conmutador.Should().NotContain("cargarWebhooks()");
+        // Y nada se pide a ciegas: cada pestaña de Ajustes carga lo suyo y solo si hay permiso.
+        html.Should().Contain("var CARGAS_AJUSTES = {");
+        html.Should().Contain("if (puede('formulario.gestionar')) { cargarFormularios(); }");
+        html.Should().Contain("if (puede('empresa.ajustes')) { cargarWebhooks(); }");
+
+        // Al abrir Ajustes se enseña una pestaña, no las siete: antes eran cinco peticiones de golpe
+        // para pintar paneles que estaban a dos pantallas de scroll.
+        var abrir = html[html.IndexOf("function abrirAjustes()", StringComparison.Ordinal)..];
+        abrir = abrir[..abrir.IndexOf("\n  }", StringComparison.Ordinal)];
+        abrir.Should().Contain("grupoAjustes('empresa')");
+        abrir.Should().NotContain("cargarWebhooks()");
     }
 
     [Fact]
@@ -385,6 +390,60 @@ public sealed class PruebasMovil(ApiDePrueba api)
 
         // El repaso es una cola de decisiones: quien no puede contestarlas no lo ve ni en el menú.
         html.Should().Contain("data-vista=\"repaso\" data-permiso=\"tarea.gestionar\"");
+    }
+
+    [Fact]
+    public async Task El_menu_tiene_una_entrada_por_seccion_y_en_el_movil_caben()
+    {
+        // Eran seis entradas y Ajustes se había convertido en un cajón de sastre con **catorce**
+        // paneles apilados: Cuentas y Tareas no existían como pantalla aunque su API estuviera
+        // completa, y el equipo se administraba desde un ajuste.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        foreach (var vista in new[] { "hoy", "repaso", "contactos", "cuentas", "embudo", "tareas", "informes", "equipo", "ajustes" })
+        {
+            html.Should().Contain($"data-vista=\"{vista}\"", $"«{vista}» tiene que estar en el menú");
+            html.Should().Contain($"id=\"vista-{vista}\"", $"«{vista}» tiene que tener su sección");
+        }
+
+        // Las vistas se derivan del propio menú: dos listas separadas se desincronizan a la primera.
+        html.Should().Contain("var VISTAS = Array.prototype.map.call(");
+        html.Should().NotContain("['hoy', 'repaso', 'contactos', 'embudo', 'informes', 'ajustes']");
+
+        // Nueve entradas no caben en una barra de pulgar: cuatro y «Más».
+        html.Should().Contain("data-secundario");
+        html.Should().Contain(".item[data-secundario] { display: none; }");
+        html.Should().Contain("id=\"hoja-mas\"");
+
+        // Y la hoja no es una segunda navegación: pulsa el elemento de menú de verdad.
+        html.Should().Contain("b.addEventListener('click', function () { item.click(); });");
+    }
+
+    [Fact]
+    public async Task Ajustes_deja_de_ser_una_sola_pagina_de_catorce_paneles()
+    {
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("id=\"aj-pestanas\"");
+        foreach (var grupo in new[] { "empresa", "captacion", "automatizacion", "correo", "integraciones", "datos", "cuenta" })
+        {
+            html.Should().Contain($"class=\"grupo-ajustes\" data-grupo=\"{grupo}\"");
+        }
+
+        // El equipo ya no vive en Ajustes: quién entra en la empresa no es un ajuste, es gente.
+        //
+        // Se recorta desde el principio de la sección de Ajustes hasta el final del documento, que es
+        // donde acaba: Ajustes es la última. Cuidado con recortar «hasta la siguiente sección» buscando
+        // `id="vista-` sin saltar la primera coincidencia: eso devuelve una cadena vacía y la
+        // comprobación pasa sin comprobar nada.
+        var desde = html.IndexOf("id=\"vista-ajustes\"", StringComparison.Ordinal);
+        desde.Should().BeGreaterThan(-1);
+        var ajustes = html[desde..];
+        ajustes.Should().Contain("grupo-ajustes", "se ha recortado el trozo correcto");
+        ajustes.Should().NotContain("id=\"panel-equipo\"");
+
+        // Y sí vive en su propia vista, antes de Ajustes.
+        html.IndexOf("id=\"panel-equipo\"", StringComparison.Ordinal).Should().BeLessThan(desde);
     }
 
     /// <summary>El cuerpo de una regla CSS de la hoja incrustada, para poder afirmar sobre ella.</summary>

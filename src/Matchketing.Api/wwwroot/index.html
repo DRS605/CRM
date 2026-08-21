@@ -453,7 +453,9 @@
   .oport .t { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
   .oport .i { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
   .oport .q { font-size: 12px; color: var(--grafito); }
-  .oport .acciones-op { display: flex; gap: 6px; }
+  /* Con cinco columnas en una pantalla de portátil, las tres acciones no caben en una línea y
+     «Mover» salía cortado como «Move». Que envuelvan: una etiqueta a medias no dice qué hace. */
+  .oport .acciones-op { display: flex; gap: 6px; flex-wrap: wrap; }
   .mini {
     font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
     padding: 3px 9px; border-radius: 6px; border: 1px solid var(--trazo);
@@ -577,6 +579,46 @@
     font-family: var(--mono); font-size: 12.5px; word-break: break-all;
     background: var(--superficie); border: 1px solid var(--trazo); border-radius: 7px; padding: 9px 10px;
   }
+  /* Las pestañas de Ajustes: siete, así que en un móvil tienen que envolver. */
+  .pestanas-ajustes { flex-wrap: wrap; gap: 4px 6px; margin-bottom: 4px; }
+  .grupo-ajustes { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ---- Tareas ---- */
+  .tr-fila {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 0; border-bottom: 1px solid var(--trazo-suave);
+  }
+  .tr-fila:last-child { border-bottom: 0; }
+  .tr-fila.hecha .que { text-decoration: line-through; color: var(--grafito); }
+  .tr-fila .de { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .tr-fila .que { font-size: 14.5px; font-weight: 600; }
+  .tr-fila .cuando { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
+  .tr-fila .cuando.tarde { color: var(--magenta); }
+  .tr-fila .acciones { margin: 0; flex-wrap: wrap; }
+
+  /* ---- «Más», solo en el móvil ---- */
+  .solo-movil { display: none; }
+
+  .hoja-fondo {
+    position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.42);
+    display: flex; align-items: flex-end;
+  }
+  .hoja {
+    width: 100%; background: var(--elevado); border-top-left-radius: 16px; border-top-right-radius: 16px;
+    border-top: 1px solid var(--trazo); padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: var(--sombra-alta); display: flex; flex-direction: column; gap: 10px;
+  }
+  .hoja-cabeza { display: flex; align-items: center; justify-content: space-between; }
+  .hoja-cabeza .btn { padding: 6px 12px; }
+  .hoja-filas { display: flex; flex-direction: column; }
+  .hoja-filas button {
+    font: inherit; font-size: 16px; font-weight: 600; text-align: left; cursor: pointer;
+    background: none; border: 0; border-bottom: 1px solid var(--trazo-suave);
+    color: var(--tinta); padding: 15px 2px; min-height: 52px;
+  }
+  .hoja-filas button:last-child { border-bottom: 0; }
+  .hoja-filas button .cuantas { margin-left: 8px; }
+
   /* ---- Equipo ---- */
   .eq-item {
     display: flex; flex-direction: column; gap: 8px;
@@ -749,6 +791,11 @@
        como suciedad. */
     .item .marcador { width: 18px; height: 2px; border-radius: 2px; }
     .item .pendiente { display: none; }
+
+    /* Nueve entradas en una barra de pulgar dan cuarenta píxeles cada una: ilegible. Se quedan las
+       cuatro de todos los días y el resto pasa a «Más». */
+    .item[data-secundario] { display: none; }
+    .solo-movil { display: flex; }
     /* Arriba a la derecha del elemento, como en cualquier barra de pestañas de móvil. Centrado sobre
        la etiqueta chocaba con el subrayado del elemento activo. */
     .cuantas { margin: 0; position: absolute; top: 3px; right: 6px; padding: 0 5px; font-size: 10px; }
@@ -912,6 +959,18 @@
   </div>
 </div>
 
+<!-- La hoja de «Más», solo en móvil. No duplica la navegación: cada fila pulsa el elemento de menú
+     de verdad, así que hay un solo sitio que decide qué se enseña. -->
+<div class="hoja-fondo" id="hoja-mas" hidden>
+  <div class="hoja">
+    <div class="hoja-cabeza">
+      <span class="rp-porque">Ir a</span>
+      <button class="btn fantasma" type="button" id="hoja-cerrar">Cerrar</button>
+    </div>
+    <div class="hoja-filas" id="hoja-filas"></div>
+  </div>
+</div>
+
 <!-- ============ APLICACIÓN ============ -->
 <div class="app" id="pantalla-app" hidden>
   <aside class="lateral">
@@ -922,9 +981,16 @@
            aquí, así que ni sale en el menú. -->
       <button class="item" type="button" data-vista="repaso" data-permiso="tarea.gestionar"><span class="marcador"></span>Repaso<span class="cuantas" id="menu-repaso" hidden></span></button>
       <button class="item" type="button" data-vista="contactos"><span class="marcador"></span>Contactos</button>
+      <button class="item" type="button" data-vista="cuentas" data-secundario><span class="marcador"></span>Cuentas</button>
       <button class="item" type="button" data-vista="embudo"><span class="marcador"></span>Embudo</button>
-      <button class="item" type="button" data-vista="informes"><span class="marcador"></span>Informes</button>
-      <button class="item" type="button" data-vista="ajustes"><span class="marcador"></span>Ajustes</button>
+      <button class="item" type="button" data-vista="tareas" data-secundario><span class="marcador"></span>Tareas</button>
+      <button class="item" type="button" data-vista="informes" data-secundario><span class="marcador"></span>Informes</button>
+      <button class="item" type="button" data-vista="equipo" data-secundario><span class="marcador"></span>Equipo</button>
+      <button class="item" type="button" data-vista="ajustes" data-secundario><span class="marcador"></span>Ajustes</button>
+
+      <!-- En un teléfono no caben nueve. Cuatro y «Más», que es lo que hace cualquier aplicación con
+           más secciones que dedos. En escritorio este botón no existe. -->
+      <button class="item solo-movil" type="button" id="mas"><span class="marcador"></span>Más</button>
     </nav>
     <div class="pie-lateral">
       <div class="quien">
@@ -1274,6 +1340,58 @@
       </div>
     </section>
 
+    <!-- ============ CUENTAS ============ -->
+    <!-- La empresa del contacto. Estaba en la API desde el módulo 2 y en la interfaz era **solo un
+         desplegable** en el alta de contactos: se podían elegir cuentas y no se podía crear ninguna,
+         así que el desplegable estaba siempre vacío y todos los contactos eran B2C para siempre. -->
+    <section id="vista-cuentas" hidden>
+      <div class="titulo">
+        <h1>Cuentas</h1>
+        <span class="sub" id="sub-cuentas"></span>
+      </div>
+
+      <div id="cta-lista">
+        <div class="herramientas">
+          <input class="buscador" id="cta-busca" type="search" placeholder="Buscar por nombre, NIF, sector o provincia…" />
+          <button class="btn pri" type="button" id="cta-nueva" data-permiso="contacto.gestionar">Nueva cuenta</button>
+        </div>
+        <div class="tabla-caja" id="cta-tabla-caja">
+          <table>
+            <thead><tr>
+              <th>Nombre</th><th>Sector</th><th>Provincia</th><th>Tamaño</th><th>Contactos</th>
+            </tr></thead>
+            <tbody id="cta-filas"></tbody>
+          </table>
+        </div>
+        <div class="vacio-caja" id="cta-vacio" hidden>
+          <span class="bolita"></span>
+          <div class="grande">Aún no hay cuentas</div>
+          <p>Una cuenta es la empresa a la que pertenece un contacto. Si vendes a particulares no
+            hacen falta: un contacto sin cuenta es un contacto normal.</p>
+        </div>
+      </div>
+
+      <div class="panel" id="cta-form" hidden style="max-width:720px">
+        <h2>Nueva cuenta</h2>
+        <p class="explica">Solo el nombre es obligatorio. El resto ayuda al Match: el
+          <strong>sector</strong> y el <strong>tamaño</strong> son con lo que se mide a quién se parece
+          cada cliente nuevo.</p>
+        <div class="rejilla-form">
+          <div class="campo"><label for="cta-nombre">Nombre</label><input id="cta-nombre" type="text" placeholder="Construcciones Marqués, S.L." /></div>
+          <div class="campo"><label for="cta-nif">NIF</label><input id="cta-nif" type="text" placeholder="B12345678" autocapitalize="characters" /></div>
+          <div class="campo"><label for="cta-sector">Sector</label><input id="cta-sector" type="text" placeholder="construcción, hostelería…" /></div>
+          <div class="campo"><label for="cta-provincia">Provincia</label><input id="cta-provincia" type="text" placeholder="Valencia" /></div>
+          <div class="campo"><label for="cta-tamano">Personas en plantilla</label><input id="cta-tamano" type="number" min="1" max="100000" placeholder="12" /></div>
+          <div class="campo"><label for="cta-web">Web</label><input id="cta-web" type="text" placeholder="construccionesmarques.es" /></div>
+        </div>
+        <div class="aviso" id="cta-aviso-form" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="cta-guardar" data-permiso="contacto.gestionar">Crear cuenta</button>
+          <button class="btn fantasma" type="button" id="cta-cancelar">Cancelar</button>
+        </div>
+      </div>
+    </section>
+
     <section id="vista-embudo" hidden>
       <div class="titulo">
         <h1>Embudo</h1>
@@ -1338,6 +1456,94 @@
       </div>
     </section>
 
+    <!-- ============ TAREAS ============ -->
+    <!-- Hoy contesta «¿qué hago ahora?». Esto contesta «¿qué tengo pendiente?», que es otra pregunta:
+         la primera se mira por la mañana, la segunda cuando alguien te pregunta por algo. La API de
+         tareas existía completa desde el módulo 4 y no había ninguna lista. -->
+    <section id="vista-tareas" hidden>
+      <div class="titulo">
+        <h1>Tareas</h1>
+        <span class="sub" id="sub-tareas"></span>
+      </div>
+
+      <div class="herramientas">
+        <div class="pestanas" id="tr-filtros">
+          <button class="pestana on" type="button" data-filtro="pendientes">Pendientes</button>
+          <button class="pestana" type="button" data-filtro="todas">Todas</button>
+        </div>
+        <button class="btn pri" type="button" id="tr-nueva" data-permiso="tarea.gestionar">Nueva tarea</button>
+      </div>
+
+      <div class="panel" id="tr-form" hidden style="max-width:640px">
+        <h2>Nueva tarea</h2>
+        <div class="rejilla-form">
+          <div class="campo"><label for="tr-titulo">Qué hay que hacer</label><input id="tr-titulo" type="text" placeholder="Llamar para confirmar la visita" /></div>
+          <div class="campo"><label for="tr-vence">Para cuándo</label><input id="tr-vence" type="date" /></div>
+          <div class="campo"><label for="tr-contacto">Con quién</label><select id="tr-contacto"><option value="">— Sin contacto —</option></select></div>
+        </div>
+        <div class="aviso" id="tr-aviso-form" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="tr-guardar" data-permiso="tarea.gestionar">Crear tarea</button>
+          <button class="btn fantasma" type="button" id="tr-cancelar">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="filas" id="tr-filas"></div>
+      <div class="vacio-caja" id="tr-vacio" hidden>
+        <span class="bolita"></span>
+        <div class="grande">Nada pendiente</div>
+        <p>Ni una tarea abierta. Si esto te sorprende, mira Hoy: ahí salen también los contactos sin
+          próximo paso, que no son tareas pero se te van a escapar igual.</p>
+      </div>
+      <div class="aviso" id="tr-aviso" hidden></div>
+    </section>
+
+    <!-- ============ EQUIPO ============ -->
+    <!-- Sale de Ajustes: quién entra en la empresa y con qué papel no es un ajuste, es gente. -->
+    <section id="vista-equipo" hidden>
+      <div class="titulo"><h1>Equipo</h1><span class="sub" id="sub-equipo"></span></div>
+      <div class="panel" id="panel-equipo" style="max-width:820px">
+        <p class="explica">Quién entra en esta empresa y qué puede hacer. Se invita con un enlace que le
+          pasas por donde habléis; la contraseña la elige la persona, no tú. Las <strong>zonas</strong>
+          son las provincias que cubre cada uno: es lo primero que mira el reparto de leads.</p>
+
+        <div class="filas" id="eq-lista"></div>
+
+        <div id="eq-pendientes"></div>
+
+        <div class="rejilla-form" id="eq-form">
+          <div class="campo">
+            <label for="eq-email">Correo de quien invitas</label>
+            <input id="eq-email" type="email" placeholder="vicent@ribera.es" />
+          </div>
+          <div class="campo">
+            <label for="eq-rol">Con qué papel</label>
+            <!-- Etiquetas cortas y la explicación debajo: dentro de un `select` el texto largo se
+                 recorta en un móvil, y lo que se recorta es justo la parte que explica. -->
+            <select id="eq-rol">
+              <option value="2">Comercial</option>
+              <option value="3">Solo lectura</option>
+              <option value="1">Propietario</option>
+            </select>
+            <span class="pista" id="eq-rol-pista">Vende: contactos, oportunidades y tareas.</span>
+          </div>
+        </div>
+
+        <!-- El enlace se ve **una sola vez**, como el secreto de un webhook: de la invitación solo se
+             guarda su huella, así que no se puede volver a preguntar. -->
+        <div class="secreto-caja" id="eq-enlace-caja" hidden>
+          <span class="rp-porque">Pásaselo ahora</span>
+          <code id="eq-enlace">—</code>
+          <p class="explica" id="eq-enlace-aviso">—</p>
+          <div class="acciones"><button class="btn fantasma" type="button" id="eq-enlace-vale">Ya lo tengo</button></div>
+        </div>
+
+        <div class="aviso" id="eq-aviso" hidden></div>
+        <div class="acciones"><button class="btn" type="button" id="eq-invitar">Invitar</button></div>
+      </div>
+
+    </section>
+
     <section id="vista-informes" hidden>
       <div class="titulo">
         <h1>Informes</h1>
@@ -1386,6 +1592,20 @@
     <section id="vista-ajustes" hidden>
       <div class="titulo"><h1>Ajustes</h1><span class="sub">Empresa activa</span></div>
 
+      <!-- Ajustes era una sola página con **catorce** paneles apilados: 1,8 MB de captura y ningún sitio
+           donde mirar. Las pestañas no añaden entradas al menú y sí arreglan lo que estaba mal, que era
+           no poder encontrar nada. -->
+      <div class="pestanas pestanas-ajustes" id="aj-pestanas">
+        <button class="pestana on" type="button" data-grupo="empresa">Empresa</button>
+        <button class="pestana" type="button" data-grupo="captacion">Captación</button>
+        <button class="pestana" type="button" data-grupo="automatizacion">Automatización</button>
+        <button class="pestana" type="button" data-grupo="correo">Correo</button>
+        <button class="pestana" type="button" data-grupo="integraciones">Integraciones</button>
+        <button class="pestana" type="button" data-grupo="datos">Datos</button>
+        <button class="pestana" type="button" data-grupo="cuenta">Mi cuenta</button>
+      </div>
+
+      <div class="grupo-ajustes" data-grupo="empresa">
       <div class="panel" style="max-width:820px">
         <h2>Datos de la empresa</h2>
         <p class="explica">Se corrigen aquí. El nombre es el que sale en los correos y en la copia de
@@ -1409,48 +1629,6 @@
           <button class="btn pri" type="button" id="btn-guardar-datos">Guardar datos</button>
         </div>
       </div>
-
-      <div class="panel" id="panel-equipo" style="max-width:820px">
-        <h2>Equipo</h2>
-        <p class="explica">Quién entra en esta empresa y qué puede hacer. Se invita con un enlace que le
-          pasas por donde habléis; la contraseña la elige la persona, no tú. Las <strong>zonas</strong>
-          son las provincias que cubre cada uno: es lo primero que mira el reparto de leads.</p>
-
-        <div class="filas" id="eq-lista"></div>
-
-        <div id="eq-pendientes"></div>
-
-        <div class="rejilla-form" id="eq-form">
-          <div class="campo">
-            <label for="eq-email">Correo de quien invitas</label>
-            <input id="eq-email" type="email" placeholder="vicent@ribera.es" />
-          </div>
-          <div class="campo">
-            <label for="eq-rol">Con qué papel</label>
-            <!-- Etiquetas cortas y la explicación debajo: dentro de un `select` el texto largo se
-                 recorta en un móvil, y lo que se recorta es justo la parte que explica. -->
-            <select id="eq-rol">
-              <option value="2">Comercial</option>
-              <option value="3">Solo lectura</option>
-              <option value="1">Propietario</option>
-            </select>
-            <span class="pista" id="eq-rol-pista">Vende: contactos, oportunidades y tareas.</span>
-          </div>
-        </div>
-
-        <!-- El enlace se ve **una sola vez**, como el secreto de un webhook: de la invitación solo se
-             guarda su huella, así que no se puede volver a preguntar. -->
-        <div class="secreto-caja" id="eq-enlace-caja" hidden>
-          <span class="rp-porque">Pásaselo ahora</span>
-          <code id="eq-enlace">—</code>
-          <p class="explica" id="eq-enlace-aviso">—</p>
-          <div class="acciones"><button class="btn fantasma" type="button" id="eq-enlace-vale">Ya lo tengo</button></div>
-        </div>
-
-        <div class="aviso" id="eq-aviso" hidden></div>
-        <div class="acciones"><button class="btn" type="button" id="eq-invitar">Invitar</button></div>
-      </div>
-
       <div class="panel" id="panel-match">
         <h2>Motor Match</h2>
         <p class="explica">Cuánto pesa parecerse a tus mejores clientes (<strong>Encaje</strong>)
@@ -1481,7 +1659,9 @@
           <button class="btn fantasma" type="button" id="btn-cambiar-empresa">Cambiar de empresa</button>
         </div>
       </div>
+      </div>
 
+      <div class="grupo-ajustes" data-grupo="captacion" hidden>
       <div class="panel" id="panel-captacion" style="max-width:820px">
         <h2>Formularios de captación</h2>
         <p class="explica">Un formulario en la web del cliente, con su casilla de consentimiento.
@@ -1517,7 +1697,6 @@
           </div>
         </div>
       </div>
-
       <div class="panel" id="panel-snippet" hidden style="max-width:820px">
         <h2 id="sn-titulo">Pégalo en tu web</h2>
         <p class="explica">Una línea, donde quieras que aparezca el formulario. Sin librerías y sin
@@ -1527,73 +1706,9 @@
         <div class="marco-vista" id="sn-vista"></div>
         <div class="acciones"><button class="btn fantasma" type="button" id="sn-cerrar">Cerrar</button></div>
       </div>
-
-      <div class="panel" id="panel-aperturas" style="max-width:820px">
-        <h2>Medir si abren los correos</h2>
-        <p class="explica">Con esto encendido, cada correo lleva una imagen de un píxel que nos dice
-          cuándo lo abrieron y cuántas veces. Es <strong>medir el comportamiento</strong> de una
-          persona, no gestionar un dato que te dio, así que nace apagado y lo enciendes tú.
-          Apagado, los correos salen <strong>solo en texto plano</strong>: sin imagen y sin nada que
-          cargar.</p>
-
-        <label class="casilla-suelta">
-          <input type="checkbox" id="aj-aperturas" />
-          Medir aperturas de correo
-        </label>
-        <span class="pista">Al apagarlo, los correos que ya salieron dejan de contar aperturas nuevas.
-          Lo que ya se apuntó se queda: la cronología no se edita.</span>
-
-        <div class="aviso" id="aviso-aperturas" hidden></div>
-        <div class="acciones">
-          <button class="btn pri" type="button" id="btn-guardar-aperturas">Guardar</button>
-        </div>
       </div>
 
-      <div class="panel" id="panel-retencion" style="max-width:820px">
-        <h2>Conservación de datos</h2>
-        <p class="explica">Un lead que sigue siendo lead, que nadie ha tocado y que nunca llegó a
-          tener una oportunidad se borra al cumplir este plazo. No es limpieza: guardar para siempre
-          el teléfono de alguien que preguntó un precio en 2019 no tiene ninguna base.</p>
-
-        <div class="campo" style="max-width:300px">
-          <label for="retencion">Meses que se conserva un lead</label>
-          <input id="retencion" type="number" min="3" max="120" value="24" />
-          <span class="pista">Los clientes y los contactos con oportunidad no se tocan nunca.</span>
-        </div>
-
-        <div class="aviso" id="aviso-retencion" hidden></div>
-        <div class="acciones">
-          <button class="btn pri" type="button" id="btn-guardar-retencion">Guardar plazo</button>
-          <button class="btn fantasma" type="button" id="btn-aplicar-retencion">Aplicar ahora</button>
-        </div>
-      </div>
-
-      <div class="panel" id="panel-auditoria" style="max-width:820px">
-        <h2>Registro de actividad</h2>
-        <p class="explica">Quién hizo qué y cuándo, en lo que de verdad importa: fusiones, cierres,
-          permisos, bajas y borrados. <strong>No se puede editar ni borrar</strong>, tampoco desde la
-          base de datos, y nunca guarda datos personales: solo cifras e identificadores.</p>
-        <div id="au-lista"></div>
-        <div class="acciones"><button class="btn fantasma" type="button" id="au-recargar">Actualizar</button></div>
-      </div>
-
-      <div class="panel" id="panel-avisos" style="max-width:820px">
-        <h2>Avisos al móvil</h2>
-        <p class="explica">Un aviso los viernes a las seis, solo si tienes decisiones pendientes en el
-          repaso. Si no hay nada, no se manda nada: un aviso que dice «no tienes nada» enseña a
-          ignorar los avisos.</p>
-
-        <div class="semaforo" id="av-estado"><span class="bolita"></span><span id="av-explica">—</span></div>
-
-        <div class="filas" id="av-aparatos"></div>
-
-        <div class="aviso" id="av-aviso" hidden></div>
-        <div class="acciones">
-          <button class="btn" type="button" id="av-activar">Activar en este aparato</button>
-          <button class="btn fantasma" type="button" id="av-desactivar">Desactivar aquí</button>
-        </div>
-      </div>
-
+      <div class="grupo-ajustes" data-grupo="automatizacion" hidden>
       <div class="panel" id="panel-reglas" style="max-width:820px">
         <h2>Reglas automáticas</h2>
         <p class="explica">«Si pasa esto, haz esto otro.» Sin ramas ni diagramas: una regla se lee de un
@@ -1633,7 +1748,9 @@
         <div class="aviso" id="rg-aviso" hidden></div>
         <div class="acciones"><button class="btn" type="button" id="rg-crear">Crear regla (apagada)</button></div>
       </div>
+      </div>
 
+      <div class="grupo-ajustes" data-grupo="correo" hidden>
       <div class="panel" id="panel-plantillas" style="max-width:820px">
         <h2>Plantillas de correo</h2>
         <p class="explica">El correo que escribes catorce veces, escrito una. Se manda de uno en uno
@@ -1671,7 +1788,29 @@
         <div class="aviso" id="pl-aviso" hidden></div>
         <div class="acciones"><button class="btn" type="button" id="pl-crear">Añadir plantilla</button></div>
       </div>
+      <div class="panel" id="panel-aperturas" style="max-width:820px">
+        <h2>Medir si abren los correos</h2>
+        <p class="explica">Con esto encendido, cada correo lleva una imagen de un píxel que nos dice
+          cuándo lo abrieron y cuántas veces. Es <strong>medir el comportamiento</strong> de una
+          persona, no gestionar un dato que te dio, así que nace apagado y lo enciendes tú.
+          Apagado, los correos salen <strong>solo en texto plano</strong>: sin imagen y sin nada que
+          cargar.</p>
 
+        <label class="casilla-suelta">
+          <input type="checkbox" id="aj-aperturas" />
+          Medir aperturas de correo
+        </label>
+        <span class="pista">Al apagarlo, los correos que ya salieron dejan de contar aperturas nuevas.
+          Lo que ya se apuntó se queda: la cronología no se edita.</span>
+
+        <div class="aviso" id="aviso-aperturas" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="btn-guardar-aperturas">Guardar</button>
+        </div>
+      </div>
+      </div>
+
+      <div class="grupo-ajustes" data-grupo="integraciones" hidden>
       <div class="panel" id="panel-webhooks" style="max-width:820px">
         <h2>Webhooks</h2>
         <p class="explica">Avisamos a otro sistema cuando pasa algo aquí: entra un lead, se gana una
@@ -1710,17 +1849,35 @@
         <div class="aviso" id="wh-aviso" hidden></div>
         <div class="acciones"><button class="btn" type="button" id="wh-crear">Añadir webhook</button></div>
       </div>
-
-      <div class="panel" style="max-width:820px">
-        <h2>Tu cuenta</h2>
-        <div class="rejilla-form">
-          <div class="campo"><label for="cc-actual">Contraseña actual</label><input id="cc-actual" type="password" autocomplete="current-password" /></div>
-          <div class="campo"><label for="cc-nueva">Contraseña nueva</label><input id="cc-nueva" type="password" autocomplete="new-password" /></div>
-        </div>
-        <div class="aviso" id="aviso-contrasena" hidden></div>
-        <div class="acciones"><button class="btn" type="button" id="btn-contrasena">Cambiar contraseña</button></div>
       </div>
 
+      <div class="grupo-ajustes" data-grupo="datos" hidden>
+      <div class="panel" id="panel-retencion" style="max-width:820px">
+        <h2>Conservación de datos</h2>
+        <p class="explica">Un lead que sigue siendo lead, que nadie ha tocado y que nunca llegó a
+          tener una oportunidad se borra al cumplir este plazo. No es limpieza: guardar para siempre
+          el teléfono de alguien que preguntó un precio en 2019 no tiene ninguna base.</p>
+
+        <div class="campo" style="max-width:300px">
+          <label for="retencion">Meses que se conserva un lead</label>
+          <input id="retencion" type="number" min="3" max="120" value="24" />
+          <span class="pista">Los clientes y los contactos con oportunidad no se tocan nunca.</span>
+        </div>
+
+        <div class="aviso" id="aviso-retencion" hidden></div>
+        <div class="acciones">
+          <button class="btn pri" type="button" id="btn-guardar-retencion">Guardar plazo</button>
+          <button class="btn fantasma" type="button" id="btn-aplicar-retencion">Aplicar ahora</button>
+        </div>
+      </div>
+      <div class="panel" id="panel-auditoria" style="max-width:820px">
+        <h2>Registro de actividad</h2>
+        <p class="explica">Quién hizo qué y cuándo, en lo que de verdad importa: fusiones, cierres,
+          permisos, bajas y borrados. <strong>No se puede editar ni borrar</strong>, tampoco desde la
+          base de datos, y nunca guarda datos personales: solo cifras e identificadores.</p>
+        <div id="au-lista"></div>
+        <div class="acciones"><button class="btn fantasma" type="button" id="au-recargar">Actualizar</button></div>
+      </div>
       <div class="panel" id="panel-cierre" style="max-width:820px">
         <h2>Cerrar la cuenta</h2>
         <p class="explica">Antes de irte, llévate tus datos: la copia trae contactos, cuentas,
@@ -1743,6 +1900,35 @@
             <button class="btn peligro" type="button" id="btn-borrar-empresa">Borrar la empresa para siempre</button>
           </div>
         </div>
+      </div>
+      </div>
+
+      <div class="grupo-ajustes" data-grupo="cuenta" hidden>
+      <div class="panel" style="max-width:820px">
+        <h2>Tu cuenta</h2>
+        <div class="rejilla-form">
+          <div class="campo"><label for="cc-actual">Contraseña actual</label><input id="cc-actual" type="password" autocomplete="current-password" /></div>
+          <div class="campo"><label for="cc-nueva">Contraseña nueva</label><input id="cc-nueva" type="password" autocomplete="new-password" /></div>
+        </div>
+        <div class="aviso" id="aviso-contrasena" hidden></div>
+        <div class="acciones"><button class="btn" type="button" id="btn-contrasena">Cambiar contraseña</button></div>
+      </div>
+      <div class="panel" id="panel-avisos" style="max-width:820px">
+        <h2>Avisos al móvil</h2>
+        <p class="explica">Un aviso los viernes a las seis, solo si tienes decisiones pendientes en el
+          repaso. Si no hay nada, no se manda nada: un aviso que dice «no tienes nada» enseña a
+          ignorar los avisos.</p>
+
+        <div class="semaforo" id="av-estado"><span class="bolita"></span><span id="av-explica">—</span></div>
+
+        <div class="filas" id="av-aparatos"></div>
+
+        <div class="aviso" id="av-aviso" hidden></div>
+        <div class="acciones">
+          <button class="btn" type="button" id="av-activar">Activar en este aparato</button>
+          <button class="btn fantasma" type="button" id="av-desactivar">Desactivar aquí</button>
+        </div>
+      </div>
       </div>
 
       <!-- El número lo comprueba `PruebasMovil.El_pie_dice_cuantos_modulos_hay_de_verdad` contra la
@@ -2156,8 +2342,7 @@
   // «Repaso» tiene que llevar al repaso, no a Hoy y luego dos toques más.
   function irADondePidieron() {
     var donde = new URLSearchParams(window.location.search).get('ir');
-    var boton = donde && document.querySelector('.item[data-vista="' + donde + '"]');
-    if (boton) { boton.click(); }
+    if (donde && VISTAS.indexOf(donde) >= 0) { irA(donde); }
   }
 
   // ---------- Avisos al móvil ----------
@@ -3115,6 +3300,251 @@
     chip.appendChild(document.createTextNode(w.activa ? 'Activo' : 'Apagado'));
     return chip;
   }
+
+  // ---------- Cuentas ----------
+  //
+  // La empresa del contacto. En la API desde el módulo 2; en la interfaz, hasta ahora, un desplegable
+  // que no se podía rellenar.
+
+  var cuentasCargadas = [];
+
+  function subVistaCuentas(cual) {
+    ['cta-lista', 'cta-form'].forEach(function (v) {
+      $(v).hidden = v !== cual;
+      $(v).style.display = v === cual ? '' : 'none';
+    });
+    mostrarAviso($('cta-aviso-form'), '');
+  }
+
+  async function cargarVistaCuentas() {
+    try {
+      cuentasCargadas = await api('/cuentas');
+    } catch (e) {
+      mostrarAviso($('cta-aviso-form'), motivoDe(e, 'No se han podido cargar las cuentas.'));
+      return;
+    }
+
+    // Cuántos contactos tiene cada una. Sale de la lista de contactos que ya se pide, no de un
+    // endpoint nuevo: es un dato de pantalla, no una consulta que merezca su propia ruta.
+    var porCuenta = {};
+    try {
+      (await api('/contactos')).forEach(function (c) {
+        if (c.cuentaId) { porCuenta[c.cuentaId] = (porCuenta[c.cuentaId] || 0) + 1; }
+      });
+    } catch (e) { /* sin recuento; la lista sigue sirviendo */ }
+
+    pintarCuentas(porCuenta);
+  }
+
+  function pintarCuentas(porCuenta) {
+    var busca = ($('cta-busca').value || '').trim().toLowerCase();
+    var lista = cuentasCargadas.filter(function (c) {
+      if (!busca) { return true; }
+      return [c.nombre, c.nif, c.sector, c.provincia].filter(Boolean).join(' ').toLowerCase().indexOf(busca) >= 0;
+    });
+
+    $('sub-cuentas').textContent = cuentasCargadas.length === 1 ? '1 cuenta' : cuentasCargadas.length + ' cuentas';
+    $('cta-vacio').hidden = cuentasCargadas.length > 0;
+    $('cta-tabla-caja').hidden = cuentasCargadas.length === 0;
+
+    var cuerpo = $('cta-filas');
+    cuerpo.textContent = '';
+
+    lista.forEach(function (c) {
+      var tr = document.createElement('tr');
+      [
+        c.nombre,
+        c.sector || '—',
+        c.provincia || '—',
+        c.tamano ? String(c.tamano) : '—',
+        String((porCuenta || {})[c.id] || 0)
+      ].forEach(function (texto, i) {
+        var td = document.createElement('td');
+        td.textContent = texto;
+        if (i === 0) { td.style.fontWeight = '600'; }
+        tr.appendChild(td);
+      });
+      cuerpo.appendChild(tr);
+    });
+  }
+
+  $('cta-busca').addEventListener('input', function () { pintarCuentas(); });
+  $('cta-nueva').addEventListener('click', function () { subVistaCuentas('cta-form'); });
+  $('cta-cancelar').addEventListener('click', function () { subVistaCuentas('cta-lista'); });
+
+  $('cta-guardar').addEventListener('click', async function () {
+    var boton = $('cta-guardar');
+    boton.disabled = true;
+    mostrarAviso($('cta-aviso-form'), '');
+    try {
+      await api('/cuentas', {
+        metodo: 'POST',
+        cuerpo: {
+          nombre: $('cta-nombre').value,
+          nif: $('cta-nif').value,
+          sector: $('cta-sector').value,
+          provincia: $('cta-provincia').value,
+          tamano: $('cta-tamano').value ? Number($('cta-tamano').value) : null,
+          web: $('cta-web').value
+        }
+      });
+      ['cta-nombre', 'cta-nif', 'cta-sector', 'cta-provincia', 'cta-tamano', 'cta-web']
+        .forEach(function (id) { $(id).value = ''; });
+      subVistaCuentas('cta-lista');
+      await cargarVistaCuentas();
+
+      // El desplegable del alta de contactos sale de esta misma lista: si no se refresca, la cuenta
+      // recién creada no aparece hasta recargar la página.
+      await cargarCuentas();
+    } catch (e) {
+      mostrarAviso($('cta-aviso-form'), motivoDe(e, 'No se ha podido crear la cuenta.'));
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  // ---------- Tareas ----------
+  //
+  // Hoy contesta «¿qué hago ahora?»; esto, «¿qué tengo pendiente?». La API estaba completa desde el
+  // módulo 4 y no había ninguna lista: las tareas solo se veían de una en una, en Hoy.
+
+  var filtroTareas = 'pendientes';
+
+  function botonTarea(texto, clase, alPulsar) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ' + clase;
+    b.textContent = texto;
+    b.dataset.permiso = 'tarea.gestionar';
+    b.addEventListener('click', async function () {
+      b.disabled = true;
+      mostrarAviso($('tr-aviso'), '');
+      try {
+        await alPulsar();
+      } catch (e) {
+        mostrarAviso($('tr-aviso'), motivoDe(e, 'No se ha podido completar.'));
+      }
+      b.disabled = false;
+    });
+    return b;
+  }
+
+  async function cargarVistaTareas() {
+    var lista;
+    try {
+      lista = await api('/tareas?soloPendientes=' + (filtroTareas === 'pendientes' ? 'true' : 'false'));
+    } catch (e) {
+      mostrarAviso($('tr-aviso'), motivoDe(e, 'No se han podido cargar las tareas.'));
+      return;
+    }
+
+    var pendientes = lista.filter(function (t) { return t.estado === 1; }).length;
+    $('sub-tareas').textContent = pendientes === 1 ? '1 pendiente' : pendientes + ' pendientes';
+    $('tr-vacio').hidden = lista.length > 0;
+
+    var caja = $('tr-filas');
+    caja.textContent = '';
+    var hoy = new Date().toISOString().slice(0, 10);
+
+    lista.forEach(function (t) {
+      var fila = document.createElement('div');
+      fila.className = 'tr-fila' + (t.estado === 1 ? '' : ' hecha');
+
+      var de = document.createElement('div');
+      de.className = 'de';
+      var que = document.createElement('span');
+      que.className = 'que';
+      que.textContent = t.titulo;
+      de.appendChild(que);
+
+      var cuando = document.createElement('span');
+      cuando.className = 'cuando' + (t.estado === 1 && t.venceEl < hoy ? ' tarde' : '');
+      cuando.textContent = [
+        t.estado === 1 ? (t.venceEl < hoy ? 'venció el ' + fechaCorta(t.venceEl) : 'para el ' + fechaCorta(t.venceEl))
+          : (t.estado === 2 ? 'hecha' : 'descartada'),
+        t.nombreContacto || null,
+        t.vecesAplazada > 0 ? 'aplazada ' + t.vecesAplazada + (t.vecesAplazada === 1 ? ' vez' : ' veces') : null,
+        t.origen === 2 ? 'la creó el sistema' : null
+      ].filter(Boolean).join(' · ');
+      de.appendChild(cuando);
+      fila.appendChild(de);
+
+      if (t.estado === 1) {
+        var acciones = document.createElement('div');
+        acciones.className = 'acciones';
+        acciones.appendChild(botonTarea('Hecha', '', async function () {
+          await api('/tareas/' + t.id + '/completar', { metodo: 'POST' });
+          await cargarVistaTareas();
+          await cargarHoy();
+        }));
+        acciones.appendChild(botonTarea('Descartar', 'fantasma', async function () {
+          await api('/tareas/' + t.id + '/descartar', { metodo: 'POST' });
+          await cargarVistaTareas();
+          await cargarHoy();
+        }));
+        fila.appendChild(acciones);
+      }
+
+      caja.appendChild(fila);
+    });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#tr-filtros .pestana'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('#tr-filtros .pestana'), function (o) {
+        o.classList.toggle('on', o === b);
+      });
+      filtroTareas = b.dataset.filtro;
+      cargarVistaTareas();
+    });
+  });
+
+  $('tr-nueva').addEventListener('click', async function () {
+    $('tr-form').hidden = false;
+    $('tr-vence').value = new Date().toISOString().slice(0, 10);
+
+    // El desplegable de contactos se rellena al abrir, no al cargar la aplicación: así no se pide una
+    // lista que casi nunca se va a usar.
+    var sel = $('tr-contacto');
+    while (sel.options.length > 1) { sel.remove(1); }
+    try {
+      (await api('/contactos')).forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c.id;
+        o.textContent = c.nombre;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* se puede crear una tarea sin contacto */ }
+  });
+
+  $('tr-cancelar').addEventListener('click', function () {
+    $('tr-form').hidden = true;
+    mostrarAviso($('tr-aviso-form'), '');
+  });
+
+  $('tr-guardar').addEventListener('click', async function () {
+    var boton = $('tr-guardar');
+    boton.disabled = true;
+    mostrarAviso($('tr-aviso-form'), '');
+    try {
+      await api('/tareas', {
+        metodo: 'POST',
+        cuerpo: {
+          titulo: $('tr-titulo').value,
+          contactoId: $('tr-contacto').value || null,
+          venceEl: $('tr-vence').value || null
+        }
+      });
+      $('tr-titulo').value = '';
+      $('tr-form').hidden = true;
+      await cargarVistaTareas();
+      await cargarHoy();
+    } catch (e) {
+      mostrarAviso($('tr-aviso-form'), motivoDe(e, 'No se ha podido crear la tarea.'));
+    } finally {
+      boton.disabled = false;
+    }
+  });
 
   // ---------- Equipo ----------
   //
@@ -4115,22 +4545,68 @@
     }
   });
 
-  Array.prototype.forEach.call(document.querySelectorAll('.item'), function (b) {
-    b.addEventListener('click', function () {
-      Array.prototype.forEach.call(document.querySelectorAll('.item'), function (o) {
-        o.classList.toggle('on', o === b);
-      });
-      ['hoy', 'repaso', 'contactos', 'embudo', 'informes', 'ajustes'].forEach(function (v) {
-        $('vista-' + v).hidden = v !== b.dataset.vista;
-      });
-      if (b.dataset.vista === 'contactos') { subVista('con-lista'); cargarContactos(); }
-      if (b.dataset.vista === 'embudo') { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); }
-      if (b.dataset.vista === 'hoy') { cargarHoy(); }
-      if (b.dataset.vista === 'repaso') { cargarRepaso(); }
-      if (b.dataset.vista === 'ajustes') { abrirAjustes(); }
-      if (b.dataset.vista === 'informes') { cargarInformes(); }
+  /// Las vistas salen del propio menú, no de una lista escrita a mano.
+  ///
+  /// Antes eran dos listas —los botones en el HTML y sus nombres aquí— y cada pantalla nueva era una
+  /// oportunidad de olvidarse de la segunda: el síntoma habría sido una sección que no se esconde al
+  /// cambiar de pestaña, o que no se abre. Ahora hay una sola fuente.
+  var VISTAS = Array.prototype.map.call(
+    document.querySelectorAll('#menu .item[data-vista]'), function (b) { return b.dataset.vista; });
+
+  var ALENTRAR = {
+    hoy: function () { cargarHoy(); },
+    repaso: function () { cargarRepaso(); },
+    contactos: function () { subVista('con-lista'); cargarContactos(); },
+    cuentas: function () { subVistaCuentas('cta-lista'); cargarVistaCuentas(); },
+    embudo: function () { subVistaEmbudo('emb-tablero-vista'); cargarEmbudo(); },
+    tareas: function () { cargarVistaTareas(); },
+    informes: function () { cargarInformes(); },
+    equipo: function () { cargarEquipo(); },
+    ajustes: function () { abrirAjustes(); },
+  };
+
+  function irA(vista) {
+    Array.prototype.forEach.call(document.querySelectorAll('#menu .item'), function (o) {
+      o.classList.toggle('on', o.dataset.vista === vista);
     });
+    VISTAS.forEach(function (v) { $('vista-' + v).hidden = v !== vista; });
+    cerrarHoja();
+    if (ALENTRAR[vista]) { ALENTRAR[vista](); }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#menu .item[data-vista]'), function (b) {
+    b.addEventListener('click', function () { irA(b.dataset.vista); });
   });
+
+  // ---------- La hoja de «Más» ----------
+  //
+  // No duplica la navegación: cada fila pulsa el elemento de menú de verdad. Así el estado activo, los
+  // permisos y la carga de datos siguen decidiéndose en un solo sitio.
+
+  function cerrarHoja() { $('hoja-mas').hidden = true; }
+
+  function abrirHoja() {
+    var caja = $('hoja-filas');
+    caja.textContent = '';
+
+    Array.prototype.forEach.call(document.querySelectorAll('#menu .item[data-secundario]'), function (item) {
+      // Lo que está escondido por permiso tampoco aparece aquí: la hoja es el mismo menú, no otro.
+      if (item.classList.contains('sin-permiso')) { return; }
+
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = item.dataset.vista.charAt(0).toUpperCase() + item.dataset.vista.slice(1);
+      b.addEventListener('click', function () { item.click(); });
+      caja.appendChild(b);
+    });
+
+    $('hoja-mas').hidden = false;
+  }
+
+  $('mas').addEventListener('click', abrirHoja);
+  $('hoja-cerrar').addEventListener('click', cerrarHoja);
+  $('hoja-mas').addEventListener('click', function (ev) { if (ev.target === $('hoja-mas')) { cerrarHoja(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { cerrarHoja(); } });
 
   function cerrarSesion() {
     sesion = null;
@@ -5372,19 +5848,39 @@
     ['panel-cierre', 'empresa.ajustes']
   ];
 
+  /// Qué hay que cargar al entrar en cada pestaña de Ajustes. Lo que no se ve, no se pide.
+  var CARGAS_AJUSTES = {
+    captacion: function () { if (puede('formulario.gestionar')) { cargarFormularios(); } },
+    automatizacion: function () { if (puede('empresa.ajustes')) { cargarReglas(); } },
+    correo: function () { if (puede('empresa.ajustes')) { cargarPlantillas(); } },
+    integraciones: function () { if (puede('empresa.ajustes')) { cargarWebhooks(); } },
+    datos: function () { if (puede('empresa.ajustes')) { cargarAuditoria(); } },
+    cuenta: function () { pintarAvisos(); },
+  };
+
+  function grupoAjustes(cual) {
+    Array.prototype.forEach.call(document.querySelectorAll('#aj-pestanas .pestana'), function (b) {
+      b.classList.toggle('on', b.dataset.grupo === cual);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.grupo-ajustes'), function (g) {
+      g.hidden = g.dataset.grupo !== cual;
+    });
+    if (CARGAS_AJUSTES[cual]) { CARGAS_AJUSTES[cual](); }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#aj-pestanas .pestana'), function (b) {
+    b.addEventListener('click', function () { grupoAjustes(b.dataset.grupo); });
+  });
+
   function abrirAjustes() {
     PANELES_AJUSTES.forEach(function (par) { $(par[0]).hidden = !puede(par[1]); });
 
     // El panel del fragmento de código cuelga del de captación: si aquel no se ve, este tampoco.
     if (!puede('formulario.gestionar')) { $('panel-snippet').hidden = true; }
 
-    // Y solo se pide lo que se va a poder pintar.
-    if (puede('formulario.gestionar')) { cargarFormularios(); }
-    if (puede('empresa.ajustes')) {
-      cargarAuditoria(); cargarPlantillas(); cargarReglas(); cargarWebhooks();
-    }
-    pintarAvisos();
-    cargarEquipo();
+    // Y solo se pide lo de la pestaña que se está viendo: antes se lanzaban cinco peticiones de
+    // golpe para pintar paneles que estaban a dos pantallas de scroll.
+    grupoAjustes('empresa');
   }
 
   vigilarPermisos();

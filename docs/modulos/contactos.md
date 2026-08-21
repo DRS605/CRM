@@ -78,6 +78,12 @@ que abre el fichero. Los duplicados —del propio fichero o ya existentes— se 
 | `POST` | `/contactos/importar` | `contacto.gestionar` | CSV, con previsualización |
 | `GET` `POST` | `/cuentas` | `contacto.*` | Cuentas |
 
+> **Las cuentas no tuvieron pantalla hasta mucho después.** Estos dos endpoints existían desde este
+> módulo, pero en la interfaz una cuenta era **solo un desplegable** en el alta de contactos: se podían
+> elegir y no se podía crear ninguna, así que el desplegable estaba siempre vacío y todos los contactos
+> eran B2C para siempre. Hoy hay una sección **Cuentas** en el menú, con su lista y su alta. Una API
+> completa no es una funcionalidad.
+
 ## Persistencia
 
 Esquema **`contactos`**: `contacto`, `cuenta`, `actividad`. Índices de deduplicación

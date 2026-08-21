@@ -23,6 +23,20 @@ deja de ser una columna y pasa a ser una **barra abajo**, que es donde llega el 
 bloque de usuario desaparecen de ahí: no caben en una barra de pulgar y tampoco hacen falta, porque
 quien tiene la aplicación abierta ya sabe cuál es y quién es.
 
+### Nueve secciones no caben en una barra de pulgar
+
+La barra de abajo reparte el ancho entre las entradas del menú. Con seis ya iba justa —«Ajustes» se
+salía por el borde derecho a 390 px— y al pasar a nueve cada entrada se quedaba en cuarenta píxeles:
+ilegible.
+
+Ahora la barra enseña **cuatro** —Hoy, Repaso, Contactos, Embudo— y una quinta que abre una hoja con el
+resto: Cuentas, Tareas, Informes, Equipo, Ajustes. Las secundarias van marcadas en el HTML con
+`data-secundario`, así que el reparto se decide en un atributo y no en una lista aparte.
+
+La hoja **no es una segunda navegación**: cada fila pulsa el elemento de menú de verdad. Si fueran dos
+juegos de botones, el estado activo, los permisos y la carga de datos tendrían dos sitios donde
+equivocarse. Y lo que está escondido por permiso tampoco aparece en la hoja, porque es el mismo menú.
+
 ### La página se estiraba a lo ancho
 
 `scrollWidth` 1052 contra `innerWidth` 390 en el embudo, y 785 contra 390 en contactos. El tablero mide

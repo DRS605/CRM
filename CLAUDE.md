@@ -34,7 +34,7 @@ busca si ya está documentada; casi siempre lo está, y casi siempre hay un test
 
 ```bash
 dotnet build
-dotnet test                            # 821 pruebas; necesita PostgreSQL en localhost:5432
+dotnet test                            # 823 pruebas; necesita PostgreSQL en localhost:5432
 ./scripts/comprobar-aislamiento.sh     # la RLS, que ningún test de C# puede comprobar
 ```
 
@@ -177,6 +177,15 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
   hasta la primera ficha de contacto: `pintarPrivacidad` hace `$('pv-alta').hidden = deBaja` —o sea
   **false** para un contacto normal— y volvía a enseñar lo que se acababa de esconder. Los permisos van
   con clase propia (`.sin-permiso`) y un `!important`; `hidden` se queda para las vistas.
+- **Una API completa no es una funcionalidad.** `/cuentas` y `/tareas` estaban enteras desde los
+  módulos 2 y 4, con sus tests. En la pantalla, las cuentas eran **un desplegable que no se podía
+  rellenar** —así que estaba siempre vacío y todos los contactos eran B2C para siempre— y las tareas
+  solo se veían de una en una en Hoy. Al cerrar un módulo, comprueba que se pueda **hacer** desde la
+  interfaz, no solo desde `curl`.
+- **Dos listas de lo mismo se desincronizan.** Las vistas estaban escritas a mano en el conmutador y
+  otra vez como botones en el HTML; añadir una pantalla era una oportunidad de olvidar la segunda.
+  Ahora `VISTAS` sale de `document.querySelectorAll('#menu .item[data-vista]')`. Misma regla para
+  cualquier catálogo que ya exista en el DOM.
 - **Un cubo de límite de intentos es del recurso, no de la IP.** Aceptar una invitación comprueba una
   contraseña, así que necesita techo; pero si el cubo fuera la IP, una oficina entera dándose de alta se
   estorbaría a sí misma, y compartirlo con el de entrar dejaría sin acceso a todo el mundo cinco
@@ -244,6 +253,11 @@ contarlo tapa los que sí lo son. Lo que se mide es la ventana, no cada caja.
 Dos cosas que un barrido con datos no ve, y hay que buscarlas a mano: **la empresa recién creada**
 —estados vacíos y campos que no se pueden rellenar— y **el texto que un estilo cambia** (versalitas
 encima de un nombre técnico o de una dirección de correo).
+
+Y al añadir una sección: entra en `#menu` con su `data-vista`, su `<section id="vista-…">` y su entrada
+en `ALENTRAR`. Si no es de uso diario, márcala `data-secundario` y aparecerá en «Más» en el móvil. Los
+paneles de Ajustes van dentro de un `.grupo-ajustes`, y lo que ese grupo tenga que pedir al abrirse va
+en `CARGAS_AJUSTES`: nada se pide a ciegas.
 
 ## Antes de producción
 

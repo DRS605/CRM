@@ -109,9 +109,13 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 821 pruebas: 548 unitarias + 273 de integración
+dotnet test                                  # 823 pruebas: 548 unitarias + 275 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
+
+La interfaz tiene **nueve secciones**: Hoy · Repaso · Contactos · Cuentas · Embudo · Tareas ·
+Informes · Equipo · Ajustes. En un teléfono la barra enseña cuatro y el resto va en «Más», porque
+nueve entradas en una barra de pulgar dan cuarenta píxeles cada una.
 
 Se **instala en el móvil**: manifiesto, iconos y el número de decisiones pendientes en el propio
 icono de la aplicación. Ver [`docs/movil.md`](docs/movil.md).

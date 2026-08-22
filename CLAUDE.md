@@ -160,6 +160,13 @@ Cosas que ya han costado tiempo. Están aquí para que no lo vuelvan a costar:
 - **Npgsql solo escribe `DateTimeOffset` con desfase 0.** «only offset 0 (UTC) is supported». Un límite
   de día calculado en hora local hay que pasarlo por `ToUniversalTime()` antes de que llegue a un
   `WHERE`; si no, la consulta revienta en ejecución y no al compilar.
+- **La IP del cliente no es la del socket detrás de un proxio.** Afecta al techo de intentos de acceso
+  y a la IP que queda como prueba de un consentimiento. Se activa con `Proxy:Confiar=true` y **falla
+  cerrado**: sin declararlo, `X-Forwarded-For` no se mira, porque esa cabecera la escribe cualquiera.
+- **Un correo comercial tiene que llevar la baja dentro.** En el cuerpo y en las cabeceras
+  `List-Unsubscribe` + `List-Unsubscribe-Post`; las dos, o Gmail no lo cuenta. Salían sin nada durante
+  seis módulos con la maquinaria del enlace ya construida. `PruebasEnvioSmtp` levanta un servidor SMTP
+  de verdad y lo comprueba.
 - **`Results.Ok(null)` devuelve el cuerpo vacío**, que no es JSON válido. Para «esto no existe y es
   normal», `Results.NoContent()`.
 - **Un envío desde un trabajo de fondo no tiene sesión.** `ServicioCorreo.DireccionAsync` leía el
@@ -349,11 +356,28 @@ en `ALENTRAR`. Si no es de uso diario, márcala `data-secundario` y aparecerá e
 paneles de Ajustes van dentro de un `.grupo-ajustes`, y lo que ese grupo tenga que pedir al abrirse va
 en `CARGAS_AJUSTES`: nada se pide a ciegas.
 
-## Antes de producción
+## Producción
 
-Lee [`docs/despliegue.md`](docs/despliegue.md). Lo más importante: la aplicación **tiene que
-conectarse con un rol sin privilegios de superusuario**, o la RLS no se aplica y el aislamiento entre
-empresas se queda con una sola barrera en lugar de dos.
+`docker compose -f docker-compose.produccion.yml up -d --build` y
+`./scripts/comprobar-despliegue.sh <url>`. Lee [`docs/despliegue.md`](docs/despliegue.md) antes de
+tocar nada de esto.
+
+Lo que hay que tener en la cabeza al escribir código nuevo:
+
+- **La aplicación se conecta con un rol sin superusuario**, así que las políticas por fila **se
+  aplican de verdad**. `GET /salud` contesta 503 si no es así.
+- **Cualquier escritura anterior a que haya empresa en la sesión tiene que fijar el inquilino a mano**
+  (`IContextoEmpresaPublico.FijarEmpresa` + `bd.ReaplicarEmpresaAsync`). Crear una empresa, aceptar
+  una invitación, la entrada pública de un lead. Si no, PostgreSQL rechaza la fila con «new row
+  violates row-level security policy» —y con un superusuario **no pasa**, así que las pruebas de
+  siempre no lo ven: para eso está `PruebasRolRestringido`.
+- **Una tabla nueva nace sin permisos** para `matchketing_app`. Los da `scripts/bd/permisos.sql`, que
+  se ejecuta tras cada migración y recorre los esquemas de la base, no una lista.
+- **Un secreto nuevo con valor por defecto tiene que entrar en `Secretos.Exigir`**, o un despliegue
+  arrancará con él y funcionará perfectamente. Los dos que había —la clave de firma y el secreto de
+  las bajas— estaban publicados en este repositorio.
+- **`FORCE ROW LEVEL SECURITY` también bloquea a `pg_dump`.** El rol que copia necesita `BYPASSRLS`
+  (ver `scripts/copia.sh`, que lo comprueba antes de escribir el fichero).
 
 ## Entorno de ejecución sin SDK (nota)
 

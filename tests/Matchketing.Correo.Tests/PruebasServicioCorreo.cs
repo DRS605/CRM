@@ -18,10 +18,11 @@ public sealed class PruebasServicioCorreo
     private readonly PermisoDePrueba permiso = new();
     private readonly DatosDePrueba datos = new();
     private readonly EmisorDePrueba emisor = new();
+    private readonly EnlacesDePrueba enlaces = new();
     private readonly CronologiaDePrueba cronologia = new();
 
     private ServicioCorreo Servicio => new(
-        repositorio, permiso, datos, emisor, cronologia, new ContextoDePrueba(Empresa, Usuario), reloj);
+        repositorio, permiso, datos, emisor, enlaces, cronologia, new ContextoDePrueba(Empresa, Usuario), reloj);
 
     private async Task<Plantilla> PlantillaAsync(ParaQue paraQue = ParaQue.AtenderSolicitud)
     {
@@ -311,5 +312,54 @@ public sealed class PruebasServicioCorreo
         correo.Cuerpo.Should().Be("Hola Manolo.");
         correo.Aperturas.Should().Be(1);
         correo.PrimeraAperturaEn.Should().NotBeNull();
+    }
+
+    // ---------- El enlace de baja ----------
+
+    [Fact]
+    public async Task Un_correo_comercial_sale_con_enlace_de_baja()
+    {
+        // **Salían sin él.** La maquinaria estaba entera —enlace firmado, ruta pública, pantalla— y no
+        // llegaba al único sitio donde hace falta: dentro del correo. Es obligatorio en una
+        // comunicación comercial, y es lo que piden Gmail y Outlook para no tratarla como no deseada.
+        var plantilla = await PlantillaAsync(ParaQue.Comercial);
+        (await Servicio.EnviarAsync(Contacto, plantilla.Id, null, null, ParaQue.Comercial))
+            .Exito.Should().BeTrue();
+
+        await Servicio.EnviarPendientesAsync(null);
+
+        emisor.Intentos.Should().ContainSingle();
+        emisor.Intentos[0].UrlBaja.Should().Be(enlaces.Devuelve);
+    }
+
+    [Fact]
+    public async Task Una_respuesta_a_lo_que_preguntaron_no_lleva_enlace_de_baja()
+    {
+        // Sería absurdo: no se ha apuntado a nada de lo que darse de baja, y ofrecerle salir de una
+        // lista que no existe hace dudar de si su pregunta se ha entendido.
+        var plantilla = await PlantillaAsync(ParaQue.AtenderSolicitud);
+        (await Servicio.EnviarAsync(Contacto, plantilla.Id, null, null, ParaQue.AtenderSolicitud))
+            .Exito.Should().BeTrue();
+
+        await Servicio.EnviarPendientesAsync(null);
+
+        emisor.Intentos.Should().ContainSingle();
+        emisor.Intentos[0].UrlBaja.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Sin_poder_firmar_el_enlace_el_correo_sale_igual()
+    {
+        // Devolver nulo es lo correcto: un correo sin enlace es peor que un correo, y una excepción
+        // aquí tiraría la pasada de envíos entera por un enlace.
+        enlaces.Devuelve = null;
+        var plantilla = await PlantillaAsync(ParaQue.Comercial);
+        (await Servicio.EnviarAsync(Contacto, plantilla.Id, null, null, ParaQue.Comercial))
+            .Exito.Should().BeTrue();
+
+        var resumen = await Servicio.EnviarPendientesAsync(null);
+
+        resumen.Enviados.Should().Be(1);
+        emisor.Intentos[0].UrlBaja.Should().BeNull();
     }
 }

@@ -85,6 +85,7 @@ El motivo está en [`docs/modulos/auditoria.md`](docs/modulos/auditoria.md).
 | 15. Campañas | ✅ Terminado |
 | 16. Objetivos | ✅ Terminado |
 | 17. Campos propios | ✅ Terminado |
+| 18. Despliegue | ✅ Terminado |
 
 Los ocho primeros son el MVP: con ellos ya se puede trabajar. Los nueve siguientes son los que hacen
 que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto:
@@ -116,9 +117,14 @@ que un comercial vuelva al día siguiente, y cada uno cierra un agujero concreto
   traicionan la tesis del producto: no son obligatorios, no aparecen en Hoy y el sistema no pide que se
   rellenen.
 
+Y el **18 no añade ninguna pantalla**: pone esto en un servidor. Cinco contenedores, HTTPS automático,
+copias con restauración probada y la aplicación conectándose con un rol de base de datos sin
+privilegios. Encontró cuatro fallos que solo existen fuera del portátil —entre ellos que **no se podía
+crear una empresa** y que **no se podían hacer copias de seguridad**—, y los cuatro están contados con
+su porqué en [`docs/despliegue.md`](docs/despliegue.md).
+
 Lo que se añadió después del octavo y no es un módulo —auditoría, trabajos en segundo plano, límite de
-intentos de acceso, sonda de salud real y el rol de base de datos sin superusuario— está en
-[`docs/despliegue.md`](docs/despliegue.md).
+intentos de acceso y la sonda de salud— también está ahí.
 
 ## Puesta en marcha
 
@@ -126,7 +132,7 @@ Requisitos: **.NET 8 SDK** y **PostgreSQL** en `localhost:5432` (`postgres`/`pos
 
 ```bash
 dotnet build
-dotnet test                                  # 1.034 pruebas: 693 unitarias + 341 de integración
+dotnet test                                  # 1.053 pruebas: 696 unitarias + 357 de integración
 dotnet run --project src/Matchketing.Api     # http://localhost:5280
 ```
 

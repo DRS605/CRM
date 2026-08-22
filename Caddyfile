@@ -1,0 +1,30 @@
+# El proxio. Hace tres cosas y ninguna de ellas es opinable:
+#
+# 1. HTTPS con certificado pedido y renovado solo. Sin tarea de renovación que olvidar.
+# 2. Redirige HTTP a HTTPS.
+# 3. Pasa la IP del cliente en `X-Forwarded-For`, que es lo que la aplicación necesita para el techo de
+#    intentos de acceso y para la IP que queda escrita como prueba de un consentimiento.
+#
+# Las cabeceras de seguridad **no** van aquí: van en la propia aplicación. Una protección que vive en la
+# configuración de otro programa es una protección que se pierde en la primera mudanza.
+{
+	email {$MK_CORREO_TLS}
+	# Un servidor que no atiende a nadie más no necesita anunciarse.
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+{$MK_DOMINIO} {
+	encode zstd gzip
+
+	reverse_proxy app:8080 {
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

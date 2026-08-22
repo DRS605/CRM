@@ -29,8 +29,40 @@ using Matchketing.Persistencia.Repositorios;
 using Matchketing.Repaso.Aplicacion;
 using Matchketing.Persistencia.Seguridad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
+// ---------------------------------------------------------------------------------------------------
+// Modo sonda. `dotnet Matchketing.Api.dll --comprobar-salud` pregunta a `/salud` y sale con 0 o con 1.
+//
+// Existe para que el contenedor pueda comprobarse a sí mismo **sin instalar nada**. La alternativa era
+// un `apt-get install curl` en la imagen final: un gestor de paquetes, una lista de repositorios y una
+// dependencia de red en la construcción, todo para hacer una petición HTTP desde un proceso que ya
+// sabe hacer peticiones HTTP.
+if (args.Contains("--comprobar-salud", StringComparer.Ordinal))
+{
+    // El puerto sale de donde escucha la aplicación, así que cambiarlo no rompe la sonda.
+    var donde = (Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://localhost:8080")
+        .Split(';', StringSplitOptions.RemoveEmptyEntries)[0]
+        .Replace("+", "localhost", StringComparison.Ordinal)
+        .Replace("*", "localhost", StringComparison.Ordinal)
+        .TrimEnd('/');
+
+    using var sonda = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+    try
+    {
+        var respuesta = await sonda.GetAsync(new Uri(donde + "/salud")).ConfigureAwait(false);
+        var cuerpo = await respuesta.Content.ReadAsStringAsync().ConfigureAwait(false);
+        Console.WriteLine(cuerpo);
+        return respuesta.IsSuccessStatusCode ? 0 : 1;
+    }
+    catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+    {
+        Console.Error.WriteLine("sin respuesta de " + donde + "/salud: " + ex.Message);
+        return 1;
+    }
+}
 
 var constructor = WebApplication.CreateBuilder(args);
 
@@ -133,6 +165,7 @@ constructor.Services.AddScoped<IConsultaDatosDelEnvio, ConsultaDatosDelEnvio>();
 constructor.Services.AddScoped<IPermisoDeEnvio, PermisoDeEnvio>();
 constructor.Services.AddScoped<IApuntaEnCronologia, ApuntaEnCronologia>();
 constructor.Services.AddScoped<IEnviaCorreo, EnviaCorreoSmtp>();
+constructor.Services.AddScoped<IEnlaceDeBaja, EnlaceDeBajaFirmado>();
 constructor.Services.AddScoped<ServicioCorreo>();
 constructor.Services.AddScoped<IRepositorioReglas, RepositorioReglas>();
 constructor.Services.AddScoped<IConsultaHechos, ConsultaHechos>();
@@ -286,6 +319,55 @@ constructor.Services.AddRateLimiter(o =>
     };
 });
 
+// **Detrás de un proxy inverso, la IP del cliente no es la del socket.** Es el detalle que convierte
+// tres cosas correctas en tres cosas falsas, y ninguna de las tres avisa:
+//
+// 1. El techo de intentos de acceso reparte por IP. Con la del proxy, **todo el mundo comparte cubo**:
+//    veinte intentos fallidos de cualquiera dejan sin entrar a la empresa entera.
+// 2. La IP del consentimiento —`cumplimiento.consentimiento`— es parte de la prueba de que alguien
+//    aceptó. Guardar la del proxy no rompe nada visible: deja una prueba que no prueba nada.
+// 3. Lo mismo con la IP del envío de un formulario.
+//
+// Y el arreglo obvio —confiar en `X-Forwarded-For` siempre— es peor que el problema: cualquiera puede
+// mandar esa cabecera, así que se podría elegir la IP que queda escrita en el consentimiento y saltarse
+// el techo de intentos cambiándola en cada petición.
+//
+// Así que **falla cerrado**: solo se lee la cabecera si el despliegue declara que hay un proxio delante
+// (`Proxy:Confiar=true`), y solo se acepta viniendo de las redes declaradas. Sin declararlo, la IP es
+// la del socket, que es la verdad cuando no hay nada delante.
+constructor.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Un solo salto. Con más, la IP se toma de más a la izquierda de la lista, que es la parte que
+    // escribe el cliente y por tanto la que se puede inventar.
+    o.ForwardLimit = 1;
+
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+
+    var declaradas = (constructor.Configuration["Proxy:Redes"] ?? string.Empty)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    // Sin redes declaradas se confía en las privadas, que es el caso de un contenedor con el proxio al
+    // lado en la misma red. Es un valor por defecto útil y **solo se usa si alguien ya dijo que hay
+    // proxio**: los dos interruptores tienen que estar puestos.
+    if (declaradas.Length == 0)
+    {
+        declaradas = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "::1/128"];
+    }
+
+    foreach (var red in declaradas)
+    {
+        var partes = red.Split('/');
+        if (System.Net.IPAddress.TryParse(partes[0], out var direccion)
+            && int.TryParse(partes.ElementAtOrDefault(1) ?? "32", CultureInfo.InvariantCulture, out var prefijo))
+        {
+            o.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(direccion, prefijo));
+        }
+    }
+});
+
 constructor.Services.AddAuthentication("Bearer").AddJwtBearer();
 
 // Los parámetros de validación se configuran con `AjustesJwt` **resuelto del contenedor**, no con una
@@ -321,7 +403,14 @@ constructor.Services.AddCors(o => o.AddPolicy("captacion", p => p
 constructor.Services.AddEndpointsApiExplorer();
 constructor.Services.AddSwaggerGen(o => o.SwaggerDoc("v1", new() { Title = "match.keting", Version = "v1" }));
 
+constructor.Services.AddSingleton<Aislamiento>();
+
 var app = constructor.Build();
+
+// **Antes de escuchar en ningún puerto.** Si un secreto sigue con el valor de desarrollo —que está
+// publicado en el repositorio— la aplicación no arranca y dice cuál y por qué. Va aquí, después de
+// `Build()`, para que estén todas las fuentes de configuración cargadas.
+Secretos.Exigir(app.Configuration, app.Environment);
 
 if (app.Environment.IsDevelopment())
 {
@@ -332,6 +421,54 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Lo primero de todo, antes de que algo mire la IP o el esquema: si hay proxio declarado, se traduce
+// aquí y el resto de la aplicación no se entera de que existe.
+if (app.Configuration.GetValue("Proxy:Confiar", false))
+{
+    app.UseForwardedHeaders();
+}
+
+// HSTS solo en producción, y **nunca** en desarrollo: un `Strict-Transport-Security` en localhost se
+// queda pegado en el navegador durante meses y deja `http://localhost` inaccesible para todos los
+// proyectos que usen ese puerto. Es un tiro en el pie clásico.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
+// Cabeceras de seguridad. Van en un middleware propio y no en el proxio a propósito: si mañana esto se
+// despliega detrás de otra cosa —o sin nada delante—, las cabeceras siguen puestas. Una protección que
+// vive en la configuración de otro programa es una protección que se pierde en la primera mudanza.
+app.Use(async (contexto, siguiente) =>
+{
+    var cabeceras = contexto.Response.Headers;
+    cabeceras["X-Content-Type-Options"] = "nosniff";
+    cabeceras["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    cabeceras["X-Frame-Options"] = "DENY";
+
+    // El fragmento de captación es un `<script src>` en la web del cliente, **no un iframe**, así que
+    // prohibir el marco no rompe nada y evita el secuestro de clics sobre la aplicación.
+    //
+    // `'unsafe-inline'` está y es una concesión de verdad, no un descuido: la aplicación es un solo
+    // fichero con su estilo y su guion dentro, servido como fichero estático. Quitarlo exige un nonce
+    // por petición, y para eso hay que dejar de servir la página como estática. Se acepta y se escribe:
+    // a cambio, `default-src 'self'` deja fuera cualquier origen externo, que es la mitad del valor de
+    // una CSP en una aplicación sin dependencias.
+    cabeceras["Content-Security-Policy"] =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data:; " +
+        "font-src 'self'; " +
+        "connect-src 'self'; " +
+        "worker-src 'self'; " +
+        "base-uri 'self'; " +
+        "form-action 'self'; " +
+        "frame-ancestors 'none'";
+
+    await siguiente(contexto).ConfigureAwait(false);
+});
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -345,12 +482,36 @@ app.UseAuthorization();
 // El anterior devolvía «vivo» mientras el proceso respondiera, lo cual es exactamente el estado en el
 // que un equilibrador de carga **no** debe mandarte tráfico: proceso arriba y base de datos caída es
 // el caso que la sonda tiene que detectar, y era el único que no detectaba.
-app.MapGet("/salud", async (ContextoMatchketing bd, CancellationToken ct) =>
-        await bd.Database.CanConnectAsync(ct).ConfigureAwait(false)
-            ? Results.Ok(new { estado = "vivo", base_datos = "ok" })
-            : Results.Json(new { estado = "enfermo", base_datos = "sin conexión" }, statusCode: StatusCodes.Status503ServiceUnavailable))
+app.MapGet("/salud", async (ContextoMatchketing bd, Aislamiento aislamiento, CancellationToken ct) =>
+{
+    if (!await bd.Database.CanConnectAsync(ct).ConfigureAwait(false))
+    {
+        return Results.Json(
+            new { estado = "enfermo", base_datos = "sin conexión" },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    // Y la segunda pregunta, que es la que nadie hace: ¿está puesta la segunda barrera del aislamiento?
+    // Con un rol superusuario las políticas por fila no se aplican y el producto promete algo que no
+    // cumple, sin que falle nada. Aquí sí falla.
+    if (!await aislamiento.DosBarrerasAsync(bd, ct).ConfigureAwait(false))
+    {
+        return Results.Json(
+            new
+            {
+                estado = "enfermo",
+                base_datos = "ok",
+                aislamiento = "una sola barrera: el rol de la conexión es superusuario, así que las " +
+                    "políticas por fila de PostgreSQL no se le aplican. Conéctate con un rol normal " +
+                    "(ver docs/despliegue.md).",
+            },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    return Results.Ok(new { estado = "vivo", base_datos = "ok", aislamiento = "dos barreras" });
+})
     .WithTags("Sistema")
-    .WithSummary("Sonda de salud. Devuelve 503 si no se llega a la base de datos.");
+    .WithSummary("Sonda de salud. Devuelve 503 si no se llega a la base o si falta una barrera del aislamiento.");
 
 app.MapearIdentidad();
 app.MapearOrganizacion();
@@ -374,6 +535,10 @@ app.MapearCampos();
 app.MapFallbackToFile("index.html");
 
 await app.RunAsync().ConfigureAwait(false);
+
+// El `return 0` es por el modo sonda de arriba: en cuanto un camino del punto de entrada devuelve un
+// número, todos tienen que devolverlo.
+return 0;
 
 /// <summary>Expuesto para que los tests de integración puedan levantar la API con WebApplicationFactory.</summary>
 public partial class Program;

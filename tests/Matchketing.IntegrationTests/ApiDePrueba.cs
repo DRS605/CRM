@@ -30,6 +30,19 @@ public sealed class ApiDePrueba : WebApplicationFactory<Program>, IAsyncLifetime
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:Matchketing"] = Conexion,
+
+                // En producción la aplicación **no arranca** con los secretos de desarrollo, y estas
+                // pruebas corren en producción a propósito. Así que hay que dárselos, y eso es parte de
+                // lo que se comprueba: si mañana se añade otro secreto obligatorio, estas pruebas se
+                // caen en el arranque y no en el primer despliegue.
+                ["Jwt:Clave"] = "clave-de-pruebas-de-integracion-suficientemente-larga-0123456789",
+                ["Baja:Secreto"] = "secreto-de-pruebas-de-integracion-suficientemente-largo-0123456789",
+                ["Baja:UrlBase"] = "https://pruebas.matchketing.es",
+
+                // Y hay que decir en voz alta que se conecta como superusuario: crea y borra la base en
+                // cada arranque, así que no puede ser un rol normal. La sonda de salud contesta 503 si
+                // esto no está puesto, que es lo que se quiere en un despliegue de verdad.
+                ["Aislamiento:PermitirSuperusuario"] = "true",
             }));
     }
 

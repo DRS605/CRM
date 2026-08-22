@@ -5,3 +5,7 @@
 bin/
 obj/
 scratchpad/
+
+# Los secretos del despliegue y las copias de seguridad no van al repositorio.
+.env
+copias/

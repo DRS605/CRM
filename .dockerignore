@@ -1,0 +1,14 @@
+# Lo que no tiene que entrar en el contexto de construcción. Sin esto, `docker build` manda al demonio
+# los `bin`, los `obj` y la caché de NuGet del repositorio —cientos de megas— y además arrastra
+# artefactos compilados en otra máquina dentro de la imagen.
+**/bin/
+**/obj/
+.git/
+.github/
+.nuget/
+scratchpad/
+docs/
+*.md
+Dockerfile
+.dockerignore
+docker-compose*.yml

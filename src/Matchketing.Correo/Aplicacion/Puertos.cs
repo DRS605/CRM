@@ -37,6 +37,21 @@ public interface IPermisoDeEnvio
     Task<Resultado> PuedeEscribirAsync(Guid contactoId, ParaQue paraQue, CancellationToken ct = default);
 }
 
+/// <summary>
+/// El enlace de baja de un contacto, o nulo si no se puede construir.
+///
+/// Otro puerto que ata este módulo al de cumplimiento sin referenciarlo: el enlace lo firma
+/// Cumplimiento con su secreto, y la implementación vive en la API, que conoce los dos.
+///
+/// Existe porque **los correos comerciales salían sin ninguna forma de darse de baja**. La maquinaria
+/// estaba entera —el enlace firmado, la ruta pública, la pantalla— y no llegaba al único sitio donde
+/// hace falta: dentro del correo. Se veía en la ficha del contacto, para copiarlo a mano.
+/// </summary>
+public interface IEnlaceDeBaja
+{
+    string? De(Guid contactoId);
+}
+
 /// <summary>Lo que hace falta saber del contacto y de quien escribe para rellenar una plantilla.</summary>
 public interface IConsultaDatosDelEnvio
 {
@@ -49,7 +64,8 @@ public interface IConsultaDatosDelEnvio
 /// </summary>
 public interface IEnviaCorreo
 {
-    Task<ResultadoEnvioCorreo> EnviarAsync(Dominio.Correo correo, string? urlPixel, CancellationToken ct = default);
+    Task<ResultadoEnvioCorreo> EnviarAsync(
+        Dominio.Correo correo, string? urlPixel, string? urlBaja, CancellationToken ct = default);
 }
 
 /// <summary>

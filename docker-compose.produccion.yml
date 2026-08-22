@@ -1,0 +1,119 @@
+# Despliegue de producción: base de datos, migraciones, permisos, aplicación y un proxio con HTTPS
+# automático. Cinco servicios y ningún paso manual.
+#
+#   cp .env.ejemplo .env      # y rellenarlo: sin secretos por defecto, a propósito
+#   docker compose -f docker-compose.produccion.yml up -d --build
+#   ./scripts/comprobar-despliegue.sh
+#
+# Lo que hace este fichero y no hace el de desarrollo:
+#
+# · La aplicación se conecta con **`matchketing_app`**, que no es superusuario. Es la mitad del
+#   aislamiento entre empresas: las políticas por fila no se aplican a un superusuario, así que
+#   desplegar con `postgres` deja una sola barrera en lugar de dos y no falla nada.
+# · Las **migraciones** las aplica un contenedor aparte con el rol dueño, y termina. La aplicación
+#   arranca con un rol que no puede crear ni una tabla.
+# · La base de datos **no publica ningún puerto**. Se llega a ella desde la red interna y desde nada más.
+
+name: matchketing
+
+services:
+  bd:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${MK_BD_DUENO:?falta MK_BD_DUENO}
+      POSTGRES_PASSWORD: ${MK_BD_CLAVE_DUENO:?falta MK_BD_CLAVE_DUENO}
+      POSTGRES_DB: ${MK_BD_NOMBRE:-matchketing}
+      MK_CLAVE_APP: ${MK_BD_CLAVE_APP:?falta MK_BD_CLAVE_APP}
+      # Copias de seguridad y restauraciones legibles en castellano sin sorpresas de orden.
+      LANG: C.UTF-8
+    volumes:
+      - datos:/var/lib/postgresql/data
+      - ./scripts/bd/01-rol-aplicacion.sh:/docker-entrypoint-initdb.d/01-rol-aplicacion.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Aplica las migraciones con el rol **dueño** y termina. Es el paquete de migraciones de EF Core: un
+  # ejecutable que lleva dentro el esquema y nada más, así que no hace falta el SDK en el servidor.
+  migraciones:
+    build: .
+    image: matchketing:ultima
+    restart: "no"
+    depends_on:
+      bd:
+        condition: service_healthy
+    entrypoint: ["./migrar"]
+    command:
+      - --connection
+      - Host=bd;Port=5432;Database=${MK_BD_NOMBRE:-matchketing};Username=${MK_BD_DUENO};Password=${MK_BD_CLAVE_DUENO}
+
+  # Y los permisos del rol de la aplicación sobre lo que las migraciones acaban de crear. Va aparte
+  # porque una tabla nueva nace sin permisos para `matchketing_app`: sin este paso, el primer módulo que
+  # añada una tabla tira la aplicación con «permission denied» en la primera petición que la toque.
+  permisos:
+    image: postgres:16-alpine
+    restart: "no"
+    depends_on:
+      migraciones:
+        condition: service_completed_successfully
+    environment:
+      PGPASSWORD: ${MK_BD_CLAVE_DUENO}
+    volumes:
+      - ./scripts/bd/permisos.sql:/permisos.sql:ro
+    command: >
+      psql -v ON_ERROR_STOP=1 -h bd -U ${MK_BD_DUENO} -d ${MK_BD_NOMBRE:-matchketing} -f /permisos.sql
+
+  app:
+    build: .
+    image: matchketing:ultima
+    restart: unless-stopped
+    depends_on:
+      permisos:
+        condition: service_completed_successfully
+    environment:
+      # El rol de la aplicación, el que sí tiene la seguridad por fila encima.
+      ConnectionStrings__Matchketing: Host=bd;Port=5432;Database=${MK_BD_NOMBRE:-matchketing};Username=matchketing_app;Password=${MK_BD_CLAVE_APP};Include Error Detail=false
+      Jwt__Clave: ${MK_JWT_CLAVE:?falta MK_JWT_CLAVE}
+      Jwt__Emisor: ${MK_DOMINIO:?falta MK_DOMINIO}
+      Jwt__Audiencia: ${MK_DOMINIO}
+      # Hay un proxio delante, así que la IP del cliente viene en `X-Forwarded-For`. Sin esto, el techo
+      # de intentos de acceso reparte por la IP del proxio —o sea, un cubo para toda la empresa— y la IP
+      # que se guarda como prueba de un consentimiento es la del proxio, que no prueba nada.
+      Proxy__Confiar: "true"
+      Smtp__Servidor: ${MK_SMTP_SERVIDOR:-}
+      Smtp__Puerto: ${MK_SMTP_PUERTO:-587}
+      Smtp__Usuario: ${MK_SMTP_USUARIO:-}
+      Smtp__Contrasena: ${MK_SMTP_CLAVE:-}
+      Smtp__Remitente: ${MK_SMTP_REMITENTE:-}
+      Smtp__NombreRemitente: ${MK_SMTP_NOMBRE:-match.keting}
+      Smtp__Ssl: ${MK_SMTP_SSL:-true}
+      Avisos__ClavePublica: ${MK_VAPID_PUBLICA:-}
+      Avisos__ClavePrivada: ${MK_VAPID_PRIVADA:-}
+      Avisos__Contacto: ${MK_VAPID_CONTACTO:-}
+      PublicBase: https://${MK_DOMINIO}
+
+  # HTTPS automático. Caddy pide y renueva el certificado solo, así que no hay una tarea de renovación
+  # que se olvide y tire el sitio un domingo catorce meses después.
+  proxio:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      MK_DOMINIO: ${MK_DOMINIO}
+      MK_CORREO_TLS: ${MK_CORREO_TLS:?falta MK_CORREO_TLS, el correo para los avisos del certificado}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-datos:/data
+      - caddy-config:/config
+
+volumes:
+  datos:
+  caddy-datos:
+  caddy-config:

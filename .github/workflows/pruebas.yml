@@ -47,7 +47,62 @@ jobs:
         env:
           MATCHKETING_TEST_CONEXION: Host=localhost;Port=5432;Database=matchketing_test;Username=postgres;Password=postgres
 
-      # La otra barrera del aislamiento: la RLS de PostgreSQL, que las pruebas de C# no pueden
-      # comprobar porque corren como superusuario. Se ejecuta después, sobre la base que dejaron.
+      # La otra barrera del aislamiento: la RLS de PostgreSQL. Desde el módulo 18 hay pruebas de C#
+      # que se conectan con un rol restringido —`PruebasRolRestringido`—, así que esto ya no es lo
+      # único que la comprueba; sigue estando porque mira cosas que desde dentro no se ven, como que
+      # el disparador de la auditoría rechace un `UPDATE`.
       - name: Comprobar el aislamiento con un rol sin superusuario
         run: ./scripts/comprobar-aislamiento.sh matchketing_test postgres postgres localhost 5432
+
+  imagen:
+    name: la imagen se construye
+    runs-on: ubuntu-latest
+
+    # Va en un trabajo aparte y no depende del anterior: si las pruebas tardan, esto ya se sabe.
+    #
+    # Existe porque un `Dockerfile` se rompe en silencio. No lo compila nadie al trabajar —se usa
+    # `dotnet run`— así que un fichero que cambia de sitio, una dependencia nueva o un `publish` que
+    # deja de encontrar algo no se descubre hasta el día del despliegue, que es el peor día para
+    # descubrirlo. Aquí se construye la imagen entera, incluido el **paquete de migraciones**, que es
+    # lo que aplica el esquema en producción.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir la imagen
+        run: docker build -t matchketing:ci .
+
+      # Y que arranque de verdad: una imagen que se construye y no arranca no vale. Sin base de datos,
+      # así que la sonda tiene que contestar 503 —y no morirse—, que es justo lo que se le pide cuando
+      # la base no está.
+      - name: Arrancar sin base de datos y comprobar que la sonda dice que está enferma
+        run: |
+          docker run -d --name mk-ci -p 8080:8080 \
+            -e 'Jwt__Clave=clave-de-integracion-continua-suficientemente-larga-0123456789' \
+            -e 'Baja__Secreto=secreto-de-integracion-continua-suficientemente-largo-0123456789' \
+            -e 'Baja__UrlBase=https://ci.matchketing.es' \
+            matchketing:ci
+          for i in $(seq 1 30); do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/salud || true)
+            [ "$codigo" = "503" ] && break
+            sleep 2
+          done
+          docker logs mk-ci | tail -20
+          test "$codigo" = "503" || { echo "la sonda contestó $codigo y sin base de datos tiene que ser 503"; exit 1; }
+
+      # La zona horaria. Todo el «hoy» del producto se cuenta en hora de España, y si la imagen base
+      # deja de traer `tzdata`, `HorasLaborables` se queda en UTC+1 fijo: no se cae, cuenta mal en
+      # verano. Es justo la clase de cosa que desaparece al cambiar de imagen base.
+      - name: La imagen trae la base de datos de zonas horarias
+        run: docker run --rm --entrypoint sh matchketing:ci -c "test -f /usr/share/zoneinfo/Europe/Madrid"
+
+      # Y que **no arranque** con los secretos de desarrollo. Es la comprobación que impide desplegar
+      # con la clave de firma que está publicada en este repositorio.
+      - name: No arrancar con los secretos de desarrollo
+        run: |
+          if docker run --rm matchketing:ci 2>&1 | tee /tmp/salida | grep -q "Jwt:Clave"; then
+            echo "correcto: se ha negado a arrancar y ha dicho por qué"
+          else
+            cat /tmp/salida
+            echo "tenía que negarse a arrancar sin Jwt:Clave"
+            exit 1
+          fi

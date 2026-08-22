@@ -5,6 +5,7 @@ using Matchketing.Auditoria.Aplicacion;
 using Matchketing.Auditoria.Dominio;
 using Matchketing.Identidad.Aplicacion;
 using Matchketing.Identidad.Dominio;
+using Matchketing.Nucleo.Comun;
 using Matchketing.Nucleo.Tiempo;
 using Matchketing.Embudo.Aplicacion;
 using Matchketing.Organizacion.Aplicacion;
@@ -26,6 +27,8 @@ public static class EndpointsOrganizacion
             ServicioIdentidad identidad,
             ServicioEmbudo embudo,
             IUnidadDeTrabajo unidad,
+            IContextoEmpresaPublico inquilino,
+            Matchketing.Persistencia.ContextoMatchketing bd,
             IReloj reloj,
             CancellationToken ct) =>
         {
@@ -44,6 +47,18 @@ public static class EndpointsOrganizacion
             // La empresa nace con su embudo de cinco etapas: nadie debería tener que montarlo antes
             // de poder apuntar su primera venta.
             embudo.CrearEmbudoPorDefecto(creada.Valor.Id);
+
+            // **La empresa activa de esta petición es la que se está creando.** Hasta aquí no había
+            // ninguna —quien crea una empresa todavía no pertenece a ninguna—, así que
+            // `app.empresa_actual` valía la cadena vacía y PostgreSQL rechazaba cada fila con
+            // «new row violates row-level security policy»: el embudo, sus etapas y la empresa misma.
+            //
+            // No se vio en ninguna prueba porque todas se conectan como superusuario, y a un
+            // superusuario **no se le aplican** las políticas por fila. Se vio en el primer arranque
+            // con un rol normal, y era el peor sitio posible: la primera pantalla después de
+            // registrarse. El producto no se podía usar.
+            inquilino.FijarEmpresa(creada.Valor.Id);
+            await bd.ReaplicarEmpresaAsync(ct).ConfigureAwait(false);
 
             await unidad.GuardarCambiosAsync(ct).ConfigureAwait(false);
 

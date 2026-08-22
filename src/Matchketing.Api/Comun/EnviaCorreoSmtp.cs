@@ -31,7 +31,8 @@ public sealed record AjustesSmtp(
 public sealed class EnviaCorreoSmtp(AjustesSmtp ajustes, ILogger<EnviaCorreoSmtp> registro) : IEnviaCorreo
 {
     public async Task<ResultadoEnvioCorreo> EnviarAsync(
-        Matchketing.Correo.Dominio.Correo correo, string? urlPixel, CancellationToken ct = default)
+        Matchketing.Correo.Dominio.Correo correo, string? urlPixel, string? urlBaja,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(correo);
 
@@ -42,22 +43,39 @@ public sealed class EnviaCorreoSmtp(AjustesSmtp ajustes, ILogger<EnviaCorreoSmtp
             return new ResultadoEnvioCorreo(false, "No hay servidor de correo configurado.", true);
         }
 
+        // El cuerpo lleva la línea de baja **dentro del texto** cuando toca. No es solo cortesía: la
+        // cabecera `List-Unsubscribe` la leen los programas de correo, no las personas, y quien recibe
+        // el mensaje tiene derecho a ver cómo se sale sin buscar un botón escondido en su cliente.
+        var cuerpo = urlBaja is null
+            ? correo.Cuerpo
+            : correo.Cuerpo + "\n\n--\nSi no quieres recibir más correos como este, dilo aquí: " + urlBaja;
+
         using var mensaje = new MailMessage
         {
             From = new MailAddress(ajustes.Remitente!, ajustes.NombreRemitente ?? ajustes.Remitente),
             Subject = correo.Asunto,
             SubjectEncoding = Encoding.UTF8,
-            Body = correo.Cuerpo,
+            Body = cuerpo,
             BodyEncoding = Encoding.UTF8,
             IsBodyHtml = false,
         };
 
         mensaje.To.Add(new MailAddress(correo.Para));
 
+        if (urlBaja is not null)
+        {
+            // Las dos cabeceras van juntas o no valen. `List-Unsubscribe` sola es de los noventa y hoy
+            // no basta: desde 2024, Gmail y Yahoo exigen a quien manda envíos masivos una baja **de un
+            // clic**, y eso es lo que declara `List-Unsubscribe-Post`. Sin ellas, una campaña legítima
+            // acaba en la carpeta de no deseados, que es la forma más cara de aprender esto.
+            mensaje.Headers.Add("List-Unsubscribe", "<" + urlBaja + ">");
+            mensaje.Headers.Add("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+        }
+
         if (urlPixel is not null)
         {
             mensaje.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(
-                Html(correo.Cuerpo, urlPixel), Encoding.UTF8, "text/html"));
+                Html(cuerpo, urlPixel), Encoding.UTF8, "text/html"));
         }
 
         try

@@ -10,6 +10,7 @@ public sealed class ServicioCorreo(
     IPermisoDeEnvio permiso,
     IConsultaDatosDelEnvio datos,
     IEnviaCorreo emisor,
+    IEnlaceDeBaja enlaces,
     IApuntaEnCronologia cronologia,
     IContextoEmpresa contexto,
     IReloj reloj)
@@ -269,7 +270,14 @@ public sealed class ServicioCorreo(
             }
 
             var url = baseUrlPixel is null ? null : $"{baseUrlPixel.TrimEnd('/')}/e/{correo.TokenApertura}.gif";
-            var r = await emisor.EnviarAsync(correo, url, ct).ConfigureAwait(false);
+
+            // **El enlace de baja va solo en los comerciales**, y esa distinción es la que importa. En
+            // una comunicación comercial es obligatorio y además es lo que piden Gmail y Outlook para
+            // no tratar los envíos como no deseados. En una respuesta a lo que la persona ha
+            // preguntado sería absurdo: no se ha apuntado a nada de lo que darse de baja.
+            var baja = correo.ParaQue == Dominio.ParaQue.Comercial ? enlaces.De(correo.ContactoId) : null;
+
+            var r = await emisor.EnviarAsync(correo, url, baja, ct).ConfigureAwait(false);
 
             if (r.Salio)
             {

@@ -88,16 +88,25 @@ public sealed class DatosDePrueba : IConsultaDatosDelEnvio
 
 public sealed class EmisorDePrueba : IEnviaCorreo
 {
-    public List<(Dominio.Correo Correo, string? UrlPixel)> Intentos { get; } = [];
+    public List<(Dominio.Correo Correo, string? UrlPixel, string? UrlBaja)> Intentos { get; } = [];
 
     public Func<Dominio.Correo, ResultadoEnvioCorreo> Contesta { get; set; } =
         _ => new ResultadoEnvioCorreo(true, null, false);
 
-    public Task<ResultadoEnvioCorreo> EnviarAsync(Dominio.Correo correo, string? urlPixel, CancellationToken ct = default)
+    public Task<ResultadoEnvioCorreo> EnviarAsync(
+        Dominio.Correo correo, string? urlPixel, string? urlBaja, CancellationToken ct = default)
     {
-        Intentos.Add((correo, urlPixel));
+        Intentos.Add((correo, urlPixel, urlBaja));
         return Task.FromResult(Contesta(correo));
     }
+}
+
+/// <summary>El enlace de baja, de mentira pero reconocible.</summary>
+public sealed class EnlacesDePrueba : IEnlaceDeBaja
+{
+    public string? Devuelve { get; set; } = "https://pruebas.matchketing.es/b/firma-de-prueba";
+
+    public string? De(Guid contactoId) => Devuelve;
 }
 
 public sealed class CronologiaDePrueba : IApuntaEnCronologia

@@ -121,12 +121,23 @@ Tres detalles del cómo, y los tres importan:
 con significado. En cuanto un color de marca se empieza a repartir por la pantalla deja de ser una
 marca y pasa a ser decoración —y ese es el camino por el que esto pareció un juguete la primera vez—.
 
-El icono de la aplicación es el mismo punto: papel crema con el disco rosa centrado. El anterior era un
-cuadrado magenta saturado con un punto blanco, de la paleta que se retiró; se quedó sin actualizar dos
-cambios de paleta. Se regeneran con Chromium a partir de esta geometría: fondo `#FBF6F0`, disco
-`#C0436A` centrado, diámetro **34 %** del lado en los iconos normales y **26 %** en los recortables
-—el sistema puede recortar hasta un 20 % por lado, así que el punto se queda dentro del círculo
-seguro—. Tamaños: 180, 192 y 512, más los dos recortables.
+El icono de la aplicación es el mismo punto, sobre **borgoña profundo**: fondo `#3A1A28`, disco
+`#E88CA8` centrado (6,4:1 de contraste). Diámetro **34 %** del lado en los iconos normales y **26 %**
+en los recortables —el sistema puede recortar hasta un 20 % por lado, así que el punto se queda dentro
+del círculo seguro—. Tamaños 180, 192 y 512, más los dos recortables; se regeneran con Chromium a
+partir de esa geometría.
+
+Llegó ahí en el tercer intento, y los dos anteriores enseñan la misma cosa:
+
+1. El original era un **cuadrado magenta saturado** con un punto blanco. Se quedó sin actualizar dos
+   cambios de paleta seguidos, porque un icono no se ve mientras se trabaja: solo aparece en la pantalla
+   de inicio de un móvil, que es donde nadie mira al revisar una captura.
+2. El segundo fue papel crema con el punto rosa, por coherencia con la aplicación. Sobre el fondo de una
+   pantalla de inicio se veía **pálido y sin acabar**, y al reducirlo a 60 px el punto casi desaparecía.
+
+De ahí la regla: **un icono no es una pantalla.** Mide 60 px, compite con otros veinte y se ve sobre un
+fondo que no controlas, así que necesita un fondo con cuerpo y una figura que aguante el tamaño. La
+coherencia con la interfaz la da la forma y el color del punto, no el color del fondo.
 
 ## El color dice un dato o no se pinta
 

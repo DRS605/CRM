@@ -99,6 +99,35 @@ La sombra que se pone no es la de 2014: `0 1px 2px` casi invisible más `0 12px 
 está encima del papel. Las tarjetas de Hoy suben un píxel al pasar por encima, y solo ellas: es la
 única pantalla donde hay que elegir una entre varias.
 
+### El punto de la marca
+
+`match` **·** `keting`. El punto del nombre es un **círculo** dibujado, no un carácter de puntuación, y
+va en un rosa borgoña propio (`--rosa: #C0436A`; en oscuro `#E88CA8`).
+
+Antes era el punto tipográfico en ciruela: a 19 px en el menú medía dos píxeles y no se distinguía de
+la tinta, así que la marca se leía «matchketing» de un tirón, sin el punto que le da el nombre.
+
+Tres detalles del cómo, y los tres importan:
+
+- **El carácter sigue en el HTML** y solo se pone transparente. Es el que reserva el hueco, el que se
+  copia al seleccionar el texto y el que lee un lector de pantalla. Un círculo dibujado encima de nada
+  habría dejado la marca sin punto para todo lo que no son ojos.
+- El disco es un `inline-block` con `vertical-align: baseline`, que apoya su borde inferior **en la
+  línea base** —donde se apoya un punto—. Con posición absoluta caía al fondo de la caja de línea, o
+  sea por debajo de la base, y se veía descolgado.
+- Mide `0.26em`, así que escala solo: 44 px en el acceso, 19 px en el menú, y se ve en los dos.
+
+`--rosa` **no se usa en ningún otro sitio**, y eso es parte de la decisión: es identidad, no un color
+con significado. En cuanto un color de marca se empieza a repartir por la pantalla deja de ser una
+marca y pasa a ser decoración —y ese es el camino por el que esto pareció un juguete la primera vez—.
+
+El icono de la aplicación es el mismo punto: papel crema con el disco rosa centrado. El anterior era un
+cuadrado magenta saturado con un punto blanco, de la paleta que se retiró; se quedó sin actualizar dos
+cambios de paleta. Se regeneran con Chromium a partir de esta geometría: fondo `#FBF6F0`, disco
+`#C0436A` centrado, diámetro **34 %** del lado en los iconos normales y **26 %** en los recortables
+—el sistema puede recortar hasta un 20 % por lado, así que el punto se queda dentro del círculo
+seguro—. Tamaños: 180, 192 y 512, más los dos recortables.
+
 ## El color dice un dato o no se pinta
 
 La regla es esa, y es lo que separa una paleta de una decoración. Un color que no se mueve cuando el

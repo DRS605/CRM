@@ -18,7 +18,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF6F0" />
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14100F" />
 <!-- El punto de la marca, también en la pestaña del navegador. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%236B2A43'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%23C0436A'/%3E%3C/svg%3E" />
 <style>
   /* Las fuentes se sirven **desde aquí**, no desde un CDN. Dos motivos, y el segundo es el que manda:
      este proyecto no tiene ni una dependencia externa en tiempo de ejecución, y un `<link>` a Google
@@ -88,6 +88,12 @@
     --trazo:#E8DACE; --trazo-suave:#F1E8DF;
     --turquesa:#2E5F66; --verde:#3F6249; --ambar:#8A5A16; --rojo:#9B2C2C;
 
+    /* El punto de «match.keting», y **solo** eso. Es un rosa borgoña: la ciruela de la casa subida de
+       claridad y de saturación, lo justo para que se despegue de la tinta sin gritar. Tiene token
+       propio porque es identidad y no un color con significado; en cuanto un color de marca se empieza
+       a repartir por la pantalla deja de ser una marca y pasa a ser decoración. */
+    --rosa:#C0436A;
+
     /* **Escala de avance.** El color de una etapa lo pone su *probabilidad*, no su posición en el
        tablero. Dos motivos:
          - Las etapas se configuran por empresa. Un embudo de tres y otro de siete pintarían escalas
@@ -130,6 +136,7 @@
       --tinta:#F3EAE3; --grafito:#A2918A; --papel:#14100F; --superficie:#1C1716; --elevado:#231D1B;
       --trazo:#302825; --trazo-suave:#241E1C;
       --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A; --rojo:#E08B8B;
+      --rosa:#E88CA8;
       --av-1:#8FAED6; --av-2:#AF9FD8; --av-3:#D08CAB; --av-4:#D9AE6A; --av-5:#8AB395;
       --sombra:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -20px rgba(0,0,0,.6);
       --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
@@ -141,6 +148,7 @@
     --tinta:#F3EAE3; --grafito:#A2918A; --papel:#14100F; --superficie:#1C1716; --elevado:#231D1B;
     --trazo:#302825; --trazo-suave:#241E1C;
     --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A; --rojo:#E08B8B;
+    --rosa:#E88CA8;
     --av-1:#8FAED6; --av-2:#AF9FD8; --av-3:#D08CAB; --av-4:#D9AE6A; --av-5:#8AB395;
     --sombra:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -20px rgba(0,0,0,.6);
     --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
@@ -189,7 +197,26 @@
      sube de 400 a 600 y el 800 desaparece; el contraste lo pone la **serifa** en titulares y cifras,
      que es la mitad de la sensación de calidad y ya estaba declarada en `--serif`. */
   .marca { font-weight: 600; letter-spacing: -.025em; }
-  .punto { color: var(--magenta); }
+
+  /* El punto de la marca es un **círculo**, no un punto de puntuación.
+     A 19 px en el menú, el punto tipográfico de Nunito Sans mide dos píxeles y en ciruela oscura no se
+     distinguía de la tinta: la marca se leía «matchketing» de un tirón, sin el punto que le da el
+     nombre. Ahora es un disco de 0,26 em en rosa borgoña, así que escala con el tamaño de la marca
+     —44 px en el acceso, 19 px en el menú— y se ve en los dos.
+     El carácter sigue en el HTML y solo se pone transparente: es el que reserva el hueco, el que se
+     copia al seleccionar el texto y el que lee un lector de pantalla. Un círculo dibujado encima de
+     nada habría dejado la marca sin el punto para todo lo que no son ojos. */
+  .punto { color: transparent; }
+  .punto::after {
+    content: ""; display: inline-block; vertical-align: baseline;
+    width: .26em; height: .26em; border-radius: 50%; background: var(--rosa);
+    /* `vertical-align: baseline` en un `inline-block` apoya su borde inferior **en la línea base**, que
+       es exactamente donde se apoya un punto. Con posición absoluta el disco caía al fondo de la caja
+       de línea, o sea por debajo de la base, y se veía como un punto descolgado.
+       El margen negativo se come el hueco que ya reserva el carácter transparente, así que el disco
+       ocupa el sitio del punto y no uno nuevo. */
+    margin-left: -.2em; margin-right: .06em;
+  }
   .bolita { width: 8px; height: 8px; border-radius: 50%; background: var(--magenta); flex: none; display: inline-block; }
 
   /* ============ Acceso ============ */

@@ -15,47 +15,57 @@
 <meta name="apple-mobile-web-app-title" content="match.keting" />
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- El color de la barra del sistema, en cada tema. -->
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F7F4F2" />
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C0809" />
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF6F0" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14100F" />
 <!-- El punto de la marca, también en la pestaña del navegador. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%235C2340'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='%236B2A43'/%3E%3C/svg%3E" />
 <style>
   /* Las fuentes se sirven **desde aquí**, no desde un CDN. Dos motivos, y el segundo es el que manda:
      este proyecto no tiene ni una dependencia externa en tiempo de ejecución, y un `<link>` a Google
      Fonts le manda la IP de cada comercial que abre la aplicación a un tercero, en una herramienta que
-     se vende diciendo que los datos son tuyos. Son 95 KB en cinco ficheros.
+     se vende diciendo que los datos son tuyos. Son 220 KB en cinco ficheros, y el trabajo se lo queda
+     el «service worker» a partir de la segunda visita.
 
-     Instrument Sans + Instrument Serif: son una pareja diseñada para ir junta, así que el salto entre
-     el titular y el texto no es un choque. `swap` para que el texto se lea desde el primer momento con
-     la fuente del sistema y cambie al cargar. */
+     **Nunito Sans + Fraunces.** La pareja anterior —Instrument Sans y Serif— estaba bien dibujada y era
+     fría: una grotesca cerrada de contornos rectos, con la serifa de contraste alto al lado. Correcta y
+     distante, que es lo que se dijo de ella. Estas dos van al revés:
+
+     · **Nunito Sans** es humanista de aperturas abiertas y curvas blandas: la «a», la «e» y la «s» no
+       se cierran, la «g» es de un piso y ancha, y a 15,5 px eso se lee como una voz que habla despacio.
+       Es la hermana **sin** terminaciones redondeadas de Nunito, y esa es la línea que separa «cálido»
+       de «juguete»: lo redondo de verdad —Nunito, Quicksand, Baloo— es simpático y a los diez minutos
+       parece de niños.
+     · **Fraunces** es una serifa blanda con eje óptico (`opsz`): a 34 px de titular engorda los remates
+       y se vuelve casi manuscrita, y a 18 px de un `h2` se calma. Un titular con carácter y un texto
+       tranquilo es exactamente lo contrario de «muy simple». */
   @font-face {
-    font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
-    src: url('/tipos/instrument-sans-latin.woff2') format('woff2');
+    font-family: 'Nunito Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/nunito-sans-latin.woff2') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
       U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
   }
   @font-face {
-    font-family: 'Instrument Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
-    src: url('/tipos/instrument-sans-latin-ext.woff2') format('woff2');
+    font-family: 'Nunito Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/nunito-sans-latin-ext.woff2') format('woff2');
     unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
       U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
       U+2C60-2C7F, U+A720-A7FF;
   }
   @font-face {
-    font-family: 'Instrument Sans'; font-style: italic; font-weight: 400 700; font-display: swap;
-    src: url('/tipos/instrument-sans-italic-latin.woff2') format('woff2');
+    font-family: 'Nunito Sans'; font-style: italic; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/nunito-sans-italic-latin.woff2') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
       U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
   }
   @font-face {
-    font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; font-display: swap;
-    src: url('/tipos/instrument-serif-latin.woff2') format('woff2');
+    font-family: 'Fraunces'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/fraunces-latin.woff2') format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
       U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
   }
   @font-face {
-    font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; font-display: swap;
-    src: url('/tipos/instrument-serif-latin-ext.woff2') format('woff2');
+    font-family: 'Fraunces'; font-style: normal; font-weight: 400 700; font-display: swap;
+    src: url('/tipos/fraunces-latin-ext.woff2') format('woff2');
     unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
       U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
       U+2C60-2C7F, U+A720-A7FF;
@@ -66,11 +76,17 @@
        pareciera un juguete: un color de mucha energía repartido a partes iguales por toda la pantalla.
        La ciruela es el mismo lado del círculo y dos tonos más grave, y sobre todo **se usa menos**: la
        acción va en tinta y el acento se guarda para señalar. */
-    --magenta:#5C2340; --magenta-hover:#3F1730; --magenta-velo:#F4EFF1; --magenta-borde:#DFD2D8;
+    --magenta:#6B2A43; --magenta-hover:#4E1C31; --magenta-velo:#F7EDE8; --magenta-borde:#E7D5CE;
     --sobre-magenta:#FFFFFF;
-    --tinta:#191316; --grafito:#6E6167; --papel:#F7F4F2; --superficie:#FFFFFF; --elevado:#FFFFFF;
-    --trazo:#E2D9DA; --trazo-suave:#EDE6E7;
-    --turquesa:#2E5F66; --verde:#3E6249; --ambar:#8A5A16; --rojo:#9B2C2C;
+
+    /* **Todo el gris tiene marrón dentro.** La versión anterior era neutra tirando a violeta y se
+       leía limpia y fría, como una hoja de cálculo bien hecha. El papel es crema, la tinta es un
+       marrón muy oscuro en vez de un negro, y el gris de los textos secundarios es cálido: son tres
+       cambios de dos o tres grados de tono y son la mitad de la sensación de acogida. La otra mitad
+       la ponen las letras. */
+    --tinta:#241B18; --grafito:#6F5F58; --papel:#FBF6F0; --superficie:#FFFCF9; --elevado:#FFFFFF;
+    --trazo:#E8DACE; --trazo-suave:#F1E8DF;
+    --turquesa:#2E5F66; --verde:#3F6249; --ambar:#8A5A16; --rojo:#9B2C2C;
 
     /* **Escala de avance.** El color de una etapa lo pone su *probabilidad*, no su posición en el
        tablero. Dos motivos:
@@ -85,39 +101,74 @@
        una vez y sirve en las dos pantallas. */
     --av-1:#3F5E86; --av-2:#5B4A86; --av-3:#7A3355; --av-4:#8A5A16; --av-5:#3E6249;
 
-    /* Sin sombras. El papel se separa con líneas de un píxel, que es lo que hace un impreso bien
-       hecho; una sombra blanda debajo de cada tarjeta es lo que hace una aplicación de móvil de 2014. */
-    --sombra:none;
-    --sombra-alta:0 20px 60px -30px rgba(25,19,22,.45);
-    --serif: "Instrument Serif", Georgia, "Iowan Old Style", "Times New Roman", serif;
-    --sans: "Instrument Sans", "Helvetica Neue", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    /* **Aquí había «sin sombras», y se cambia a propósito.** El argumento era bueno —un impreso bien
+       hecho separa el papel con una línea— y llevaba a una pantalla plana: dieciocho rectángulos de un
+       píxel de borde, todos a la misma altura, sin nada que invitara a tocar nada. La sombra que se
+       pone no es la de 2014: es un velo cálido, casi invisible, que solo dice que la tarjeta está
+       encima del papel. La regla que se mantiene es la de siempre: **la sombra no colorea**, y por eso
+       es marrón, del mismo tono que la tinta.
+       El radio también sube: 3 px es una esquina de formulario y 14 px es una esquina de cosa que se
+       puede coger. Con el radio grande **sin** color plano de fondo no hay riesgo de juguete: lo que
+       hacía pueril el primer intento era el bloque saturado, no la curva. */
+    --sombra:0 1px 2px rgba(36,27,24,.04), 0 12px 28px -20px rgba(36,27,24,.28);
+    --sombra-alta:0 20px 60px -30px rgba(36,27,24,.45);
+
+    /* Tres radios y nada más. Antes había trece valores distintos entre 2 y 12 px, que es lo que pasa
+       cuando cada pantalla elige el suyo: nada rima con nada. */
+    --r-xs:6px; --r-s:10px; --r-m:14px;
+
+    --serif: "Fraunces", Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: "Nunito Sans", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --magenta:#C89BB4; --magenta-hover:#DEBACD; --magenta-velo:#211619; --magenta-borde:#38262D;
-      --sobre-magenta:#150F12;
-      --tinta:#F2ECEE; --grafito:#9C8F95; --papel:#0C0809; --superficie:#131011; --elevado:#1A1517;
-      --trazo:#282022; --trazo-suave:#1E1819;
+      --magenta:#D3A0B3; --magenta-hover:#E5BACB; --magenta-velo:#241A1D; --magenta-borde:#3B292F;
+      --sobre-magenta:#17100F;
+      /* El oscuro también es cálido: marrón muy oscuro, no negro azulado. Un tema oscuro frío al lado
+         de un tema claro cálido son dos productos distintos. */
+      --tinta:#F3EAE3; --grafito:#A2918A; --papel:#14100F; --superficie:#1C1716; --elevado:#231D1B;
+      --trazo:#302825; --trazo-suave:#241E1C;
       --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A; --rojo:#E08B8B;
       --av-1:#8FAED6; --av-2:#AF9FD8; --av-3:#D08CAB; --av-4:#D9AE6A; --av-5:#8AB395;
-      --sombra:none;
+      --sombra:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -20px rgba(0,0,0,.6);
       --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
     }
   }
   :root[data-theme="dark"] {
-    --magenta:#C89BB4; --magenta-hover:#DEBACD; --magenta-velo:#211619; --magenta-borde:#38262D;
-    --sobre-magenta:#150F12;
-    --tinta:#F2ECEE; --grafito:#9C8F95; --papel:#0C0809; --superficie:#131011; --elevado:#1A1517;
-    --trazo:#282022; --trazo-suave:#1E1819;
+    --magenta:#D3A0B3; --magenta-hover:#E5BACB; --magenta-velo:#241A1D; --magenta-borde:#3B292F;
+    --sobre-magenta:#17100F;
+    --tinta:#F3EAE3; --grafito:#A2918A; --papel:#14100F; --superficie:#1C1716; --elevado:#231D1B;
+    --trazo:#302825; --trazo-suave:#241E1C;
     --turquesa:#7FB8BE; --verde:#8AB395; --ambar:#D9AE6A; --rojo:#E08B8B;
     --av-1:#8FAED6; --av-2:#AF9FD8; --av-3:#D08CAB; --av-4:#D9AE6A; --av-5:#8AB395;
-    --sombra:none;
+    --sombra:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -20px rgba(0,0,0,.6);
     --sombra-alta:0 20px 60px -30px rgba(0,0,0,.85);
   }
 
   * { box-sizing: border-box; }
+  /* Los controles nativos que quedan —el calendario de un `input type="date"`, las barras de
+     desplazamiento— se dibujan con el tema del sistema. Sin esto, en tema oscuro salía un icono de
+     calendario negro sobre un campo oscuro. */
+  html { color-scheme: light dark; }
   html, body { height: 100%; }
+
+  /* **Un `input` de texto se estiliza por lo que es, no por dónde está.** Solo `.campo input` tenía
+     estilo, así que cualquier casilla creada fuera de un `.campo` salía con el estilo del navegador:
+     fondo blanco, esquina cuadrada, borde azulado. En claro pasaba por un campo pálido y en oscuro era
+     un rectángulo blanco en medio de la ficha —así se encontró, mirando el tema oscuro, no leyendo el
+     CSS—. Los campos propios del módulo 17 nacieron con ese defecto y no era el único sitio.
+
+     Va dentro de `:where()` a propósito: así la regla no tiene ninguna especificidad y **todas** las
+     que ya existen —`.campo input`, `.buscador`, `.mini`— siguen ganando sin tocar nada. */
+  :where(input[type="text"], input[type="search"], input[type="email"], input[type="password"],
+         input[type="tel"], input[type="url"], input[type="date"], input[type="month"],
+         input[type="time"], input:not([type])) {
+    font: inherit; font-size: 14.5px; padding: 9px 12px; border-radius: var(--r-s);
+    border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
+  }
+  :where(input, select, textarea):focus { border-color: var(--magenta); }
+  :where(input, select, textarea)[disabled] { opacity: .75; cursor: default; }
 
   /* Los párrafos llevaban el margen que pone el navegador —un `em` arriba y otro abajo— y eso es
      espacio que **nadie eligió**: sumado al `gap` de cada tarjeta dejaba huecos de treinta píxeles en
@@ -125,10 +176,13 @@
   p { margin: 0; }
   body {
     margin: 0; background: var(--papel); color: var(--tinta);
-    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    font-family: var(--sans); font-size: 15.5px; line-height: 1.62;
     -webkit-font-smoothing: antialiased;
+    /* Fraunces lleva eje óptico: sin esto, un titular de 34 px se dibuja con los remates de un texto
+       de 12 y pierde justo lo que se ha venido a buscar. */
+    font-optical-sizing: auto;
   }
-  :focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: 4px; }
+  :focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: var(--r-xs); }
   [hidden] { display: none !important; }
 
   /* Ocho de negrita en todo es lo que hace que una interfaz parezca de plástico. La escala de pesos
@@ -147,13 +201,13 @@
     margin: 0; max-width: 30ch;
   }
   .tarjeta {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: var(--r-m);
     padding: 26px; box-shadow: var(--sombra); display: flex; flex-direction: column; gap: 18px;
   }
   .pestanas { display: flex; gap: 4px; }
   .pestana {
     font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
-    padding: 7px 14px; border-radius: 3px; border: 1px solid transparent;
+    padding: 7px 14px; border-radius: var(--r-s); border: 1px solid transparent;
     background: none; color: var(--grafito);
   }
   .pestana.on { background: transparent; color: var(--tinta); box-shadow: inset 0 -2px 0 var(--magenta); }
@@ -164,7 +218,7 @@
     text-transform: uppercase; color: var(--grafito);
   }
   .campo input {
-    font: inherit; font-size: 15px; padding: 10px 13px; border-radius: 3px;
+    font: inherit; font-size: 15px; padding: 10px 13px; border-radius: var(--r-s);
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .campo input:focus { border-color: var(--magenta); }
@@ -179,7 +233,7 @@
 
   .btn {
     font: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer;
-    padding: 10px 18px; border-radius: 3px;
+    padding: 10px 18px; border-radius: var(--r-s);
     border: 1px solid var(--trazo); background: var(--superficie); color: var(--tinta);
     transition: background .14s ease, border-color .14s ease;
   }
@@ -211,7 +265,7 @@
   /* Estado de privacidad en una línea. El color lo pone la bolita: verde se puede, ámbar ojo. */
   .semaforo {
     display: flex; gap: 10px; align-items: baseline; font-size: 14px;
-    padding: 12px 14px; border-radius: 4px;
+    padding: 12px 14px; border-radius: var(--r-s);
     border: 1px solid var(--trazo); background: var(--papel);
   }
   .semaforo .bolita { background: var(--ambar); position: relative; top: 4px; }
@@ -231,8 +285,8 @@
   .rp-detalle { font-size: 15px; color: var(--grafito); margin: 0; max-width: 46ch; }
   .rp-quien { font-size: 13.5px; color: var(--grafito); font-family: var(--mono); }
 
-  .progreso { height: 3px; border-radius: 2px; background: var(--trazo-suave); margin-bottom: 14px; }
-  .progreso i { display: block; height: 100%; border-radius: 2px; background: var(--magenta); transition: width .2s; }
+  .progreso { height: 3px; border-radius: 999px; background: var(--trazo-suave); margin-bottom: 14px; }
+  .progreso i { display: block; height: 100%; border-radius: 999px; background: var(--magenta); transition: width .2s; }
   @media (prefers-reduced-motion: reduce) { .progreso i { transition: none; } }
 
   /* Las respuestas se pintan grandes y con su número: la mano va al ratón o al teclado, pero nunca
@@ -246,7 +300,7 @@
   .rp-teclas { font-size: 12.5px; color: var(--grafito); margin: 14px 0 0; }
   .rp-teclas kbd {
     font-family: var(--mono); font-size: 11px; border: 1px solid var(--trazo);
-    border-radius: 4px; padding: 1px 5px; background: var(--papel);
+    border-radius: var(--r-xs); padding: 1px 5px; background: var(--papel);
   }
 
   .rp-cifras { display: flex; flex-wrap: wrap; gap: 26px; margin: 16px 0 4px; }
@@ -261,7 +315,7 @@
   .cuantas {
     margin-left: auto; font-family: var(--mono); font-size: 10.5px;
     background: var(--magenta); color: var(--sobre-magenta);
-    border: 1px solid var(--magenta); border-radius: 3px; padding: 1px 7px;
+    border: 1px solid var(--magenta); border-radius: 999px; padding: 1px 7px;
   }
 
   /* La lista de etapas que abre «Mover». En columna y a ancho completo: son objetivos de dedo. */
@@ -293,7 +347,7 @@
   .permiso .retirado { color: var(--grafito); text-decoration: line-through; }
 
   .aviso {
-    font-size: 13.5px; padding: 10px 13px; border-radius: 3px;
+    font-size: 13.5px; padding: 10px 13px; border-radius: var(--r-s);
     border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
     color: var(--ambar);
   }
@@ -302,8 +356,13 @@
   /* ============ Aplicación ============ */
   .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100%; }
 
+  /* El lateral era blanco, igual que los paneles, y separado del contenido por una raya. Con un velo
+     muy suave —dos grados más cálido que el papel— la columna se lee como el borde del cuaderno y no
+     como otra tarjeta más. No lleva color de marca: en cuanto el menú se tiñe, la pantalla se vuelve
+     un tema de escritorio. */
   .lateral {
-    background: var(--superficie); border-right: 1px solid var(--trazo);
+    background: color-mix(in srgb, var(--magenta-velo) 55%, var(--papel));
+    border-right: 1px solid var(--trazo);
     padding: 20px 14px; display: flex; flex-direction: column; gap: 22px;
   }
   .lateral .marca { font-size: 19px; padding: 0 10px; }
@@ -311,17 +370,23 @@
   .item {
     font: inherit; font-size: 14.5px; text-align: left; cursor: pointer;
     display: flex; align-items: center; gap: 10px;
-    padding: 9px 10px; border-radius: 3px; border: 0; background: none; color: var(--tinta);
+    padding: 9px 10px; border-radius: var(--r-s); border: 0; background: none; color: var(--tinta);
   }
-  .item:hover { background: var(--trazo-suave); }
+  .item:hover { background: color-mix(in srgb, var(--magenta-velo) 70%, transparent); }
   /* El elemento activo se marca con una **línea**, no con una pastilla de color de fondo. Una pastilla
      rosa detrás del texto es la diferencia entre una herramienta y una aplicación de colorear. */
-  .item.on { background: transparent; color: var(--tinta); font-weight: 600; }
+  /* La línea sigue siendo la marca del elemento activo —una pastilla rosa detrás del texto sería lo
+     de colorear— pero ahora lleva debajo el mismo velo que el `hover`. Sin él, el activo se distinguía
+     solo por la negrita y por dos píxeles de línea, y en una pantalla llena costaba encontrarlo. */
+  .item.on {
+    background: color-mix(in srgb, var(--magenta-velo) 90%, transparent);
+    color: var(--tinta); font-weight: 600;
+  }
   .item .marcador { width: 2px; height: 15px; border-radius: 0; background: transparent; flex: none; }
   .item.on .marcador { background: var(--magenta); }
   .item .pendiente {
     margin-left: auto; font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em;
-    color: var(--grafito); border: 1px solid var(--trazo); border-radius: 4px; padding: 1px 5px;
+    color: var(--grafito); border: 1px solid var(--trazo); border-radius: 999px; padding: 1px 5px;
   }
 
   .pie-lateral { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 10px; }
@@ -351,29 +416,43 @@
      igual. */
   main > section > * { min-width: 0; }
   .titulo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .titulo h1 { font-family: var(--serif); font-size: 34px; font-weight: 400; letter-spacing: -.005em; margin: 0; }
+  .titulo h1 { font-family: var(--serif); font-size: 35px; font-weight: 500; letter-spacing: -.01em; margin: 0; }
   .titulo .sub { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
 
+  /* Un estado vacío es la primera pantalla que ve alguien que acaba de entrar, así que es la que más
+     tiene que acoger. Deja de ser un rectángulo de puntos sobre blanco: papel cálido, borde entero y
+     un círculo con la bolita dentro, que da algo que mirar donde antes no había nada. */
   .vacio-caja {
-    border: 1px dashed var(--trazo); border-radius: 4px; background: var(--superficie);
-    padding: 56px 32px; display: flex; flex-direction: column; align-items: center;
+    border: 1px solid var(--trazo); border-radius: var(--r-m);
+    background: color-mix(in srgb, var(--magenta-velo) 55%, var(--superficie));
+    padding: 52px 32px; display: flex; flex-direction: column; align-items: center;
     gap: 12px; text-align: center;
+  }
+  .vacio-caja > .bolita {
+    width: 46px; height: 46px; background: color-mix(in srgb, var(--magenta) 12%, transparent);
+    position: relative; margin-bottom: 2px;
+  }
+  .vacio-caja > .bolita::after {
+    content: ""; position: absolute; inset: 0; margin: auto;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--magenta);
   }
   .vacio-caja .grande { font-family: var(--serif); font-size: 25px; font-weight: 400; letter-spacing: -.01em; }
   .vacio-caja p { margin: 0; color: var(--grafito); max-width: 46ch; font-size: 14.5px; }
   .etiqueta-modulo {
     font-family: var(--mono); font-size: 10.5px; letter-spacing: .11em; text-transform: uppercase;
     color: var(--magenta); background: var(--magenta-velo); border: 1px solid var(--magenta-borde);
-    border-radius: 3px; padding: 4px 11px;
+    border-radius: 999px; padding: 4px 11px;
   }
 
   .panel {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: var(--r-m);
     padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 660px;
     box-shadow: var(--sombra);
   }
-  .panel h2 { font-family: var(--serif); font-size: 18px; font-weight: 400; letter-spacing: -.005em; margin: 0; }
-  .panel .explica { font-size: 13.5px; color: var(--grafito); margin: 0; }
+  /* Fraunces a 500 en los títulos de panel. A 400 se quedaba fina al lado de un texto de 15,5 px, y
+     lo que se busca aquí es que el título tenga cuerpo, no que susurre. */
+  .panel h2 { font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -.005em; margin: 0; }
+  .panel .explica { font-size: 14px; color: var(--grafito); margin: 0; line-height: 1.6; }
   .filas { display: flex; flex-direction: column; gap: 14px; }
   .fila-dato { display: flex; justify-content: space-between; gap: 16px; font-size: 14.5px; padding-bottom: 12px; border-bottom: 1px solid var(--trazo-suave); }
   .fila-dato:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -432,7 +511,7 @@
      es adorno: aquí el magenta significa «esto lo has tocado tú». */
   input[type="checkbox"], input[type="radio"] { accent-color: var(--magenta); }
   input[type="number"] {
-    font: inherit; font-size: 15px; padding: 9px 12px; border-radius: 3px; width: 110px;
+    font: inherit; font-size: 15px; padding: 9px 12px; border-radius: var(--r-s); width: 110px;
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .acciones { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
@@ -441,12 +520,12 @@
   /* ---- Contactos ---- */
   .herramientas { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
   .buscador {
-    font: inherit; font-size: 14px; padding: 9px 13px; border-radius: 3px; flex: 1 1 260px; min-width: 0;
+    font: inherit; font-size: 14px; padding: 9px 13px; border-radius: var(--r-s); flex: 1 1 260px; min-width: 0;
     border: 1px solid var(--trazo); background: var(--superficie); color: var(--tinta);
   }
   .contador { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
 
-  .tabla-caja { border: 1px solid var(--trazo); border-radius: 4px; background: var(--superficie); overflow-x: auto; }
+  .tabla-caja { border: 1px solid var(--trazo); border-radius: var(--r-m); background: var(--superficie); overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 680px; }
   thead th {
     text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
@@ -462,7 +541,7 @@
 
   .chip {
     display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-    padding: 3px 10px 3px 8px; border-radius: 3px; border: 1px solid;
+    padding: 3px 10px 3px 8px; border-radius: 999px; border: 1px solid;
   }
   .chip .pt { width: 6px; height: 6px; border-radius: 50%; flex: none; }
   .e-lead { color: var(--magenta); background: var(--magenta-velo); border-color: var(--magenta-borde); }
@@ -514,11 +593,11 @@
 
   .rejilla-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
   textarea {
-    font: inherit; font-size: 14px; padding: 10px 13px; border-radius: 3px; resize: vertical;
+    font: inherit; font-size: 14px; padding: 10px 13px; border-radius: var(--r-s); resize: vertical;
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta); width: 100%;
   }
   select {
-    font: inherit; font-size: 14.5px; padding: 9px 12px; border-radius: 3px;
+    font: inherit; font-size: 14.5px; padding: 9px 12px; border-radius: var(--r-s);
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .par-duplicado { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid var(--trazo-suave); }
@@ -528,14 +607,14 @@
   .par-duplicado .lado .d { font-family: var(--mono); font-size: 12px; color: var(--grafito); }
   .par-duplicado .motivo {
     font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
-    color: var(--ambar); border: 1px solid var(--ambar); border-radius: 3px; padding: 3px 10px;
+    color: var(--ambar); border: 1px solid var(--ambar); border-radius: 999px; padding: 3px 10px;
   }
 
 
   /* ---- Embudo ---- */
   .resumen-embudo { display: flex; gap: 10px; flex-wrap: wrap; }
   .tarjeta-dato {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: var(--r-s);
     padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 128px;
   }
   .tarjeta-dato .k {
@@ -564,14 +643,14 @@
      motivo. Mismo patrón que las barras de Informes, para que las dos vistas cuenten lo mismo. */
   .columna-pista { height: 2px; border-radius: 999px; background: var(--trazo); overflow: hidden; }
   .columna-pista i { display: block; height: 100%; background: var(--av-3); border-radius: 999px; }
-  .soltar { min-height: 60px; display: flex; flex-direction: column; gap: 9px; border-radius: 10px; padding: 2px; }
+  .soltar { min-height: 60px; display: flex; flex-direction: column; gap: 9px; border-radius: var(--r-m); padding: 2px; }
   .soltar.encima { background: var(--magenta-velo); outline: 1px dashed var(--magenta-borde); }
 
   /* El canto izquierdo lleva el color de la etapa. En el tablero es redundante con la columna —y a
      propósito: al arrastrar, la tarjeta viaja con su color y se ve de dónde sale— pero la misma
      tarjeta aparece fuera del tablero, y ahí el color es la única pista de en qué punto está. */
   .oport {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 9px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: var(--r-m);
     border-left: 3px solid var(--av-3);
     padding: 12px 13px; display: flex; flex-direction: column; gap: 7px;
     box-shadow: var(--sombra); cursor: grab;
@@ -586,7 +665,7 @@
   .oport .acciones-op { display: flex; gap: 6px; flex-wrap: wrap; }
   .mini {
     font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
-    padding: 3px 9px; border-radius: 6px; border: 1px solid var(--trazo);
+    padding: 3px 9px; border-radius: var(--r-xs); border: 1px solid var(--trazo);
     background: var(--superficie); color: var(--tinta);
   }
   .mini.ganar { border-color: var(--verde); color: var(--verde); }
@@ -604,20 +683,37 @@
   /* ---- Hoy ---- */
   .pila { display: flex; flex-direction: column; gap: 12px; max-width: 780px; }
   .tarjeta-hoy {
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 4px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: var(--r-m);
     padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--sombra);
+    transition: box-shadow .16s ease, transform .16s ease;
+  }
+  /* Un milímetro de subida al pasar por encima. No es adorno: la pila de Hoy es lo único de esta
+     aplicación donde hay que elegir una tarjeta entre varias, y que la de debajo del ratón se levante
+     es lo que hace que se sienta como una cosa que se puede coger. */
+  .tarjeta-hoy:hover { box-shadow: var(--sombra-alta); transform: translateY(-1px); }
+  @media (prefers-reduced-motion: reduce) {
+    .tarjeta-hoy { transition: none; }
+    .tarjeta-hoy:hover { transform: none; }
   }
   /* La línea de la izquierda dice **por qué** está la tarjeta en la pila, con el mismo color que su
      etiqueta: rojo si va tarde, ciruela si es de hoy, ámbar si está parada, turquesa si no tiene
      próximo paso. Se lee la pila de un barrido sin leer una palabra. La primera tarjeta la engorda
      a 4 px en vez de cambiarle el color: sigue siendo «la siguiente», no «otra cosa».
      Rodearla de color entero convertía «esta es la siguiente» en «esto está seleccionado». */
-  .tarjeta-hoy { border-left: 3px solid var(--trazo); }
-  .tarjeta-hoy.por-t-vencida { border-left-color: var(--rojo); }
-  .tarjeta-hoy.por-t-hoy { border-left-color: var(--magenta); }
-  .tarjeta-hoy.por-t-parada { border-left-color: var(--ambar); }
-  .tarjeta-hoy.por-t-sinpaso { border-left-color: var(--turquesa); }
-  .tarjeta-hoy.primera { border-left-width: 4px; }
+  /* Va en un pseudoelemento y no en `border-left`, y el motivo es la esquina: con 14 px de radio, un
+     borde izquierdo de 3 px se curva hacia arriba y hacia abajo y deja dos garfios de color en las
+     esquinas. Una franja recortada por el radio de la tarjeta —`overflow: hidden`— se lee como el lomo
+     de una carpeta, que es exactamente lo que se quería decir. */
+  .tarjeta-hoy { position: relative; overflow: hidden; }
+  .tarjeta-hoy::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--trazo);
+  }
+  .tarjeta-hoy.por-t-vencida::before { background: var(--rojo); }
+  .tarjeta-hoy.por-t-hoy::before { background: var(--magenta); }
+  .tarjeta-hoy.por-t-parada::before { background: var(--ambar); }
+  .tarjeta-hoy.por-t-sinpaso::before { background: var(--turquesa); }
+  .tarjeta-hoy.primera::before { width: 5px; }
   .tarjeta-hoy .cabeza { display: flex; align-items: flex-start; gap: 14px; }
   .tarjeta-hoy .quien-h { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .tarjeta-hoy .nom { font-size: 17px; font-weight: 600; letter-spacing: -.015em; }
@@ -650,7 +746,7 @@
   .t-sinpaso .pt { background: var(--turquesa); }
 
   .hecho-caja {
-    border: 1px dashed var(--trazo); border-radius: 12px; background: var(--superficie);
+    border: 1px dashed var(--trazo); border-radius: var(--r-m); background: var(--superficie);
     padding: 56px 32px; display: flex; flex-direction: column; align-items: center; gap: 12px;
     text-align: center; max-width: 780px;
   }
@@ -663,7 +759,7 @@
   .cola-caja {
     display: flex; align-items: center; gap: 12px; max-width: 640px; margin-bottom: 14px;
     border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
-    border-radius: 11px; padding: 11px 13px;
+    border-radius: var(--r-m); padding: 11px 13px;
   }
   .cola-caja .de { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
   .cola-caja .cual { font-size: 13.5px; font-weight: 600; }
@@ -682,14 +778,14 @@
   .rg-linea select, .rg-linea input { min-width: 0; }
   .rg-linea .quitar {
     border: 1px solid var(--trazo); background: var(--superficie); color: var(--grafito);
-    border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: none; font-size: 15px;
+    border-radius: var(--r-s); width: 32px; height: 32px; cursor: pointer; flex: none; font-size: 15px;
   }
   .rg-hechas { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
   .rg-hechas span { font-family: var(--mono); font-size: 11.5px; color: var(--grafito); }
 
   /* ---- Correo ---- */
   .vista-previa {
-    border: 1px solid var(--trazo); border-radius: 11px; background: var(--fondo);
+    border: 1px solid var(--trazo); border-radius: var(--r-m); background: var(--fondo);
     padding: 13px; margin: 12px 0; display: flex; flex-direction: column; gap: 6px;
   }
   .vista-previa .encabezado { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
@@ -717,11 +813,11 @@
   /* El secreto, en ámbar y en monoespaciado: hay que copiarlo entero y sin confundir caracteres. */
   .secreto-caja {
     border: 1px solid var(--ambar); background: color-mix(in srgb, var(--ambar) 10%, transparent);
-    border-radius: 11px; padding: 13px; margin: 12px 0; display: flex; flex-direction: column; gap: 6px;
+    border-radius: var(--r-m); padding: 13px; margin: 12px 0; display: flex; flex-direction: column; gap: 6px;
   }
   .secreto-caja code {
     font-family: var(--mono); font-size: 12.5px; word-break: break-all;
-    background: var(--superficie); border: 1px solid var(--trazo); border-radius: 7px; padding: 9px 10px;
+    background: var(--superficie); border: 1px solid var(--trazo); border-radius: var(--r-s); padding: 9px 10px;
   }
   /* Las pestañas de Ajustes: siete, así que en un móvil tienen que envolver. */
   .pestanas-ajustes { flex-wrap: wrap; gap: 4px 6px; margin-bottom: 4px; }
@@ -822,7 +918,7 @@
      es lo único que hay que hacer ahora. */
   .mes-caja {
     display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    border: 1px solid var(--trazo); border-radius: 4px; background: var(--superficie);
+    border: 1px solid var(--trazo); border-radius: var(--r-m); background: var(--superficie);
     padding: 12px 16px; max-width: 780px; margin-bottom: 12px;
   }
   .mes-cifras { display: flex; align-items: baseline; gap: 8px; }
@@ -904,17 +1000,17 @@
   }
   .snippet {
     font-family: var(--mono); font-size: 12px; line-height: 1.6;
-    background: var(--elevado); border: 1px solid var(--trazo); border-radius: 8px;
+    background: var(--elevado); border: 1px solid var(--trazo); border-radius: var(--r-m);
     padding: 12px 14px; overflow-x: auto; white-space: pre; color: var(--tinta); margin: 0;
   }
   .marco-vista {
-    border: 1px solid var(--trazo); border-radius: 10px; background: var(--superficie);
+    border: 1px solid var(--trazo); border-radius: var(--r-m); background: var(--superficie);
     padding: 20px; max-width: 460px;
   }
   .marco-vista .campo-v { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
   .marco-vista .campo-v span { font-size: 13px; }
   .marco-vista .campo-v input, .marco-vista .campo-v textarea {
-    font: inherit; font-size: 14px; padding: 9px 12px; border-radius: 8px;
+    font: inherit; font-size: 14px; padding: 9px 12px; border-radius: var(--r-s);
     border: 1px solid var(--trazo); background: var(--papel); color: var(--tinta);
   }
   .marco-vista .consent-v { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; margin-bottom: 14px; }
@@ -947,8 +1043,8 @@
   .leyenda-av span { display: inline-flex; align-items: center; gap: 5px; }
   .leyenda-av b { width: 8px; height: 8px; border-radius: 2px; display: block; }
   .escalon .et small { display: block; font-weight: 400; font-size: 11px; color: var(--grafito); font-family: var(--mono); }
-  .escalon .pista-e { height: 20px; border-radius: 5px; background: var(--trazo-suave); overflow: hidden; }
-  .escalon .pista-e i { display: block; height: 100%; background: var(--av-3); border-radius: 5px; }
+  .escalon .pista-e { height: 20px; border-radius: 999px; background: var(--trazo-suave); overflow: hidden; }
+  .escalon .pista-e i { display: block; height: 100%; background: var(--av-3); border-radius: 999px; }
   .escalon .cif { font-family: var(--mono); font-size: 12.5px; color: var(--grafito); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .paso {
     grid-column: 2; font-family: var(--mono); font-size: 11px; color: var(--grafito);
@@ -993,7 +1089,7 @@
     nav { flex-direction: row; flex: 1; gap: 0; }
     .item {
       flex: 1; flex-direction: column; gap: 3px; text-align: center; justify-content: center;
-      font-size: 11px; padding: 7px 2px; border-radius: 10px; min-height: 48px;
+      font-size: 11px; padding: 7px 2px; border-radius: var(--r-s); min-height: 48px;
       position: relative;
     }
     .item.on { font-weight: 700; }
@@ -1013,7 +1109,7 @@
     /* Hueco abajo para que la barra no tape la última fila de ninguna pantalla. */
     main { padding: 20px 16px calc(76px + env(safe-area-inset-bottom)); gap: 18px; }
     .titulo h1 { font-size: 23px; }
-    .panel { padding: 18px 16px; border-radius: 12px; }
+    .panel { padding: 18px 16px; border-radius: var(--r-m); }
     .rejilla-form { grid-template-columns: 1fr; }
 
     /* La tarjeta del repaso, para un pulgar: cada respuesta ocupa el ancho y mide lo que mide un dedo

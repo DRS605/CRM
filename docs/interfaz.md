@@ -7,10 +7,32 @@ salen las letras** y **qué significa cada color**.
 
 ## Las letras están en el repositorio, no en un CDN
 
-Dos familias, pensadas para ir juntas: **Instrument Serif** para los titulares y las cifras grandes,
-**Instrument Sans** para todo lo demás. Cinco ficheros en `wwwroot/tipos/`, 95 KB en total, partidos
-por `unicode-range` en latín y latín extendido, de modo que una pantalla en español descarga dos
-ficheros y no cinco.
+Dos familias: **Fraunces** para los titulares y las cifras grandes, **Nunito Sans** para todo lo demás.
+Cinco ficheros en `wwwroot/tipos/`, 220 KB en total, partidos por `unicode-range` en latín y latín
+extendido, de modo que una pantalla en español descarga tres ficheros y no cinco.
+
+### Por qué se cambió la pareja anterior
+
+Antes eran Instrument Sans e Instrument Serif, y el motivo del cambio cabe en una frase de quien lo
+usa: «la fuente de texto no es amigable». Tenía razón, y era una decisión, no un descuido:
+
+- **Instrument Sans** es una grotesca de contornos rectos y aperturas cerradas. Compone limpísimo y
+  compone **frío**: en una pantalla de nueve paneles blancos con líneas de un píxel, el conjunto se
+  parecía más a una hoja de cálculo bien hecha que a una herramienta que uno abre por gusto.
+- **Nunito Sans** es humanista: aperturas abiertas en la «a», la «e» y la «s», «g» de un piso, curvas
+  blandas y una altura de x generosa. A 15,5 px eso se lee como una voz que habla despacio.
+
+Y la línea que no se cruza: **es Nunito *Sans*, no Nunito.** Nunito lleva las terminaciones
+redondeadas, y lo redondo de verdad —Nunito, Quicksand, Baloo— es simpático diez minutos y luego parece
+de niños. Eso ya se dijo una vez de esta interfaz y no se va a repetir.
+
+**Fraunces** sustituye a Instrument Serif por lo mismo: es una serifa blanda con eje óptico (`opsz`),
+así que a 35 px de titular engorda los remates y se vuelve casi manuscrita, y a 19 px de un `h2` se
+calma. Hace falta `font-optical-sizing: auto` en el `body`; sin eso, un titular de 35 px se dibuja con
+los remates de un texto de 12 y pierde exactamente lo que se ha venido a buscar.
+
+El precio del cambio son 125 KB más de letra, casi todos de Fraunces —una variable de dos ejes—. Se
+acepta: se descargan una vez y a partir de la segunda visita los sirve el trabajador de servicio.
 
 Están servidas desde aquí y no enlazadas a Google Fonts **por privacidad, no por velocidad**. Un
 `<link rel="stylesheet" href="https://fonts.googleapis.com/…">` hace que el navegador de cada
@@ -34,6 +56,48 @@ es una aplicación de una sola página— y está mal para un fichero: el navega
 `index.html` como si fuera un woff2. Ahora la raíz solo se sirve si `peticion.mode === 'navigate'`;
 para lo demás la petición falla, y `font-display: swap` deja la letra del sistema, que es exactamente
 lo que toca.
+
+## Que se acoja: el tono, la esquina y la sombra
+
+Tres decisiones que se tomaron al revés en la primera versión y se cambiaron a la vez. Están juntas
+aquí porque las tres responden a lo mismo —«es muy simple, quiero algo cálido»— y por separado no
+habrían llegado.
+
+### Todo el gris tiene marrón dentro
+
+El papel es crema (`--papel: #FBF6F0`), la tinta es un marrón muy oscuro y no un negro
+(`--tinta: #241B18`) y el gris de los textos secundarios es cálido (`--grafito: #6F5F58`). Son tres
+cambios de dos o tres grados de tono, no se pueden señalar mirando un color aislado, y son la mitad de
+la sensación de acogida. La otra mitad la ponen las letras.
+
+El tema oscuro va igual: marrón muy oscuro, no negro azulado. Un tema oscuro frío al lado de un tema
+claro cálido son dos productos distintos.
+
+Los contrastes se comprobaron uno a uno: el más justo es el ámbar sobre papel, 5,5:1, y el resto pasa
+de 5,6:1. El mínimo de AA para texto pequeño es 4,5:1.
+
+### Tres radios, y más grandes
+
+`--r-xs: 6px`, `--r-s: 10px`, `--r-m: 14px`. Antes había **trece** valores distintos entre 2 y 12 px,
+que es lo que pasa cuando cada pantalla elige el suyo: nada rima con nada.
+
+Y son más grandes que antes a propósito. La regla vieja decía «radios de 3–4 px y ninguna pastilla»,
+con este razonamiento: lo redondo es simpático y esto no va de ser simpático. El razonamiento estaba
+mal dirigido: **lo que hacía pueril el primer intento era el bloque de color saturado, no la curva.**
+Con el acento guardado para señalar —la acción principal sigue yendo en tinta— 14 px en una tarjeta no
+la convierten en un juguete, la convierten en algo que se puede coger. Las pastillas de 999 px vuelven,
+pero solo donde el elemento es un dato de una línea: chips de estado, contadores y barras de progreso.
+
+### La sombra vuelve, y es marrón
+
+La regla vieja era «sin sombras: el papel se separa con líneas de un píxel, que es lo que hace un
+impreso bien hecho». Bien argumentado y llevaba a una pantalla plana: dieciocho rectángulos de un píxel
+de borde, todos a la misma altura, sin nada que invitara a tocar nada.
+
+La sombra que se pone no es la de 2014: `0 1px 2px` casi invisible más `0 12px 28px -20px` de velo, y
+**del color de la tinta** —marrón—, no un gris neutro. Una sombra no colorea; solo dice que la tarjeta
+está encima del papel. Las tarjetas de Hoy suben un píxel al pasar por encima, y solo ellas: es la
+única pantalla donde hay que elegir una entre varias.
 
 ## El color dice un dato o no se pinta
 
@@ -113,6 +177,21 @@ Compartían el gris apagado y no son lo mismo. **Perdido** es una venta que no s
 a intentar. **Baja** es que retiró el consentimiento y no se le puede escribir. Igualar los dos es la
 clase de detalle con el que se manda un correo ilegal, así que la baja se pinta como lo que es: un
 aviso en rojo, no un estado apagado.
+
+## Una casilla de texto lleva estilo esté donde esté
+
+El estilo de un `input` de texto vivía **solo** en `.campo input`. Cualquier casilla creada fuera de un
+`.campo` —los campos propios del módulo 17, entre otras— salía con el estilo del navegador: fondo
+blanco, esquina cuadrada, borde azulado. En tema claro pasaba por un campo pálido y nadie lo vio; en
+tema oscuro era un rectángulo blanco en medio de la ficha.
+
+Ahora el estilo va por tipo de elemento, dentro de un `:where(...)`. El `:where()` no es un adorno de
+sintaxis: deja la regla **con especificidad cero**, así que todas las que ya existían —`.campo input`,
+`.buscador`, los tamaños de cada pantalla— siguen ganando sin haber tocado ninguna. Y el `html` lleva
+`color-scheme: light dark`, que es lo que hace que el calendario de un `input type="date"` y las barras
+de desplazamiento se dibujen con el tema puesto.
+
+Lo cubre `Una_casilla_de_texto_lleva_estilo_esté_donde_esté` en `PruebasMovil`.
 
 ## Errores que ya se han cometido aquí
 

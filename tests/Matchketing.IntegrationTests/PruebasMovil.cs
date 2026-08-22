@@ -521,6 +521,24 @@ public sealed class PruebasMovil(ApiDePrueba api)
     }
 
     [Fact]
+    public async Task Una_casilla_de_texto_lleva_estilo_esté_donde_esté()
+    {
+        // El estilo de un `input` de texto vivía **solo** en `.campo input`, así que cualquier casilla
+        // creada fuera de un `.campo` salía con el estilo del navegador: fondo blanco, esquina cuadrada,
+        // borde azulado. En tema claro pasaba por un campo pálido; en oscuro era un rectángulo blanco en
+        // medio de la ficha. Los campos propios del módulo 17 nacieron así y no eran el único sitio.
+        //
+        // Se encontró mirando una captura en tema oscuro, no leyendo el CSS, y de eso sale esta prueba:
+        // el estilo tiene que estar puesto **por tipo de elemento**, no por el sitio donde esté.
+        var html = await api.CreateClient().GetStringAsync(new Uri("/", UriKind.Relative));
+
+        html.Should().Contain("input[type=\"text\"]",
+            "una casilla de texto suelta necesita estilo propio, o se dibuja con el del navegador");
+        html.Should().Contain("html { color-scheme: light dark; }",
+            "sin esto, el calendario de un input de fecha sale claro sobre un campo oscuro");
+    }
+
+    [Fact]
     public async Task Las_letras_se_guardan_para_cuando_no_haya_cobertura()
     {
         var js = await api.CreateClient().GetStringAsync(new Uri("/sw.js", UriKind.Relative));

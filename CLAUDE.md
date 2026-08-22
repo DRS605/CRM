@@ -292,20 +292,34 @@ Si añades un tipo de acción a las reglas, mira antes
 ## Interfaz
 
 Es un **único fichero**, `src/Matchketing.Api/wwwroot/index.html`: tokens, estilos, vistas y
-JavaScript. Sin dependencias externas ni paso de compilación. Paleta **ciruela**
-(`--magenta: #5C2340`; el token conserva el nombre viejo para no tocar doscientas referencias), claro y
-oscuro mediante `:root` + `prefers-color-scheme` + `[data-theme]`. **No hay rojo** en el sistema: lo
-que en otras herramientas sería rojo aquí va en ámbar.
+JavaScript. Sin dependencias externas ni paso de compilación. Paleta **ciruela sobre papel crema**
+(`--magenta: #6B2A43` sobre `--papel: #FBF6F0`; el token conserva el nombre viejo para no tocar
+doscientas referencias), claro y oscuro mediante `:root` + `prefers-color-scheme` + `[data-theme]`.
+**No hay rojo** en el sistema: lo que en otras herramientas sería rojo aquí va en ámbar.
 
-Y tres reglas de acabado, que son las que separan «herramienta» de «juguete»:
+Letras: **Nunito Sans** (texto) y **Fraunces** (titulares y cifras), servidas desde `/tipos/`. Es
+Nunito **Sans**, no Nunito: lo redondo de verdad parece de niños a los diez minutos.
+
+Y cuatro reglas de acabado, que son las que separan «herramienta» de «juguete» sin caer en «frío»:
 
 1. **El acento no rellena bloques.** La acción principal va en tinta; el color de marca aparece al
    pasar por encima, en la línea del elemento activo y en lo que de verdad avisa. Un bloque saturado de
    120 px es lo primero que hace que una pantalla parezca de plástico.
-2. **Radios de 3–4 px, y ninguna pastilla de 999 px.** Lo redondo es simpático; esto no va de ser
-   simpático.
-3. **Serifa en titulares y cifras, pesos de 400 a 600.** El contraste tipográfico hace el trabajo que
-   antes se le pedía al color, y `font-weight: 800` en todo era la mitad del problema.
+2. **Tres radios y nada más:** `--r-xs: 6px`, `--r-s: 10px`, `--r-m: 14px`; pastilla de 999 px solo
+   donde el elemento es un dato de una línea (chips, contadores, barras). Aquí ponía «radios de 3–4 px
+   y ninguna pastilla», y se cambió: **lo que hacía pueril el primer intento era el bloque de color
+   saturado, no la curva.** Con el acento guardado para señalar, 14 px en una tarjeta no la convierten
+   en un juguete.
+3. **Sombra, y del color de la tinta.** Aquí ponía «sin sombras», y también se cambió: dieciocho
+   rectángulos de un píxel de borde a la misma altura es una pantalla plana. El velo es
+   `0 1px 2px` + `0 12px 28px -20px` en marrón, nunca gris neutro, y **nunca colorea**.
+4. **Serifa en titulares y cifras, pesos de 400 a 600.** Con Fraunces hace falta
+   `font-optical-sizing: auto`, o el titular de 35 px se dibuja con los remates de un texto de 12.
+   `font-weight: 800` en todo era la mitad del problema original.
+
+Y todo el gris tiene **marrón dentro**: papel crema, tinta marrón muy oscuro, grafito cálido, y el tema
+oscuro igual. Un tema oscuro frío al lado de un tema claro cálido son dos productos distintos. Ver
+[`docs/interfaz.md`](docs/interfaz.md).
 
 Cuando cambies algo de la interfaz, **míralo**. Casi todos los defectos de este proyecto —CORS que
 faltaba, conversiones inventadas, Match clavado en 100, JSON crudo en pantalla, el menú que no existía
@@ -323,6 +337,12 @@ contarlo tapa los que sí lo son. Lo que se mide es la ventana, no cada caja.
 Dos cosas que un barrido con datos no ve, y hay que buscarlas a mano: **la empresa recién creada**
 —estados vacíos y campos que no se pueden rellenar— y **el texto que un estilo cambia** (versalitas
 encima de un nombre técnico o de una dirección de correo).
+
+Y **míralo en tema oscuro**. Ahí se vio que los campos propios del módulo 17 salían con el estilo del
+navegador —un rectángulo blanco en medio de la ficha— porque el estilo de un `input` de texto vivía solo
+en `.campo input`. Un elemento se estiliza **por lo que es, no por dónde está**: si añades un control
+que no vive dentro de un `.campo`, comprueba que tiene estilo propio. La regla global va dentro de
+`:where(...)` para no tener especificidad y no pisar nada de lo que ya había.
 
 Y al añadir una sección: entra en `#menu` con su `data-vista`, su `<section id="vista-…">` y su entrada
 en `ALENTRAR`. Si no es de uso diario, márcala `data-secundario` y aparecerá en «Más» en el móvil. Los
